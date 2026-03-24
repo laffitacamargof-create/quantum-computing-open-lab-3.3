@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>QCOL — Arquitecto Cuántico con IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;600&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════
+   QCOL ARQUITECTO — Versión Completa con IA y Fundador
+══════════════════════════════════════════════════ */
+:root {
+  --bg:#0a0e1a; --bg2:#0d1220; --bg3:#111827; --bg4:#060912;
+  --p:#0f1626;  --p2:#141e30;  --p3:#1a2640;
+  --bd:#1a2a48; --bd2:#1e3058;
+  --bl:#0088ff; --bl2:#00aaff; --cy:#00ffdd;
+  --gr:#00ff88; --yw:#ffd700;  --rd:#ff4466; --pu:#bd93f9;
+  --tx:#dce8ff; --tx2:#8aa0c4; --mu:#3d5a8a; --mu2:#1e2e4a;
+  --kw:#ff79c6; --fn:#50fa7b; --st:#f1fa8c;
+  --nm:#bd93f9; --cm:#4a5a7a; --cl:#8be9fd;
+  --orb:'Orbitron',monospace;
+  --mono:'JetBrains Mono',monospace;
+  --ex:'Exo 2',sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
+
+.notif {
+  position:fixed; top:.6rem; right:.6rem; z-index:9999;
+  padding:.45rem .85rem; background:rgba(6,9,18,.97);
+  border:1px solid var(--cy); border-radius:7px;
+  font-family:var(--orb); font-size:.55rem; color:var(--cy);
+  transform:translateX(130%); transition:transform .28s;
+  backdrop-filter:blur(20px); max-width:240px; pointer-events:none;
+}
+.notif.show { transform:translateX(0); }
+
+.titlebar {
+  height:32px; display:flex; align-items:center;
+  background:#060912; border-bottom:1px solid var(--bd);
+  flex-shrink:0; padding:0 .8rem;
+}
+.tb-brand { display:flex; align-items:center; gap:.5rem; }
+.tb-q { font-family:var(--orb); font-size:.85rem; font-weight:900; color:var(--cy); }
+.tb-col { font-family:var(--orb); font-size:.85rem; font-weight:900; color:var(--bl2); }
+.tb-right { margin-left:auto; display:flex; align-items:center; gap:.5rem; }
+.badge {
+  padding:.2rem .5rem; border-radius:4px;
+  font-family:var(--orb); font-size:.5rem;
+}
+.badge-eng-off { background:rgba(50,70,110,.15); border:1px solid var(--bd2); color:var(--mu); }
+.badge-eng-on { background:rgba(0,255,136,.1); border:1px solid var(--gr); color:var(--gr); }
+.user-chip {
+  display:flex; align-items:center; gap:.3rem;
+  padding:.2rem .5rem; background:rgba(0,136,255,.1);
+  border:1px solid var(--bl); border-radius:16px;
+  font-family:var(--orb); font-size:.5rem; cursor:pointer;
+}
+.u-dot { width:6px; height:6px; border-radius:50%; background:var(--mu); }
+.u-dot.on { background:var(--gr); box-shadow:0 0 4px var(--gr); }
+
+.toolbar {
+  height:38px; display:flex; align-items:center; gap:.4rem;
+  padding:0 .8rem; background:var(--bg2);
+  border-bottom:1px solid var(--bd); flex-shrink:0;
+  overflow-x:auto; flex-wrap:wrap;
+}
+.toolbar::-webkit-scrollbar { display:none; }
+.btn-run {
+  display:flex; align-items:center; gap:.4rem;
+  padding:.25rem .9rem; border:none; border-radius:6px;
+  background:linear-gradient(135deg,#003a9e,var(--bl));
+  color:#fff; font-family:var(--orb); font-size:.6rem;
+  font-weight:700; cursor:pointer;
+}
+.btn-ai {
+  background:linear-gradient(135deg,#8b5cf6,var(--pu));
+}
+.bsm {
+  padding:.2rem .5rem; border-radius:5px;
+  background:rgba(30,48,88,.5); border:1px solid var(--bd2);
+  color:var(--tx2); font-family:var(--orb); font-size:.5rem;
+  cursor:pointer;
+}
+.bsm:hover { background:rgba(0,136,255,.2); border-color:var(--bl); color:var(--bl2); }
+.lib-btn {
+  padding:.2rem .5rem; border-radius:5px;
+  background:rgba(20,30,50,.6); border:1px solid var(--bd);
+  color:var(--mu); font-family:var(--orb); font-size:.5rem;
+  cursor:pointer;
+}
+.lib-btn.on { background:rgba(0,136,255,.2); border-color:var(--bl); color:var(--bl2); }
+.mode-btn {
+  padding:.2rem .5rem; border-radius:5px;
+  background:rgba(20,30,50,.6); border:1px solid var(--bd);
+  color:var(--mu); font-family:var(--orb); font-size:.5rem;
+  cursor:pointer;
+}
+.mode-btn.on { background:rgba(0,255,221,.1); border-color:var(--cy); color:var(--cy); }
+.sep { width:1px; height:20px; background:var(--bd2); margin:0 .1rem; }
+
+.body-layout {
+  display:flex; height:calc(100vh - 70px);
+  overflow:hidden;
+}
+
+.palette {
+  width:160px; flex-shrink:0;
+  background:var(--p); border-right:1px solid var(--bd);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.palette-hdr {
+  padding:.4rem .6rem; background:#060912;
+  border-bottom:1px solid var(--bd);
+  font-family:var(--orb); font-size:.5rem; color:var(--mu);
+}
+.palette-body { flex:1; overflow-y:auto; padding:.5rem; }
+.pal-sec { margin-bottom:.6rem; }
+.pal-sec-lbl {
+  font-family:var(--orb); font-size:.45rem; color:var(--mu);
+  padding:.2rem; border-left:2px solid var(--bd2); margin-bottom:.3rem;
+}
+.pal-grid { display:grid; grid-template-columns:1fr 1fr; gap:.3rem; }
+.pal-gate {
+  width:100%; aspect-ratio:1; border-radius:8px;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; cursor:grab;
+  border:1px solid rgba(255,255,255,.1);
+  transition:transform .1s;
+}
+.pal-gate:active { cursor:grabbing; }
+.pal-gate:hover { transform:scale(1.05); filter:brightness(1.1); }
+.pal-gate-sym { font-family:var(--mono); font-size:.75rem; font-weight:700; }
+.pal-gate-lbl { font-family:var(--orb); font-size:.4rem; color:rgba(255,255,255,.6); margin-top:.05rem; }
+
+.center-area { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+.circuit-section {
+  flex-shrink:0; height:200px;
+  border-bottom:1px solid var(--bd);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.circuit-hdr {
+  display:flex; align-items:center; gap:.6rem;
+  padding:.3rem .7rem; background:#060912;
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.circuit-hdr-lbl { font-family:var(--orb); font-size:.5rem; color:var(--cy); }
+.qcount-badge {
+  font-family:var(--mono); font-size:.5rem;
+  padding:.1rem .5rem; background:rgba(0,255,221,.1);
+  border:1px solid rgba(0,255,221,.3); border-radius:4px;
+  color:var(--cy);
+}
+.circuit-body {
+  flex:1; overflow:auto; padding:.5rem;
+  background:var(--bg4);
+}
+.circuit-body::-webkit-scrollbar { width:8px; height:8px; }
+.circuit-body::-webkit-scrollbar-track { background:var(--bg2); border-radius:4px; }
+.circuit-body::-webkit-scrollbar-thumb { background:var(--bd2); border-radius:4px; }
+
+.resize-handle-h {
+  height:4px; cursor:ns-resize; background:var(--bd);
+  flex-shrink:0;
+}
+.resize-handle-h:hover { background:var(--bl); }
+.resize-handle-v {
+  width:4px; cursor:ew-resize; background:var(--bd);
+  flex-shrink:0;
+}
+.resize-handle-v:hover { background:var(--bl); }
+
+.code-section {
+  flex:1; display:flex; flex-direction:column; min-height:0;
+}
+.code-hdr {
+  display:flex; align-items:center; gap:.5rem;
+  padding:.3rem .7rem; background:#060912;
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.code-hdr-lbl { font-family:var(--orb); font-size:.5rem; color:var(--mu); }
+.code-wrap { flex:1; position:relative; display:flex; min-height:0; }
+.lnums {
+  width:35px; flex-shrink:0; padding:.6rem .2rem;
+  background:var(--bg4); text-align:right;
+  font-family:var(--mono); font-size:.7rem; color:var(--mu2);
+  line-height:1.6; overflow:hidden; user-select:none;
+  border-right:1px solid var(--bd);
+}
+.editor-body { flex:1; position:relative; overflow:hidden; }
+.syn-lay {
+  position:absolute; inset:0; padding:.6rem .8rem;
+  font-family:var(--mono); font-size:.7rem; line-height:1.6;
+  pointer-events:none; z-index:1; overflow:auto;
+  white-space:pre; background:var(--bg4); tab-size:4;
+}
+.code-ta {
+  position:absolute; inset:0;
+  background:transparent; color:transparent;
+  caret-color:var(--cy);
+  padding:.6rem .8rem;
+  font-family:var(--mono); font-size:.7rem;
+  border:none; outline:none; resize:none;
+  line-height:1.6; z-index:2;
+  white-space:pre; overflow:auto; tab-size:4;
+}
+.code-ta::-webkit-scrollbar { width:6px; }
+.code-ta::-webkit-scrollbar-thumb { background:var(--bd2); }
+
+.statusbar {
+  display:flex; align-items:center; gap:.5rem;
+  padding:0 .7rem; height:22px;
+  background:#060912; border-top:1px solid var(--bd);
+  font-family:var(--mono); font-size:.45rem; color:var(--mu);
+  flex-shrink:0;
+}
+.sb-dot { width:6px; height:6px; border-radius:50%; background:var(--gr); }
+
+.right-panel {
+  width:320px; display:flex; flex-direction:column;
+  background:var(--p); border-left:1px solid var(--bd);
+  flex-shrink:0;
+}
+.rtabs {
+  display:flex; background:#060912;
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.rtab {
+  flex:1; padding:.4rem .2rem; background:transparent; border:none;
+  color:var(--mu); font-family:var(--orb); font-size:.5rem;
+  cursor:pointer; border-bottom:2px solid transparent;
+}
+.rtab.on { color:var(--bl2); border-bottom-color:var(--bl2); }
+
+.output-panel { flex:1; display:flex; flex-direction:column; min-height:0; }
+.out-hdr {
+  padding:.3rem .6rem; background:#060912;
+  border-bottom:1px solid var(--bd);
+  font-family:var(--orb); font-size:.5rem; color:var(--mu);
+  flex-shrink:0;
+}
+.out-body {
+  flex:1; padding:.6rem; background:#040810;
+  font-family:var(--mono); font-size:.7rem; color:var(--tx2);
+  line-height:1.6; overflow-y:auto; white-space:pre-wrap;
+}
+.out-body::-webkit-scrollbar { width:4px; }
+.ok { color:#3fb950; }
+.er { color:#f85149; }
+.inf { color:#58a6ff; }
+.wa { color:#d29922; }
+.pb { color:#bc8cff; }
+.err-line { background:rgba(248,81,73,.1); border-left:3px solid #f85149; padding:.1rem .5rem; display:block; margin:.1rem 0; }
+.err-arrow { color:#f85149; font-weight:bold; }
+.out-bar {
+  padding:.3rem .6rem; background:#060912;
+  border-top:1px solid var(--bd);
+  display:flex; gap:.3rem; align-items:center;
+  flex-shrink:0;
+}
+
+.ai-panel {
+  flex:1; display:flex; flex-direction:column;
+  background:radial-gradient(circle at top, #0f1626, #060912);
+  overflow:hidden;
+}
+.ai-header {
+  padding:.5rem;
+  background:linear-gradient(135deg, #1a1f2e, #0a0e1a);
+  border-bottom:1px solid var(--bd);
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  flex-shrink:0;
+}
+.ai-header h3 {
+  font-family:var(--orb);
+  font-size:.6rem;
+  color:var(--pu);
+}
+.ai-chat {
+  flex:1;
+  overflow-y:auto;
+  padding:.5rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+}
+.ai-message {
+  padding:.4rem .6rem;
+  border-radius:8px;
+  max-width:90%;
+  font-family:var(--mono);
+  font-size:.6rem;
+  line-height:1.5;
+}
+.ai-message.user {
+  background:rgba(0,136,255,.15);
+  border-left:2px solid var(--bl);
+  align-self:flex-end;
+  color:var(--tx);
+}
+.ai-message.assistant {
+  background:rgba(189,147,249,.1);
+  border-left:2px solid var(--pu);
+  align-self:flex-start;
+  color:var(--tx2);
+}
+.ai-input-area {
+  display:flex;
+  gap:.3rem;
+  padding:.5rem;
+  border-top:1px solid var(--bd);
+  flex-shrink:0;
+}
+.ai-input {
+  flex:1;
+  background:var(--bg3);
+  border:1px solid var(--bd2);
+  color:var(--tx);
+  font-family:var(--mono);
+  font-size:.6rem;
+  padding:.4rem .6rem;
+  border-radius:6px;
+  resize:none;
+}
+.ai-input:focus {
+  outline:none;
+  border-color:var(--pu);
+}
+.ai-send {
+  background:linear-gradient(135deg, #8b5cf6, var(--pu));
+  border:none;
+  border-radius:6px;
+  padding:.2rem .6rem;
+  color:white;
+  font-family:var(--orb);
+  font-size:.5rem;
+  cursor:pointer;
+}
+
+.bloch-panel { flex:1; display:flex; flex-direction:column; align-items:center; padding:1rem; gap:1rem; overflow:auto; background:radial-gradient(circle at center, #0a0e1a, #060912); }
+.bloch-container { position:relative; width:100%; max-width:280px; margin:0 auto; }
+#bloch-canvas { width:100%; aspect-ratio:1; background:radial-gradient(circle at 30% 30%, #0d1424, #040810); border-radius:50%; box-shadow:0 0 30px rgba(0,136,255,0.2); cursor:grab; }
+.bloch-q-select { background:var(--bg3); border:1px solid var(--bd2); color:var(--bl2); padding:.2rem .5rem; border-radius:4px; font-family:var(--mono); font-size:.6rem; }
+.bloch-info { text-align:center; font-family:var(--mono); font-size:.65rem; color:var(--tx2); background:rgba(0,0,0,.3); padding:.5rem; border-radius:8px; width:100%; }
+.bloch-info span { color:var(--cy); font-weight:bold; }
+.gate-btns { display:flex; flex-wrap:wrap; gap:.3rem; justify-content:center; margin-top:.5rem; }
+.gb { padding:.25rem .6rem; border:none; border-radius:5px; background:rgba(0,136,255,.2); color:var(--bl2); font-family:var(--orb); font-size:.5rem; cursor:pointer; }
+
+.save-panel { flex:1; overflow-y:auto; padding:.6rem; }
+.save-sec { margin-bottom:.8rem; }
+.save-title { font-family:var(--orb); font-size:.5rem; color:var(--bl2); margin-bottom:.4rem; }
+.fi { width:100%; padding:.3rem .5rem; background:rgba(20,30,50,.7); border:1px solid var(--bd2); color:var(--tx); font-family:var(--mono); font-size:.6rem; border-radius:4px; }
+.circ-item { display:flex; align-items:center; gap:.4rem; padding:.3rem .5rem; background:rgba(20,30,50,.5); border:1px solid var(--bd); border-radius:5px; margin-bottom:.2rem; cursor:pointer; }
+.circ-item:hover { border-color:var(--bl); background:rgba(0,136,255,.1); }
+.ci-name { font-family:var(--mono); font-size:.6rem; color:var(--tx); flex:1; }
+.ci-del { background:transparent; border:none; color:var(--rd); cursor:pointer; font-size:.7rem; }
+
+.q-row { display:flex; align-items:center; height:56px; position:relative; }
+.q-label { width:40px; text-align:right; padding-right:.5rem; font-family:var(--mono); font-size:.55rem; color:var(--mu); flex-shrink:0; }
+.q-wire { flex:1; position:relative; height:56px; min-width:200px; background:transparent; }
+.q-wire::before { content:''; position:absolute; left:0; right:0; top:50%; height:2px; background:linear-gradient(90deg, rgba(0,136,255,0.3), rgba(0,136,255,0.1)); transform:translateY(-50%); pointer-events:none; }
+.placed-gate { position:absolute; top:50%; transform:translateY(-50%); z-index:5; }
+.pg-box { width:38px; height:38px; border-radius:6px; display:flex; align-items:center; justify-content:center; border:1.5px solid rgba(255,255,255,.2); cursor:pointer; position:relative; }
+.pg-sym { font-family:var(--mono); font-size:.8rem; font-weight:700; color:#fff; }
+.pg-del { position:absolute; top:-8px; right:-8px; width:16px; height:16px; border-radius:50%; background:var(--rd); border:none; color:#fff; font-size:.6rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.multi-gate-container, .triple-gate-container { position:absolute; top:0; left:0; z-index:5; }
+.multi-gate-svg, .triple-gate-svg { cursor:pointer; }
+.multi-gate-delete, .triple-gate-delete { position:absolute; top:-8px; right:-8px; width:16px; height:16px; border-radius:50%; background:#ff4466; border:none; color:#fff; font-size:.6rem; cursor:pointer; z-index:10; }
+
+@media(max-width:700px){ .palette { width:120px; } .right-panel { width:280px; } .bloch-container { max-width:220px; } }
+</style>
+</head>
+<body>
+<div class="notif" id="notif"></div>
+
+<div class="titlebar">
+  <div class="tb-brand"><span class="tb-q">Q</span><span class="tb-col">COL</span></div>
+  <div class="tb-right">
+    <div class="badge badge-eng-off" id="eng-badge">● SIN COMPILADOR</div>
+    <div class="user-chip" id="user-chip"><div class="u-dot" id="udot"></div><span id="uname">Invitado</span></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn-run" id="btn-run">▶ EJECUTAR</button>
+  <button class="btn-run btn-ai" id="btn-ai-assist">🤖 ASISTENTE IA</button>
+  <button class="bsm" id="btn-sync">⟳ SINCRONIZAR</button>
+  <button class="bsm" id="btn-clear">🗑 Limpiar</button>
+  <div class="sep"></div>
+  <button class="bsm" id="btn-addqb">+ Qubit</button>
+  <button class="bsm" id="btn-remqb">- Qubit</button>
+  <div class="sep"></div>
+  <button class="lib-btn on" data-lib="qiskit">Qiskit</button>
+  <div class="sep"></div>
+  <button class="mode-btn on" data-mode="circ">⚛ Circuito</button>
+  <button class="mode-btn" data-mode="code">{ } Código</button>
+</div>
+
+<div class="body-layout">
+  <div class="palette" id="palette">
+    <div class="palette-hdr">🔲 PUERTAS</div>
+    <div class="palette-body" id="palette-body"></div>
+  </div>
+
+  <div class="center-area">
+    <div class="circuit-section" id="circuit-section">
+      <div class="circuit-hdr">
+        <span class="circuit-hdr-lbl">⚛ CIRCUITO</span>
+        <span class="qcount-badge" id="qcount-badge">2 qubits · 0 puertas</span>
+      </div>
+      <div class="circuit-body" id="circuit-canvas"></div>
+    </div>
+    <div class="resize-handle-h" id="resize-h"></div>
+    <div class="code-section" id="code-section">
+      <div class="code-hdr">
+        <span class="code-hdr-lbl">{ } EDITOR PYTHON</span>
+        <button class="bsm" id="btn-copy">COPIAR</button>
+        <button class="bsm" id="btn-clear-code">LIMPIAR</button>
+      </div>
+      <div class="code-wrap">
+        <div class="lnums" id="lnums"></div>
+        <div class="editor-body">
+          <div class="syn-lay" id="syn-lay"></div>
+          <textarea class="code-ta" id="code-ta" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="statusbar">
+        <div class="sb-dot" id="sb-dot"></div>
+        <span id="sb-txt">Listo</span>
+        <span id="sb-lib">Qiskit</span>
+        <span id="sb-cur" style="margin-left:auto;">Ln 1, Col 1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="resize-handle-v" id="resize-v"></div>
+
+  <div class="right-panel" id="right-panel">
+    <div class="rtabs">
+      <button class="rtab on" data-tab="out">📤 OUTPUT</button>
+      <button class="rtab" data-tab="bloch">🌐 BLOCH</button>
+      <button class="rtab" data-tab="ai">🤖 AI CHAT</button>
+      <button class="rtab" data-tab="save">💾 GUARDAR</button>
+    </div>
+    
+    <div class="output-panel" id="p-out">
+      <div class="out-hdr">TERMINAL</div>
+      <div class="out-body" id="out-body"><span class="inf">╔══════════════════════════╗<br>║  QCOL con IA integrada   ║<br>║  Sincronización Fundador ║<br>╚══════════════════════════╝<br><br>✅ Listo</span></div>
+      <div class="out-bar"><button class="bsm" id="btn-clear-out">LIMPIAR</button><button class="btn-run" id="btn-run2">▶ EJECUTAR</button><span id="out-elapsed" style="margin-left:auto;font-size:.45rem;"></span></div>
+    </div>
+    
+    <div class="bloch-panel" id="p-bloch" style="display:none;">
+      <div class="bloch-container">
+        <canvas id="bloch-canvas" width="280" height="280"></canvas>
+        <div class="bloch-controls"><select id="bloch-q-select" class="bloch-q-select"></select></div>
+      </div>
+      <div class="bloch-info" id="bloch-info"></div>
+      <div class="gate-btns">
+        <button class="gb" data-gate="H">H</button><button class="gb" data-gate="X">X</button>
+        <button class="gb" data-gate="Y">Y</button><button class="gb" data-gate="Z">Z</button>
+        <button class="gb" data-gate="SX">√X</button><button class="gb" data-gate="RX">Rx</button>
+        <button class="gb" data-gate="RY">Ry</button><button class="gb" data-gate="RZ">Rz</button>
+        <button class="gb rst" data-gate="reset">⟳ RESET</button>
+      </div>
+    </div>
+    
+    <div class="ai-panel" id="p-ai" style="display:none;">
+      <div class="ai-header"><h3>🤖 ASISTENTE CUÁNTICO IA</h3></div>
+      <div class="ai-chat" id="ai-chat"><div class="ai-message assistant">👋 ¡Hola! Soy tu asistente de computación cuántica. Puedo ayudarte con:<br><br>📝 Explicar algoritmos cuánticos<br>🔧 Corregir tu código<br>💡 Sugerir optimizaciones<br>🎓 Enseñar conceptos cuánticos<br>🔌 Sincronización con el módulo fundador<br><br>¿En qué puedo ayudarte?</div></div>
+      <div class="ai-input-area"><textarea class="ai-input" id="ai-input" rows="2" placeholder="Escribe tu pregunta..."></textarea><button class="ai-send" id="ai-send">📤 ENVIAR</button></div>
+    </div>
+    
+    <div class="save-panel" id="p-save" style="display:none;">
+      <div class="save-sec"><div class="save-title">💾 GUARDAR</div><input class="fi" id="save-name" placeholder="nombre_circuito"><button class="bsm" id="btn-save" style="margin-top:.3rem;">Guardar circuito</button><button class="bsm" id="btn-dlpy" style="margin-top:.3rem;">📥 Descargar .py</button><button class="bsm" id="btn-dlnb" style="margin-top:.3rem;">📥 .ipynb</button></div>
+      <div class="save-sec" id="queue-sec" style="display:none;"><div class="save-title">⏱ Cola (>10 qubits)</div><div id="queue-list"></div><button class="bsm" id="btn-run-queue" style="margin-top:.3rem;">▶ Ejecutar cola</button></div>
+      <div class="save-sec"><div class="save-title">📂 MIS CIRCUITOS</div><div id="circ-list"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// QCOL — Versión Completa con IA, Fundador, Queue, Compilador
+// ═══════════════════════════════════════════════════════════
+
+// ── ESTADO GLOBAL ──────────────────────────────────────────
+let circuit = { qubits: 2, gates: [] };
+let curLib = 'qiskit';
+let curMode = 'circ';
+let curUser = null;
+let engineURL = '', engineOK = false;
+let running = false;
+let dragGate = null;
+let nextId = 1;
+let isUpdatingFromCode = false;
+let isUpdatingFromCircuit = false;
+let syncTimeout = null;
+const ROW_HEIGHT = 56;
+const MAX_QUBITS = 20;
+
+// Estado de Bloch por qubit
+let blochStates = {};
+let currentBlochQubit = 0;
+let blochSt = { theta: 0, phi: 0 };
+
+// ── DEFINICIÓN DE PUERTAS ──────────────────────────────────
+const GATES = {
+  '1q': [
+    { id: 'H', sym: 'H', bg: '#0088ff', desc: 'Hadamard', code: 'qc.h({q})', regex: /qc\.h\((\d+)\)/ },
+    { id: 'X', sym: 'X', bg: '#0088ff', desc: 'Pauli-X', code: 'qc.x({q})', regex: /qc\.x\((\d+)\)/ },
+    { id: 'Y', sym: 'Y', bg: '#0088ff', desc: 'Pauli-Y', code: 'qc.y({q})', regex: /qc\.y\((\d+)\)/ },
+    { id: 'Z', sym: 'Z', bg: '#0088ff', desc: 'Pauli-Z', code: 'qc.z({q})', regex: /qc\.z\((\d+)\)/ },
+    { id: 'S', sym: 'S', bg: '#0088ff', desc: 'Fase π/2', code: 'qc.s({q})', regex: /qc\.s\((\d+)\)/ },
+    { id: 'T', sym: 'T', bg: '#0088ff', desc: 'Fase π/4', code: 'qc.t({q})', regex: /qc\.t\((\d+)\)/ },
+    { id: 'SX', sym: '√X', bg: '#0088ff', desc: 'Raíz X', code: 'qc.sx({q})', regex: /qc\.sx\((\d+)\)/ },
+    { id: 'RX', sym: 'Rx', bg: '#0088ff', desc: 'Rotación X', code: 'qc.rx(np.pi/4, {q})', regex: /qc\.rx\([^,]+,\s*(\d+)\)/ },
+    { id: 'RY', sym: 'Ry', bg: '#0088ff', desc: 'Rotación Y', code: 'qc.ry(np.pi/4, {q})', regex: /qc\.ry\([^,]+,\s*(\d+)\)/ },
+    { id: 'RZ', sym: 'Rz', bg: '#0088ff', desc: 'Rotación Z', code: 'qc.rz(np.pi/4, {q})', regex: /qc\.rz\([^,]+,\s*(\d+)\)/ }
+  ],
+  '2q': [
+    { id: 'CX', sym: '●─⊕', bg: '#0088ff', desc: 'CNOT', code: 'qc.cx({q},{q2})', regex: /qc\.cx\((\d+),\s*(\d+)\)/, multi: true },
+    { id: 'CZ', sym: '●─●', bg: '#0088ff', desc: 'CZ', code: 'qc.cz({q},{q2})', regex: /qc\.cz\((\d+),\s*(\d+)\)/, multi: true },
+    { id: 'SWAP', sym: '×─×', bg: '#0088ff', desc: 'SWAP', code: 'qc.swap({q},{q2})', regex: /qc\.swap\((\d+),\s*(\d+)\)/, multi: true }
+  ],
+  '3q': [
+    { id: 'CCX', sym: '●─●─⊕', bg: '#0088ff', desc: 'Toffoli', code: 'qc.ccx({q},{q2},{q3})', regex: /qc\.ccx\((\d+),\s*(\d+),\s*(\d+)\)/, triple: true }
+  ],
+  'meas': [
+    { id: 'M', sym: 'M', bg: '#0088ff', desc: 'Medir', code: 'qc.measure({q},{q})', regex: /qc\.measure\((\d+),\s*\d+\)/ }
+  ]
+};
+
+// ── COMUNICACIÓN CON MÓDULO FUNDADOR ───────────────────────
+function postCore(t, d = {}) { window.parent.postMessage({ type: t, ...d }, '*'); }
+
+function notify(msg, dur = 2000) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  clearTimeout(n._t);
+  n._t = setTimeout(() => n.classList.remove('show'), dur);
+}
+
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (!d?.type) return;
+  if (d.type === 'QCOL_CONFIG') {
+    engineURL = (localStorage.getItem('qcol_colab_url') || '').replace(/\/+$/, '');
+    if (engineURL) checkEngine();
+  }
+  if (d.type === 'QCOL_USER_UPDATE') {
+    curUser = d.user;
+    updateUserBadge();
+    renderSaveList();
+    renderQueue();
+  }
+});
+postCore('QCOL_GET_CONFIG');
+
+function updateUserBadge() {
+  const dot = document.getElementById('udot'), nm = document.getElementById('uname');
+  if (curUser) { dot.className = 'u-dot on'; nm.textContent = curUser.name?.split(' ')[0] || curUser.username; }
+  else { dot.className = 'u-dot'; nm.textContent = 'Invitado'; }
+}
+
+async function checkEngine() {
+  if (!engineURL) return;
+  engineURL = engineURL.trim().replace(/\/+$/, '');
+  const isHF = engineURL.includes('hf.space') || engineURL.includes('huggingface');
+  try {
+    let ok = false;
+    if (isHF) {
+      const r = await fetch(engineURL + '/health/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [''] }), signal: AbortSignal.timeout(65000) });
+      ok = r.ok;
+    } else {
+      const r = await fetch(engineURL + '/health/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [''] }), signal: AbortSignal.timeout(65000) });
+      ok = r.ok;
+    }
+    if (ok) {
+      engineOK = true;
+      const b = document.getElementById('eng-badge');
+      b.textContent = '● COMPILADOR ACTIVO';
+      b.className = 'badge badge-eng-on';
+    }
+  } catch (e) { engineOK = false; }
+}
+
+// ── CONSTRUIR PALETA ──────────────────────────────────────
+function buildPalette() {
+  const container = document.getElementById('palette-body');
+  if (!container) return;
+  let html = '';
+  html += '<div class="pal-sec"><div class="pal-sec-lbl">1 QUBIT</div><div class="pal-grid">';
+  GATES['1q'].forEach(g => { html += `<div class="pal-gate" draggable="true" data-gate="${g.id}" style="background:#0088ff;" ondragstart="onDragStart(event)" ondragend="onDragEnd()"><span class="pal-gate-sym">${g.sym}</span><span class="pal-gate-lbl">${g.id}</span></div>`; });
+  html += '</div></div><div class="pal-sec"><div class="pal-sec-lbl">2 QUBITS</div><div class="pal-grid">';
+  GATES['2q'].forEach(g => { html += `<div class="pal-gate" draggable="true" data-gate="${g.id}" style="background:#0088ff;" ondragstart="onDragStart(event)" ondragend="onDragEnd()"><span class="pal-gate-sym">${g.sym}</span><span class="pal-gate-lbl">${g.id}</span></div>`; });
+  html += '</div></div><div class="pal-sec"><div class="pal-sec-lbl">3 QUBITS</div><div class="pal-grid">';
+  GATES['3q'].forEach(g => { html += `<div class="pal-gate" draggable="true" data-gate="${g.id}" style="background:#0088ff;" ondragstart="onDragStart(event)" ondragend="onDragEnd()"><span class="pal-gate-sym">${g.sym}</span><span class="pal-gate-lbl">${g.id}</span></div>`; });
+  html += '</div></div><div class="pal-sec"><div class="pal-sec-lbl">MEDICIÓN</div><div class="pal-grid">';
+  GATES['meas'].forEach(g => { html += `<div class="pal-gate" draggable="true" data-gate="${g.id}" style="background:#0088ff;" ondragstart="onDragStart(event)" ondragend="onDragEnd()"><span class="pal-gate-sym">${g.sym}</span><span class="pal-gate-lbl">${g.id}</span></div>`; });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function onDragStart(e) { dragGate = e.target.closest('.pal-gate')?.dataset.gate; if (dragGate) e.dataTransfer.setData('text/plain', dragGate); }
+function onDragEnd() { dragGate = null; }
+function onWireDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dh'); }
+function onWireDragLeave(e) { e.currentTarget.classList.remove('dh'); }
+function onWireDrop(e, qubit) { e.preventDefault(); e.currentTarget.classList.remove('dh'); const gateId = dragGate || e.dataTransfer.getData('text/plain'); if (gateId) placeGate(gateId, qubit); dragGate = null; }
+
+function findGateDef(id) { for (const cat of Object.values(GATES)) { const g = cat.find(g => g.id === id); if (g) return g; } return null; }
+
+function placeGate(gateId, qubit) {
+  if (isUpdatingFromCode) return;
+  isUpdatingFromCircuit = true;
+  const def = findGateDef(gateId);
+  if (!def) { isUpdatingFromCircuit = false; return; }
+  if (def.triple) {
+    if (circuit.qubits < 3) { notify('Necesitas al menos 3 qubits'); isUpdatingFromCircuit = false; return; }
+    let q1 = qubit, q2 = qubit + 1 < circuit.qubits ? qubit + 1 : qubit - 1, q3 = qubit + 2 < circuit.qubits ? qubit + 2 : qubit - 2;
+    if (q2 < 0) q2 = 0; if (q3 < 0) q3 = 0;
+    const qs = [q1, q2, q3].sort((a, b) => a - b);
+    circuit.gates.push({ id: gateId, q: qs[0], q2: qs[1], q3: qs[2], def: def, uid: nextId++ });
+    applyGateToBloch(gateId, qs[0]); applyGateToBloch(gateId, qs[1]); applyGateToBloch(gateId, qs[2]);
+  } else if (def.multi) {
+    if (circuit.qubits < 2) { notify('Necesitas al menos 2 qubits'); isUpdatingFromCircuit = false; return; }
+    const q2 = qubit + 1 < circuit.qubits ? qubit + 1 : qubit - 1;
+    circuit.gates.push({ id: gateId, q: Math.min(qubit, q2), q2: Math.max(qubit, q2), def: def, uid: nextId++ });
+  } else {
+    circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++ });
+    applyGateToBloch(gateId, qubit);
+  }
+  renderCircuit();
+  updateCircuitInfo();
+  updateCodeFromCircuit();
+  isUpdatingFromCircuit = false;
+  notify(`${gateId} → q[${qubit}]`);
+  if (engineOK && engineURL) setTimeout(() => runCode(), 900);
+}
+
+function applyGateToBloch(gateId, qubit) {
+  let state = blochStates[qubit] || { theta: 0, phi: 0 };
+  switch (gateId) {
+    case 'H': state.theta = Math.PI / 2; state.phi = 0; break;
+    case 'X': state.theta = Math.PI - state.theta; break;
+    case 'Y': state.theta = Math.PI - state.theta; state.phi = (state.phi + Math.PI) % (2 * Math.PI); break;
+    case 'Z': state.phi = (state.phi + Math.PI) % (2 * Math.PI); break;
+    case 'SX': state.theta = Math.PI / 2; state.phi = 0; break;
+    case 'RX': state.theta = Math.PI / 4; state.phi = 0; break;
+    case 'RY': state.theta = Math.PI / 4; state.phi = Math.PI / 2; break;
+    case 'RZ': state.phi = (state.phi + Math.PI / 4) % (2 * Math.PI); break;
+    default: return;
+  }
+  blochStates[qubit] = state;
+  if (qubit === currentBlochQubit) drawBloch();
+}
+
+function removeGate(uid) {
+  if (isUpdatingFromCode) return;
+  isUpdatingFromCircuit = true;
+  circuit.gates = circuit.gates.filter(g => g.uid !== uid);
+  renderCircuit();
+  updateCircuitInfo();
+  updateCodeFromCircuit();
+  isUpdatingFromCircuit = false;
+}
+
+function renderCircuit() {
+  const container = document.getElementById('circuit-canvas');
+  if (!container) return;
+  const depth = Array(circuit.qubits).fill(0);
+  const placed = circuit.gates.map(g => {
+    let col;
+    if (g.q3 !== undefined) { col = Math.max(depth[g.q], depth[g.q2], depth[g.q3]); depth[g.q] = col + 1; depth[g.q2] = col + 1; depth[g.q3] = col + 1; }
+    else if (g.q2 !== undefined) { col = Math.max(depth[g.q], depth[g.q2]); depth[g.q] = col + 1; depth[g.q2] = col + 1; }
+    else { col = depth[g.q]; depth[g.q]++; }
+    return { ...g, col };
+  });
+  const totalCols = Math.max(...depth, 1);
+  const step = 52;
+  const wireWidth = totalCols * step + 70;
+  let html = `<div style="min-width:${wireWidth}px; position:relative;">`;
+  for (let q = 0; q < circuit.qubits; q++) {
+    html += `<div class="q-row" style="height:${ROW_HEIGHT}px;"><div class="q-label">q[${q}]</div><div class="q-wire" ondragover="onWireDragOver(event)" ondragleave="onWireDragLeave(event)" ondrop="onWireDrop(event, ${q})" style="position:relative; height:${ROW_HEIGHT}px;"></div></div>`;
+  }
+  placed.forEach(g => {
+    const left = g.col * step + 15;
+    if (g.q3 !== undefined) {
+      const qs = [g.q, g.q2, g.q3].sort((a, b) => a - b);
+      const topY = qs[0] * ROW_HEIGHT;
+      const height = (qs[2] - qs[0]) * ROW_HEIGHT;
+      let svg = `<svg width="52" height="${ROW_HEIGHT + height}" viewBox="0 0 52 ${ROW_HEIGHT + height}"><line x1="26" y1="0" x2="26" y2="${ROW_HEIGHT + height}" stroke="#0088ff" stroke-width="2.5"/><circle cx="26" cy="${ROW_HEIGHT / 2 + (qs[1] - qs[0]) * ROW_HEIGHT}" r="8" fill="#0088ff"/><circle cx="26" cy="${ROW_HEIGHT / 2}" r="8" fill="#0088ff"/><circle cx="26" cy="${ROW_HEIGHT / 2 + height}" r="14" fill="none" stroke="#0088ff" stroke-width="2.5"/><line x1="18" y1="${ROW_HEIGHT / 2 + height}" x2="34" y2="${ROW_HEIGHT / 2 + height}" stroke="#0088ff" stroke-width="2"/><line x1="26" y1="${ROW_HEIGHT / 2 + height - 10}" x2="26" y2="${ROW_HEIGHT / 2 + height + 10}" stroke="#0088ff" stroke-width="2"/></svg>`;
+      html += `<div style="position:absolute; left:${left}px; top:${topY}px;"><div onclick="removeGate(${g.uid})">${svg}</div><button style="position:absolute; top:-8px; right:-8px; width:16px; height:16px; border-radius:50%; background:#ff4466; border:none; color:white; cursor:pointer;" onclick="event.stopPropagation(); removeGate(${g.uid})">✕</button></div>`;
+    } else if (g.q2 !== undefined) {
+      const topY = g.q * ROW_HEIGHT;
+      const height = (g.q2 - g.q) * ROW_HEIGHT;
+      let svg = `<svg width="48" height="${ROW_HEIGHT + height}" viewBox="0 0 48 ${ROW_HEIGHT + height}"><line x1="24" y1="0" x2="24" y2="${ROW_HEIGHT + height}" stroke="#0088ff" stroke-width="2.5"/><circle cx="24" cy="${ROW_HEIGHT / 2}" r="8" fill="#0088ff"/><circle cx="24" cy="${ROW_HEIGHT / 2 + height}" r="14" fill="none" stroke="#0088ff" stroke-width="2.5"/><line x1="16" y1="${ROW_HEIGHT / 2 + height}" x2="32" y2="${ROW_HEIGHT / 2 + height}" stroke="#0088ff" stroke-width="2"/><line x1="24" y1="${ROW_HEIGHT / 2 + height - 10}" x2="24" y2="${ROW_HEIGHT / 2 + height + 10}" stroke="#0088ff" stroke-width="2"/></svg>`;
+      html += `<div style="position:absolute; left:${left}px; top:${topY}px;"><div onclick="removeGate(${g.uid})">${svg}</div><button style="position:absolute; top:-8px; right:-8px; width:16px; height:16px; border-radius:50%; background:#ff4466; border:none; color:white; cursor:pointer;" onclick="event.stopPropagation(); removeGate(${g.uid})">✕</button></div>`;
+    } else {
+      const yPos = g.q * ROW_HEIGHT;
+      html += `<div class="placed-gate" style="left:${left}px; top:${yPos + ROW_HEIGHT / 2}px; transform:translateY(-50%);"><div class="pg-box" style="background:#0088ff;" onclick="removeGate(${g.uid})"><span class="pg-sym">${g.def.sym}</span></div><button class="pg-del" onclick="event.stopPropagation(); removeGate(${g.uid})">✕</button></div>`;
+    }
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function updateCircuitInfo() {
+  const ng = circuit.gates.length;
+  document.getElementById('qcount-badge').textContent = `${circuit.qubits} qubits · ${ng} puertas`;
+  updateBlochSelector();
+  const qs = document.getElementById('queue-sec');
+  if (qs) qs.style.display = circuit.qubits > 10 ? 'block' : 'none';
+}
+
+function updateBlochSelector() {
+  const sel = document.getElementById('bloch-q-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  for (let i = 0; i < circuit.qubits; i++) {
+    let state = blochStates[i] || { theta: 0, phi: 0 };
+    let label = state.theta < 0.1 ? '|0⟩' : state.theta > Math.PI - 0.1 ? '|1⟩' : 'sup';
+    sel.innerHTML += `<option value="${i}">Qubit ${i} (${label})</option>`;
+  }
+  if (currentBlochQubit >= circuit.qubits) currentBlochQubit = circuit.qubits - 1;
+  if (sel.value !== currentBlochQubit.toString()) sel.value = currentBlochQubit;
+}
+
+// ── GENERAR CÓDIGO DESDE CIRCUITO ─────────────────────────
+function updateCodeFromCircuit() {
+  if (isUpdatingFromCode) return;
+  let code = `from qiskit import QuantumCircuit, execute, Aer\nimport numpy as np\n\nqc = QuantumCircuit(${circuit.qubits}, ${circuit.qubits})\n\n`;
+  circuit.gates.forEach(g => {
+    let line = g.def.code.replace('{q}', g.q).replace('{q2}', g.q2 !== undefined ? g.q2 : 0).replace('{q3}', g.q3 !== undefined ? g.q3 : 0);
+    code += line + '\n';
+  });
+  code += `\nqc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\nprint(qc.draw(output='text'))\n\n# Simulación\nbackend = Aer.get_backend('qasm_simulator')\njob = execute(qc, backend, shots=1024)\nresult = job.result()\nprint("\\nResultados:", result.get_counts())`;
+  const ta = document.getElementById('code-ta');
+  if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
+}
+
+// ── ACTUALIZAR CIRCUITO DESDE CÓDIGO ──────────────────────
+function updateCircuitFromCode() {
+  if (isUpdatingFromCircuit) return;
+  const code = document.getElementById('code-ta').value;
+  const newGates = [];
+  const lines = code.split('\n');
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+    for (const g of GATES['3q']) {
+      const m = line.match(g.regex);
+      if (m) { const qs = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])].sort((a, b) => a - b); if (qs[2] < circuit.qubits) newGates.push({ id: g.id, q: qs[0], q2: qs[1], q3: qs[2], def: g, uid: nextId++ }); return; }
+    }
+    for (const g of GATES['2q']) {
+      const m = line.match(g.regex);
+      if (m) { const q1 = parseInt(m[1]), q2 = parseInt(m[2]); if (q1 < circuit.qubits && q2 < circuit.qubits) newGates.push({ id: g.id, q: Math.min(q1, q2), q2: Math.max(q1, q2), def: g, uid: nextId++ }); return; }
+    }
+    for (const g of GATES['1q']) {
+      const m = line.match(g.regex);
+      if (m) { const q = parseInt(m[1]); if (q < circuit.qubits) newGates.push({ id: g.id, q: q, def: g, uid: nextId++ }); return; }
+    }
+  });
+  const currJSON = JSON.stringify(circuit.gates.map(g => ({ id: g.id, q: g.q, q2: g.q2, q3: g.q3 })));
+  const newJSON = JSON.stringify(newGates.map(g => ({ id: g.id, q: g.q, q2: g.q2, q3: g.q3 })));
+  if (currJSON !== newJSON) {
+    isUpdatingFromCode = true;
+    circuit.gates = newGates;
+    renderCircuit();
+    updateCircuitInfo();
+    isUpdatingFromCode = false;
+  }
+}
+
+// ── SINTAXIS HIGHLIGHT ────────────────────────────────────
+function updateSyntaxHighlight() {
+  const ta = document.getElementById('code-ta'), syn = document.getElementById('syn-lay'), lnums = document.getElementById('lnums');
+  if (!ta || !syn) return;
+  const lines = ta.value.split('\n');
+  if (lnums) lnums.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+  let highlighted = ta.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\b(from|import|def|class|return|if|elif|else|for|while|in|not|and|or|True|False|None|as|print)\b/g, '<span style="color:#ff79c6;">$1</span>')
+    .replace(/(".*?"|'.*?')/g, '<span style="color:#f1fa8c;">$1</span>')
+    .replace(/\b(QuantumCircuit|execute|Aer|np|pi)\b/g, '<span style="color:#8be9fd;">$1</span>')
+    .replace(/(#.*$)/gm, '<span style="color:#6272a4;">$1</span>')
+    .replace(/\b(\d+)\b/g, '<span style="color:#bd93f9;">$1</span>');
+  syn.innerHTML = highlighted;
+  syn.scrollTop = ta.scrollTop;
+  syn.scrollLeft = ta.scrollLeft;
+}
+
+function onCodeEdit() { updateSyntaxHighlight(); if (syncTimeout) clearTimeout(syncTimeout); syncTimeout = setTimeout(() => updateCircuitFromCode(), 500); }
+function onCodeScroll() { const ta = document.getElementById('code-ta'), syn = document.getElementById('syn-lay'); if (ta && syn) { syn.scrollTop = ta.scrollTop; syn.scrollLeft = ta.scrollLeft; } }
+function forceSync() { updateCircuitFromCode(); notify('🔄 Sincronización forzada'); }
+
+function formatError(errText, code) {
+  const lines = code ? code.split('\n') : [];
+  let html = '';
+  const lineMatch = errText.match(/line[^\d]*(\d+)/i) || errText.match(/línea[^\d]*(\d+)/i);
+  const errLine = lineMatch ? parseInt(lineMatch[1]) : null;
+  if (errLine && errLine > 0) highlightErrorLine(errLine);
+  const typeMatch = errText.match(/(SyntaxError|NameError|TypeError|ValueError|ImportError|AttributeError|IndexError|KeyError|ZeroDivisionError|IndentationError)[:\s]/);
+  const errType = typeMatch ? typeMatch[1] : 'Error';
+  const explanations = {
+    'SyntaxError': '💡 Error de sintaxis — revisa paréntesis, dos puntos o indentación.',
+    'NameError': '💡 Variable o función no definida — ¿escribiste bien el nombre?',
+    'TypeError': '💡 Tipo incorrecto — estás usando un tipo de dato que no corresponde.',
+    'ValueError': '💡 Valor incorrecto — el valor no es válido para esta operación.',
+    'ImportError': '💡 No se pudo importar — la librería no está disponible.',
+    'IndentationError': '💡 Error de indentación — verifica los espacios al inicio de la línea.',
+  };
+  const explanation = explanations[errType] || '💡 Revisa el código en la línea indicada.';
+  html += `❌ ${errType}` + (errLine ? ` en línea ${errLine}` : '') + '\n';
+  if (errLine && lines[errLine - 1]) html += `\n<span class="err-line"><span class="err-arrow">→ L${errLine}:</span> ${escH(lines[errLine - 1])}</span>\n`;
+  const msgLines = errText.split('\n').filter(l => l.trim());
+  html += `<span class="err-msg">${escH(msgLines[msgLines.length - 1] || errText)}</span>\n\n<span class="wa">${explanation}</span>`;
+  return html;
+}
+
+function highlightErrorLine(lineNum) {
+  const ta = document.getElementById('code-ta');
+  if (!ta) return;
+  const lines = ta.value.split('\n');
+  let pos = 0;
+  for (let i = 0; i < lineNum - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+  ta.focus();
+  ta.setSelectionRange(pos, pos + (lines[lineNum - 1] || '').length);
+  const lineHeight = parseInt(getComputedStyle(ta).lineHeight) || 19;
+  ta.scrollTop = (lineNum - 3) * lineHeight;
+  updCur();
+}
+
+function escH(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// ── EJECUTAR CÓDIGO ──────────────────────────────────────
+async function runCode() {
+  if (running) return;
+  const code = document.getElementById('code-ta').value.trim();
+  if (!code) { notify('Escribe código primero'); return; }
+  running = true;
+  setRunSt('run', 'Ejecutando...');
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> EJECUTANDO';
+  setTab('out');
+  const t0 = Date.now();
+  const out = document.getElementById('out-body');
+  out.innerHTML = `<span class="inf">Procesando · ${curLib}...\n</span>`;
+
+  if (engineOK && engineURL) {
+    const isHF = engineURL.includes('hf.space') || engineURL.includes('huggingface');
+    try {
+      let res, d;
+      if (isHF) {
+        res = await fetch(engineURL + '/run/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [code] }), signal: AbortSignal.timeout(75000) });
+        const raw = await res.json();
+        d = raw.data ? raw.data[0] : raw;
+      } else {
+        res = await fetch(engineURL + '/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, lib: curLib }), signal: AbortSignal.timeout(45000) });
+        d = await res.json();
+      }
+      const el = ((Date.now() - t0) / 1000).toFixed(2);
+      document.getElementById('out-elapsed').textContent = el + 's';
+      if (d.success) {
+        out.innerHTML = `<span class="inf">╔════════════════════════════╗\n║  Compilador · ${el}s\n╚════════════════════════════╝\n\n</span><span class="ok">${escH(d.output)}</span>`;
+        if (d.bloch?.probabilities) updateBlochFromProbs(d.bloch.probabilities);
+        setRunSt('idle', 'Listo');
+        logMonitorRun({ success: true, lib: curLib, qubits: circuit.qubits, time: parseFloat(el) });
+      } else {
+        out.innerHTML += `<span class="er">${formatError(d.output, code)}</span>`;
+        setRunSt('err', 'Error');
+      }
+    } catch (e) {
+      out.innerHTML += `<span class="er">❌ ${e.name === 'TimeoutError' ? 'Tiempo agotado' : e.message}</span>`;
+      setRunSt('err', 'Error');
+      engineOK = false;
+    }
+  } else {
+    await new Promise(r => setTimeout(r, 650));
+    const el = ((Date.now() - t0) / 1000).toFixed(2);
+    const hasH = /\.h\(|Hadamard/.test(code), hasCX = /\.cx\(|CNOT/.test(code), hasX = /\.x\(/.test(code);
+    let st = '', eq = '', probs = [];
+    if (hasH && hasCX) { st = 'Bell |Φ⁺⟩'; eq = '(|00⟩+|11⟩)/√2'; probs = [['00', '50.0'], ['11', '50.0']]; }
+    else if (hasH) { st = 'Superposición'; eq = '(|0⟩+|1⟩)/√2'; probs = [['0', '50.0'], ['1', '50.0']]; }
+    else if (hasX) { st = '|1⟩'; eq = 'Excitado'; probs = [['1', '100.0']]; }
+    else { st = '|0⟩'; eq = 'Base'; probs = [['0', '100.0']]; }
+    out.innerHTML = `<span class="inf">╔════════════════════════════════╗\n║  Simulación local · ${el}s\n╚════════════════════════════════╝\n\n</span><span class="ok">Estado final: ${st}\n|ψ⟩ = ${eq}\n\n</span><span class="inf">══ Probabilidades ══\n</span>`;
+    probs.forEach(([s, p]) => { const bar = '█'.repeat(parseInt(p / 5) || 1); out.innerHTML += `<span class="pb">|${s}⟩: ${p.padStart(6)}%  ${bar}\n</span>`; });
+    out.innerHTML += `\n<span class="ok">✅ Simulación completada en ${el}s</span>`;
+    document.getElementById('out-elapsed').textContent = el + 's';
+    setRunSt('idle', 'Listo (sim.)');
+    logMonitorRun({ success: true, lib: curLib, qubits: circuit.qubits, time: parseFloat(el), simulated: true });
+  }
+  running = false;
+  btn.disabled = false;
+  btn.innerHTML = '<span>▶</span> EJECUTAR';
+  out.scrollTop = out.scrollHeight;
+}
+
+function setRunSt(s, msg) {
+  const dot = document.getElementById('sb-dot'), stxt = document.getElementById('sb-txt');
+  dot.className = 'sb-dot ' + (s === 'run' ? 'run' : s === 'err' ? 'err' : 'idle');
+  if (stxt) stxt.textContent = msg;
+}
+
+function logMonitorRun(info) {
+  try {
+    const user = curUser?.username || 'guest';
+    const entry = { ts: new Date().toISOString(), user, lib: info.lib || 'qiskit', qubits: info.qubits || 0, time: info.time || 0, success: info.success !== false, simulated: info.simulated || false };
+    const raw = localStorage.getItem('qcol_monitor_data');
+    const data = raw ? JSON.parse(raw) : { runs: [], total: 0 };
+    data.runs.push(entry);
+    data.total = (data.total || 0) + 1;
+    if (data.runs.length > 1000) data.runs = data.runs.slice(-1000);
+    localStorage.setItem('qcol_monitor_data', JSON.stringify(data));
+    postCore('QCOL_MONITOR_RUN', entry);
+  } catch (e) { }
+}
+
+// ── BLOCH SPHERE ─────────────────────────────────────────
+function drawBloch() {
+  const canvas = document.getElementById('bloch-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h / 2;
+  const r = Math.min(w, h) * 0.38;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, w, h);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,136,255,0.4)';
+  ctx.stroke();
+  for (let i = 1; i <= 3; i++) {
+    const yr = r * Math.sin(i * Math.PI / 4);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, yr, yr * 0.35, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,136,255,0.15)`;
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 1.1, cy);
+  ctx.lineTo(cx + r * 1.1, cy);
+  ctx.moveTo(cx, cy - r * 1.1);
+  ctx.lineTo(cx, cy + r * 1.1);
+  ctx.strokeStyle = 'rgba(0,200,255,0.2)';
+  ctx.stroke();
+  const state = blochStates[currentBlochQubit] || { theta: 0, phi: 0 };
+  const theta = state.theta, phi = state.phi;
+  const x = r * Math.sin(theta) * Math.cos(phi);
+  const y = -r * Math.cos(theta);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + x, cy + y);
+  ctx.strokeStyle = '#00ffdd';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx + x, cy + y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#00ffdd';
+  ctx.fill();
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#8aa0c4';
+  ctx.fillText('|0⟩', cx + 5, cy - r - 5);
+  ctx.fillText('|1⟩', cx + 5, cy + r + 12);
+  ctx.fillText('|+⟩', cx + r + 10, cy);
+  const prob0 = Math.cos(theta / 2) ** 2, prob1 = Math.sin(theta / 2) ** 2;
+  document.getElementById('bloch-info').innerHTML = `<span>Qubit ${currentBlochQubit}</span><br>θ=${Math.round(theta * 180 / Math.PI)}° φ=${Math.round(phi * 180 / Math.PI)}°<br>P0=${(prob0 * 100).toFixed(1)}% P1=${(prob1 * 100).toFixed(1)}%`;
+}
+
+function updateBlochFromProbs(probs) {
+  const n = circuit.qubits;
+  for (let qi = 0; qi < n; qi++) {
+    let p0 = 0;
+    Object.entries(probs).forEach(([s, p]) => {
+      const bit = s.length > qi ? s[s.length - 1 - qi] : '0';
+      if (bit === '0') p0 += p;
+    });
+    const th = 2 * Math.acos(Math.min(1, Math.sqrt(Math.max(0, p0))));
+    blochStates[qi] = { theta: th, phi: blochStates[qi]?.phi || 0 };
+    if (qi === currentBlochQubit) drawBloch();
+  }
+  updateBlochSelector();
+}
+
+function applyBlochGate(gate) {
+  let state = blochStates[currentBlochQubit] || { theta: 0, phi: 0 };
+  switch (gate) {
+    case 'H': state.theta = Math.PI / 2; state.phi = 0; break;
+    case 'X': state.theta = Math.PI - state.theta; break;
+    case 'Y': state.theta = Math.PI - state.theta; state.phi = (state.phi + Math.PI) % (2 * Math.PI); break;
+    case 'Z': state.phi = (state.phi + Math.PI) % (2 * Math.PI); break;
+    case 'SX': state.theta = Math.PI / 2; state.phi = 0; break;
+    case 'RX': state.theta = Math.PI / 4; state.phi = 0; break;
+    case 'RY': state.theta = Math.PI / 4; state.phi = Math.PI / 2; break;
+    case 'RZ': state.phi = (state.phi + Math.PI / 4) % (2 * Math.PI); break;
+    case 'reset': state.theta = 0; state.phi = 0; break;
+  }
+  blochStates[currentBlochQubit] = state;
+  drawBloch();
+  updateBlochSelector();
+}
+
+// ── AI ASISTENTE ─────────────────────────────────────────
+function aiResponse(message) {
+  const lowerMsg = message.toLowerCase();
+  if (lowerMsg.includes("hola") || lowerMsg.includes("buenas")) return "¡Hola! Soy tu asistente de computación cuántica. ¿En qué puedo ayudarte?";
+  if (lowerMsg.includes("circuito") || lowerMsg.includes("circuit")) return "Puedes crear circuitos cuánticos arrastrando puertas desde la paleta izquierda al cable del qubit. También puedes escribir código Python con Qiskit directamente en el editor.";
+  if (lowerMsg.includes("bell") || lowerMsg.includes("entrelazamiento")) return "El estado de Bell es un estado entrelazado máximo: |Φ⁺⟩ = (|00⟩ + |11⟩)/√2. Para crearlo: qc.h(0); qc.cx(0,1)";
+  if (lowerMsg.includes("superposición")) return "La superposición es cuando un qubit está en una combinación lineal de |0⟩ y |1⟩. La puerta de Hadamard (H) crea superposición: H|0⟩ = (|0⟩+|1⟩)/√2";
+  if (lowerMsg.includes("error") || lowerMsg.includes("corregir")) return "Revisa la sintaxis de tu código. Asegúrate de importar Qiskit correctamente: from qiskit import QuantumCircuit, execute, Aer";
+  if (lowerMsg.includes("qubit")) return `Actualmente tienes ${circuit.qubits} qubits. Puedes añadir más con el botón '+ Qubit' en la barra superior.`;
+  if (lowerMsg.includes("bloch")) return "La esfera de Bloch representa visualmente el estado de un qubit. El vector apunta a |0⟩ (norte), |1⟩ (sur), o a cualquier punto en la superficie para superposiciones.";
+  if (lowerMsg.includes("toffoli") || lowerMsg.includes("ccx")) return "La puerta Toffoli (CCX) es una puerta de 3 qubits. Aplica X al tercer qubit si los dos primeros están en |1⟩. Es universal para computación reversible.";
+  if (lowerMsg.includes("fundador") || lowerMsg.includes("sincronizacion")) return "El módulo fundador permite sincronizar tu trabajo con la plataforma QCOL. Puedes guardar circuitos, ejecutar en la nube y compartir tus algoritmos cuánticos.";
+  return "Puedo ayudarte con: circuitos cuánticos, estado de Bell, superposición, esfera de Bloch, puertas cuánticas (H, X, Y, Z, CX, CCX), código Qiskit, y sincronización con el módulo fundador. ¿Qué te gustaría aprender?";
+}
+
+function sendAIMessage() {
+  const input = document.getElementById('ai-input');
+  const chat = document.getElementById('ai-chat');
+  const msg = input.value.trim();
+  if (!msg) return;
+  chat.innerHTML += `<div class="ai-message user">${msg.replace(/</g, '&lt;')}</div>`;
+  input.value = '';
+  chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => {
+    const response = aiResponse(msg);
+    chat.innerHTML += `<div class="ai-message assistant">${response}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }, 300);
+}
+
+// ── CONTROLES DE CIRCUITO ────────────────────────────────
+function addQubit() { if (circuit.qubits < MAX_QUBITS) { circuit.qubits++; if (!blochStates[circuit.qubits - 1]) blochStates[circuit.qubits - 1] = { theta: 0, phi: 0 }; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } else notify(`Máximo ${MAX_QUBITS} qubits`); }
+function removeQubit() { if (circuit.qubits > 1) { circuit.gates = circuit.gates.filter(g => g.q < circuit.qubits - 1 && (!g.q2 || g.q2 < circuit.qubits - 1) && (!g.q3 || g.q3 < circuit.qubits - 1)); circuit.qubits--; if (currentBlochQubit >= circuit.qubits) currentBlochQubit = circuit.qubits - 1; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } }
+function clearCircuit() { circuit.gates = []; for (let i = 0; i < circuit.qubits; i++) blochStates[i] = { theta: 0, phi: 0 }; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); drawBloch(); notify('Circuito limpiado'); }
+function clearCode() { document.getElementById('code-ta').value = 'from qiskit import QuantumCircuit\nimport numpy as np\n\nqc = QuantumCircuit(2)\nqc.h(0)\nqc.cx(0, 1)\nqc.measure_all()\nprint(qc.draw(output="text"))\n\n# Ejecutar\nfrom qiskit import execute, Aer\nbackend = Aer.get_backend("qasm_simulator")\njob = execute(qc, backend, shots=1024)\nprint(job.result().get_counts())'; onCodeEdit(); }
+function copyCode() { navigator.clipboard.writeText(document.getElementById('code-ta').value); notify('📋 Código copiado'); }
+function updCur() { const ta = document.getElementById('code-ta'); const txt = ta.value.substring(0, ta.selectionStart); const lines = txt.split('\n'); document.getElementById('sb-cur').textContent = `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`; }
+
+// ── GUARDAR / CARGAR ─────────────────────────────────────
+function saveCircuit() {
+  if (!curUser) { notify('Inicia sesión para guardar circuitos'); postCore('QCOL_LOGIN'); return; }
+  const name = document.getElementById('save-name').value.trim() || 'circuito_' + Date.now();
+  const code = document.getElementById('code-ta').value;
+  const key = 'qcol_circuits_' + curUser.username;
+  const all = JSON.parse(localStorage.getItem(key) || '[]');
+  const idx = all.findIndex(c => c.name === name);
+  const entry = { name, code, lib: curLib, circ: JSON.stringify(circuit), date: new Date().toLocaleDateString() };
+  if (idx >= 0) all[idx] = entry;
+  else all.unshift(entry);
+  localStorage.setItem(key, JSON.stringify(all.slice(0, 100)));
+  notify('✅ Guardado: ' + name);
+  renderSaveList();
+}
+
+function renderSaveList() {
+  const list = document.getElementById('circ-list');
+  if (!list) return;
+  if (!curUser) { list.innerHTML = `<div class="no-login">Inicia sesión para guardar circuitos<br><button class="btn-li" onclick="postCore('QCOL_LOGIN')">INICIAR SESIÓN</button></div>`; return; }
+  const key = 'qcol_circuits_' + curUser.username;
+  const all = JSON.parse(localStorage.getItem(key) || '[]');
+  if (all.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--mu);">Sin circuitos guardados</div>'; return; }
+  list.innerHTML = all.map((c, i) => `<div class="circ-item" onclick="loadCircuit(${i})"><span class="ci-name">${c.name}</span><button class="ci-del" onclick="event.stopPropagation(); deleteCircuit(${i})">✕</button></div>`).join('');
+}
+
+function loadCircuit(i) {
+  const key = 'qcol_circuits_' + curUser.username;
+  const c = JSON.parse(localStorage.getItem(key) || '[]')[i];
+  if (!c) return;
+  document.getElementById('code-ta').value = c.code;
+  document.getElementById('save-name').value = c.name;
+  if (c.circ) { try { const cc = JSON.parse(c.circ); circuit = cc; renderCircuit(); updateCircuitInfo(); } catch (e) { } }
+  onCodeEdit();
+  setTab('out');
+  notify('Cargado: ' + c.name);
+}
+
+function deleteCircuit(i) {
+  const key = 'qcol_circuits_' + curUser.username;
+  const all = JSON.parse(localStorage.getItem(key) || '[]');
+  all.splice(i, 1);
+  localStorage.setItem(key, JSON.stringify(all));
+  renderSaveList();
+  notify('Eliminado');
+}
+
+function dlPy() {
+  const code = document.getElementById('code-ta').value;
+  const name = document.getElementById('save-name').value.trim() || 'qcol_circuito';
+  const blob = new Blob([code], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.replace(/\.py$/, '') + '.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  notify('📥 Descargado');
+}
+
+function dlNb() {
+  const code = document.getElementById('code-ta').value;
+  const name = document.getElementById('save-name').value.trim() || 'qcol_circuito';
+  const nb = {
+    nbformat: 4, nbformat_minor: 5,
+    metadata: { kernelspec: { display_name: 'Python 3', language: 'python', name: 'python3' } },
+    cells: [
+      { cell_type: 'markdown', source: [`# ${name}\n\nGenerado por QCOL`], metadata: {} },
+      { cell_type: 'code', source: ['!pip install qiskit qiskit-aer matplotlib -q'], metadata: {}, outputs: [], execution_count: null },
+      { cell_type: 'code', source: [code], metadata: {}, outputs: [], execution_count: null }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(nb, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.replace(/\.ipynb$/, '') + '.ipynb';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  notify('📥 Descargado .ipynb');
+}
+
+function openHF() {
+  const url = (localStorage.getItem('qcol_colab_url') || '').replace(/\/+$/, '');
+  if (!url) { notify('Configura el compilador HuggingFace en el panel de Configuración'); return; }
+  dlNb();
+  notify('📥 Descargado — súbelo a tu HuggingFace Space', 4000);
+}
+
+// ── QUEUE ────────────────────────────────────────────────
+function saveAndSchedule() {
+  if (!curUser) { notify('Inicia sesión para usar la cola'); postCore('QCOL_LOGIN'); return; }
+  const name = document.getElementById('save-name').value.trim() || 'circuito_' + Date.now();
+  const code = document.getElementById('code-ta').value;
+  const key = 'qcol_queue_' + curUser.username;
+  const queue = JSON.parse(localStorage.getItem(key) || '[]');
+  queue.push({ name, code, lib: curLib, circ: JSON.stringify(circuit), added: new Date().toLocaleString(), status: 'pendiente' });
+  localStorage.setItem(key, JSON.stringify(queue.slice(0, 50)));
+  renderQueue();
+  notify('⏱ "' + name + '" añadido a la cola');
+  setTab('save');
+}
+
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  if (!el) return;
+  if (!curUser) { el.innerHTML = '<div style="color:var(--mu);">Inicia sesión para usar la cola</div>'; return; }
+  const key = 'qcol_queue_' + curUser.username;
+  const queue = JSON.parse(localStorage.getItem(key) || '[]');
+  if (queue.length === 0) { el.innerHTML = '<div style="color:var(--mu);">Sin circuitos en cola</div>'; return; }
+  el.innerHTML = queue.map((c, i) => `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:rgba(0,0,0,.2);border:1px solid var(--bd);border-radius:6px;margin-bottom:.2rem;"><span style="flex:1;">${c.name}</span><span style="font-size:.45rem;color:${c.status === 'completado' ? 'var(--gr)' : c.status === 'error' ? 'var(--rd)' : 'var(--yw)'};">${c.status}</span><button class="ci-del" onclick="removeFromQueue(${i})">✕</button></div>`).join('');
+}
+
+async function runQueue() {
+  if (!curUser) { notify('Inicia sesión primero'); return; }
+  const key = 'qcol_queue_' + curUser.username;
+  const queue = JSON.parse(localStorage.getItem(key) || '[]');
+  const pending = queue.filter(c => c.status === 'pendiente');
+  if (pending.length === 0) { notify('Sin circuitos pendientes'); return; }
+  notify('▶ Ejecutando cola: ' + pending.length + ' circuito(s)...', 5000);
+  for (let i = 0; i < queue.length; i++) {
+    if (queue[i].status !== 'pendiente') continue;
+    queue[i].status = 'ejecutando';
+    localStorage.setItem(key, JSON.stringify(queue));
+    renderQueue();
+    document.getElementById('code-ta').value = queue[i].code;
+    document.getElementById('save-name').value = queue[i].name;
+    onCodeEdit();
+    await runCode();
+    queue[i].status = 'completado';
+    localStorage.setItem(key, JSON.stringify(queue));
+    renderQueue();
+    await new Promise(r => setTimeout(r, 500));
+  }
+  notify('✅ Cola completada');
+}
+
+function removeFromQueue(i) {
+  if (!curUser) return;
+  const key = 'qcol_queue_' + curUser.username;
+  const queue = JSON.parse(localStorage.getItem(key) || '[]');
+  queue.splice(i, 1);
+  localStorage.setItem(key, JSON.stringify(queue));
+  renderQueue();
+}
+
+// ── RESIZE ───────────────────────────────────────────────
+let resizingH = false, startY, startHeight;
+let resizingV = false, startX, startWidth;
+
+function initResize() {
+  const resizeH = document.getElementById('resize-h');
+  const resizeV = document.getElementById('resize-v');
+  const circuitSec = document.getElementById('circuit-section');
+  const rightPanel = document.getElementById('right-panel');
+  if (resizeH) resizeH.onmousedown = (e) => { resizingH = true; startY = e.clientY; startHeight = circuitSec.offsetHeight; document.body.style.cursor = 'ns-resize'; e.preventDefault(); };
+  if (resizeV) resizeV.onmousedown = (e) => { resizingV = true; startX = e.clientX; startWidth = rightPanel.offsetWidth; document.body.style.cursor = 'ew-resize'; e.preventDefault(); };
+  document.onmousemove = (e) => {
+    if (resizingH) { let nh = startHeight + (e.clientY - startY); if (nh > 80 && nh < window.innerHeight * 0.7) circuitSec.style.height = nh + 'px'; }
+    if (resizingV) { let nw = startWidth + (startX - e.clientX); if (nw > 200 && nw < window.innerWidth * 0.4) rightPanel.style.width = nw + 'px'; }
+  };
+  document.onmouseup = () => { resizingH = false; resizingV = false; document.body.style.cursor = ''; };
+}
+
+// ── TABS Y MODOS ─────────────────────────────────────────
+function setTab(tab) {
+  document.querySelectorAll('.rtab').forEach(btn => btn.classList.toggle('on', btn.dataset.tab === tab));
+  document.getElementById('p-out').style.display = tab === 'out' ? 'flex' : 'none';
+  document.getElementById('p-bloch').style.display = tab === 'bloch' ? 'flex' : 'none';
+  document.getElementById('p-ai').style.display = tab === 'ai' ? 'flex' : 'none';
+  document.getElementById('p-save').style.display = tab === 'save' ? 'flex' : 'none';
+  if (tab === 'bloch') setTimeout(drawBloch, 50);
+  if (tab === 'save') { renderSaveList(); renderQueue(); }
+}
+
+function setMode(mode) {
+  curMode = mode;
+  const cs = document.getElementById('circuit-section'), pal = document.getElementById('palette'), rh = document.getElementById('resize-h');
+  if (mode === 'circ') { cs.style.display = 'flex'; pal.style.display = 'flex'; if (rh) rh.style.display = 'flex'; }
+  else { cs.style.display = 'none'; pal.style.display = 'none'; if (rh) rh.style.display = 'none'; }
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.mode === mode));
+}
+
+function setLib(lib) { curLib = lib; document.querySelectorAll('.lib-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.lib === lib)); updateCodeFromCircuit(); notify('Librería: ' + lib); }
+
+// ── INICIALIZACIÓN ───────────────────────────────────────
+function init() {
+  for (let i = 0; i < circuit.qubits; i++) blochStates[i] = { theta: 0, phi: 0 };
+  buildPalette();
+  renderCircuit();
+  updateCircuitInfo();
+  updateCodeFromCircuit();
+  initResize();
+
+  document.getElementById('btn-run').onclick = runCode;
+  document.getElementById('btn-run2').onclick = runCode;
+  document.getElementById('btn-ai-assist').onclick = () => setTab('ai');
+  document.getElementById('btn-sync').onclick = forceSync;
+  document.getElementById('btn-clear').onclick = clearCircuit;
+  document.getElementById('btn-clear-code').onclick = clearCode;
+  document.getElementById('btn-addqb').onclick = addQubit;
+  document.getElementById('btn-remqb').onclick = removeQubit;
+  document.getElementById('btn-copy').onclick = copyCode;
+  document.getElementById('btn-clear-out').onclick = () => document.getElementById('out-body').innerHTML = '<span class="inf">Terminal limpiada</span>';
+  document.getElementById('btn-save').onclick = saveCircuit;
+  document.getElementById('btn-dlpy').onclick = dlPy;
+  document.getElementById('btn-dlnb').onclick = dlNb;
+  document.getElementById('btn-run-queue').onclick = runQueue;
+  document.getElementById('ai-send').onclick = sendAIMessage;
+  document.getElementById('ai-input').onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); sendAIMessage(); } };
+
+  document.querySelectorAll('.lib-btn').forEach(btn => btn.onclick = () => setLib(btn.dataset.lib));
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.onclick = () => setMode(btn.dataset.mode));
+  document.querySelectorAll('.rtab').forEach(btn => btn.onclick = () => setTab(btn.dataset.tab));
+  document.querySelectorAll('.gb').forEach(btn => btn.onclick = () => applyBlochGate(btn.dataset.gate));
+
+  document.getElementById('bloch-q-select').onchange = (e) => { currentBlochQubit = parseInt(e.target.value); drawBloch(); };
+
+  const ta = document.getElementById('code-ta');
+  ta.onscroll = onCodeScroll;
+  ta.oninput = onCodeEdit;
+  ta.onkeyup = updCur;
+  ta.onclick = updCur;
+  ta.onkeydown = (e) => {
+    if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.substring(0, s) + '    ' + ta.value.substring(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 4; onCodeEdit(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveCircuit(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); runCode(); }
+  };
+
+  drawBloch();
+  loadSavedCircuits();
+  renderQueue();
+}
+
+window.onDragStart = onDragStart;
+window.onDragEnd = onDragEnd;
+window.onWireDragOver = onWireDragOver;
+window.onWireDragLeave = onWireDragLeave;
+window.onWireDrop = onWireDrop;
+window.removeGate = removeGate;
+window.loadCircuit = loadCircuit;
+window.deleteCircuit = deleteCircuit;
+window.removeFromQueue = removeFromQueue;
+
+init();
+</script>
+</body>
+</html>
