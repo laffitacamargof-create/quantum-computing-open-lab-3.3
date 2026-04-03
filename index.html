@@ -573,6 +573,20 @@ const QCOL = (() => {
     if (d.type === 'QCOL_GET_CONFIG')   sendCfg(e.source);
     if (d.type === 'QCOL_LOGOUT')       doLogout();
     if (d.type === 'QCOL_OPEN_FOUNDER') openAuth('founder');
+    if (d.type === 'QCOL_GET_USER') {
+      try { e.source.postMessage({type:'QCOL_USER', user:curUser}, '*'); } catch(err){}
+    }
+    // Cargar notebook en Arquitecto Pro desde Proyectos
+    if (d.type === 'QCOL_LOAD_NB') {
+      nav('architect-pro');
+      setTimeout(()=>{
+        const proIframe = iframes['architect-pro'];
+        if (proIframe) {
+          try { proIframe.contentWindow.postMessage({type:'QCOL_LOAD_NB', nb:d.nb}, '*'); }
+          catch(err){}
+        }
+      }, 400);
+    }
     if (d.type === 'QCOL_SAVE') {
       const val = typeof d.val === 'object' ? JSON.stringify(d.val) : d.val;
       localStorage.setItem(d.key, val);
@@ -643,7 +657,7 @@ const QCOL = (() => {
     iframe.src = file;
     iframe.onload = () => {
       iframes[screen] = iframe;
-      setTimeout(() => { sendCfg(iframe.contentWindow); broadcast({type:'QCOL_USER_UPDATE',user:curUser}); }, 200);
+      setTimeout(() => { sendCfg(iframe.contentWindow); try{iframe.contentWindow.postMessage({type:'QCOL_USER',user:curUser},'*');}catch(e){} broadcast({type:'QCOL_USER_UPDATE',user:curUser}); }, 300);
     };
     iframe.onerror = () => {
       wrap.innerHTML = renderPH(screen);
@@ -826,7 +840,7 @@ const QCOL = (() => {
     if (!f) return notify('Usuario o contraseña incorrectos');
     curUser = f; closeAuth(); updateUI(); renderMenu();
     notify(`¡Bienvenido, ${f.name}!`);
-    broadcast({ type:'QCOL_USER_UPDATE', user:curUser });
+    broadcast({ type:'QCOL_USER_UPDATE', user:curUser }); broadcast({ type:'QCOL_USER', user:curUser }); try{localStorage.setItem('qcol_cur_user', curUser ? JSON.stringify(curUser) : '');}catch(e){}
   }
 
   function doRegister() {
@@ -841,7 +855,7 @@ const QCOL = (() => {
     localStorage.setItem('qcol_users', JSON.stringify(users));
     curUser = nu; closeAuth(); updateUI(); renderMenu();
     notify(`¡Bienvenido, ${name}!`);
-    broadcast({ type:'QCOL_USER_UPDATE', user:curUser });
+    broadcast({ type:'QCOL_USER_UPDATE', user:curUser }); broadcast({ type:'QCOL_USER', user:curUser }); try{localStorage.setItem('qcol_cur_user', curUser ? JSON.stringify(curUser) : '');}catch(e){}
   }
 
   function doFounder() {
@@ -851,7 +865,7 @@ const QCOL = (() => {
       curUser = { name:'Franci Laffita Camargo', username:'franci_laffita', role:'founder', canUpload:true };
       closeAuth(); updateUI(); renderMenu();
       notify('👑 Acceso fundador concedido');
-      broadcast({ type:'QCOL_USER_UPDATE', user:curUser });
+      broadcast({ type:'QCOL_USER_UPDATE', user:curUser }); broadcast({ type:'QCOL_USER', user:curUser }); try{localStorage.setItem('qcol_cur_user', curUser ? JSON.stringify(curUser) : '');}catch(e){}
       nav('founder');
     } else {
       notify('Contraseña incorrecta');
@@ -861,7 +875,7 @@ const QCOL = (() => {
   function doLogout() {
     curUser = null; updateUI(); renderMenu(); nav('home');
     notify('Sesión cerrada');
-    broadcast({ type:'QCOL_USER_UPDATE', user:null });
+    broadcast({ type:'QCOL_USER_UPDATE', user:null }); broadcast({ type:'QCOL_USER', user:null }); try{localStorage.removeItem('qcol_cur_user');}catch(e){}
   }
 
   function updateUI() {

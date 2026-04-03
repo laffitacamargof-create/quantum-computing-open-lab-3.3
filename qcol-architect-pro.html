@@ -223,9 +223,13 @@ body{display:flex;flex-direction:column;overflow:hidden;}
 .cell-output::-webkit-scrollbar{width:4px;}
 .cell-output::-webkit-scrollbar-thumb{background:var(--bd2);}
 .cell-output.show{display:block;}
-.out-ok{color:#39d353;}
-.out-err{color:#ff6080;}
+.out-ok{color:#3fb950;text-shadow:0 0 8px rgba(63,185,80,.2);}
+.out-err{color:#f85149;}
 .out-inf{color:#58a6ff;}
+.out-warn{color:#d29922;}
+.err-line{background:rgba(248,81,73,.12);border-left:3px solid #f85149;padding:.1rem .5rem;display:block;margin:.1rem 0;border-radius:0 4px 4px 0;}
+.err-arrow{color:#f85149;font-weight:bold;}
+.err-msg{color:#ffa198;}
 .out-warn{color:var(--yw);}
 
 /* Toolbar de celda (hover) */
@@ -357,6 +361,13 @@ textarea.fi{resize:vertical;min-height:65px;line-height:1.5;}
 .st{color:var(--st);}.nm{color:var(--nm);}.cm{color:var(--cm);font-style:italic;}
 .cl{color:var(--cl);}
 
+.nb-cell.drag-over{
+  border-color:var(--cy)!important;
+  box-shadow:0 0 0 2px rgba(0,255,221,.2);
+}
+.nb-cell[draggable]{cursor:grab;}
+.nb-cell[draggable]:active{cursor:grabbing;}
+
 /* Mobile */
 @media(max-width:700px){
   .nb-cell{width:98%;}
@@ -480,17 +491,19 @@ textarea.fi{resize:vertical;min-height:65px;line-height:1.5;}
 // Estilo Google Colab · Solo Admin/Founder
 // ══════════════════════════════════════════════════
 
+// Detectar si está dentro del ecosistema o abierto directamente
 const STANDALONE = window.parent === window;
 let curUser = null;
 let engineURL = '', engineOK = false, running = false;
 let curView = 'notebook';
-let cells = [];      // [{id, type, code, output, exec_count}]
+let cells = [];
 let curCellId = null;
 let execCounter = 0;
+let _initialized = false;
 
 // ── CORE COMM ──────────────────────────────────────
 function postCore(type, data={}){
-  if(!STANDALONE) window.parent.postMessage({type,...data},'*');
+  try{ window.parent.postMessage({type,...data},'*'); }catch(e){}
 }
 function notify(msg,ms=2800){
   const el=document.getElementById('notif');
@@ -498,42 +511,108 @@ function notify(msg,ms=2800){
   setTimeout(()=>el.classList.remove('show'),ms);
 }
 
+// ── SHOW UI ────────────────────────────────────────
+function showUI(user){
+  // Permitir re-inicializar si llega un usuario con más permisos
+  const newRole = user?.role || 'guest';
+  const isUpgrade = _initialized && 
+    (newRole==='founder'||newRole==='admin') &&
+    (curUser?.role!=='founder' && curUser?.role!=='admin');
+
+  if(_initialized && !isUpgrade) return;
+  _initialized = true;
+  curUser = user;
+  const role = newRole;
+
+  // SEGURIDAD: bloquear si no es admin o founder
+  if(role !== 'admin' && role !== 'founder'){
+    document.getElementById('access-denied').classList.add('show');
+    document.getElementById('topbar').style.display='none';
+    document.getElementById('secbar').style.display='none';
+    document.getElementById('main-area').style.display='none';
+    document.getElementById('statusbar').style.display='none';
+    return;
+  }
+  // Ocultar access-denied si estaba visible
+  document.getElementById('access-denied').classList.remove('show');
+
+  ['topbar','secbar','main-area','statusbar'].forEach(id=>{
+    document.getElementById(id).style.display='flex';
+  });
+
+  const pill = document.getElementById('user-pill');
+  const ico = role==='founder'?'👑 ':role==='admin'?'🔑 ':'';
+  pill.textContent = ico + (curUser.name||'—').split(' ')[0];
+  document.getElementById('admin-pill').style.display='';
+
+  engineURL = localStorage.getItem('qcol_colab_url')||'';
+  if(engineURL) checkEngine();
+  refreshNbs();
+  if(cells.length===0) addCellAt(-1,'code');
+}
+
 // ── AUTH ───────────────────────────────────────────
 window.addEventListener('message',e=>{
-  const d=e.data||{};
+  const d = e.data||{};
   if(d.type==='QCOL_USER'){
-    curUser=d.user;
-    const role=curUser?.role||'guest';
-    if(role!=='admin'&&role!=='founder'){
-      document.getElementById('access-denied').classList.add('show');
-      return;
-    }
-    document.getElementById('topbar').style.display='flex';
-    document.getElementById('secbar').style.display='flex';
-    document.getElementById('main-area').style.display='flex';
-    document.getElementById('statusbar').style.display='flex';
-    document.getElementById('user-pill').textContent=
-      (role==='founder'?'👑 ':role==='admin'?'🔑 ':'') + (curUser.name||'—').split(' ')[0];
-    if(role==='admin'||role==='founder')
-      document.getElementById('admin-pill').style.display='';
-    engineURL=localStorage.getItem('qcol_colab_url')||'';
-    if(engineURL) checkEngine();
-    refreshNbs();
-    if(cells.length===0) addCellAt(-1,'code');
+    showUI(d.user);
   }
   if(d.type==='QCOL_CONFIG_UPDATED'){
-    engineURL=localStorage.getItem('qcol_colab_url')||'';
+    engineURL = localStorage.getItem('qcol_colab_url')||'';
     if(engineURL) checkEngine();
   }
+  // Cargar notebook desde Proyectos
+  if(d.type==='QCOL_LOAD_NB' && d.nb){
+    if(!requireAuth()) return;
+    const nb = d.nb;
+    document.getElementById('nb-name-inp').value = nb.title||'Sin título';
+    if(nb.cells && nb.cells.length>0){
+      cells = nb.cells.map(c=>({...c, id:genId(), output:'', exec_count:null, mdEdit:false}));
+      renderCells();
+      if(cells[0]) focusCell(cells[0].id);
+    } else {
+      cells=[];
+      addCellAt(-1,'code');
+    }
+    setView('notebook');
+    notify('📂 Cargado: '+nb.title);
+  }
 });
-if(STANDALONE){
-  document.getElementById('topbar').style.display='flex';
-  document.getElementById('secbar').style.display='flex';
-  document.getElementById('main-area').style.display='flex';
-  document.getElementById('statusbar').style.display='flex';
-  document.getElementById('user-pill').textContent='DEV';
-  if(cells.length===0) addCellAt(-1,'code');
-  refreshNbs();
+
+// Pedir usuario al ecosistema
+postCore('QCOL_GET_USER');
+
+// Fallback: si en 2s no llegó QCOL_USER, leer de localStorage
+setTimeout(()=>{
+  if(!_initialized){
+    const stored = localStorage.getItem('qcol_cur_user');
+    const user = stored ? JSON.parse(stored) : null;
+    showUI(user);
+  }
+}, 2000);
+
+// Escuchar también QCOL_USER_UPDATE (por si el usuario hace login después)
+window.addEventListener('message', e=>{
+  const d = e.data||{};
+  if(d.type==='QCOL_USER_UPDATE'){
+    // Si ahora es admin/founder, mostrar UI
+    const role = d.user?.role||'guest';
+    if(role==='admin'||role==='founder'){
+      _initialized = false; // reset para permitir re-init
+      showUI(d.user);
+    }
+  }
+});
+
+// ── SEGURIDAD — verificar en cada operación crítica ──
+function requireAuth(){
+  const role = curUser?.role||'guest';
+  if(role!=='admin'&&role!=='founder'){
+    notify('❌ Requiere cuenta Admin o Founder');
+    postCore('QCOL_LOGIN');
+    return false;
+  }
+  return true;
 }
 
 // ── COMPILADOR ─────────────────────────────────────
@@ -670,7 +749,12 @@ function buildCellEl(cell,i){
   const el=document.createElement('div');
   el.className='nb-cell'+(curCellId===cell.id?' active':'');
   el.dataset.id=cell.id;
+  el.draggable=true;
   el.onclick=()=>focusCell(cell.id);
+  el.ondragstart=e=>onCellDragStart(e,cell.id);
+  el.ondragend=e=>onCellDragEnd(e,cell.id);
+  el.ondragover=e=>onCellDragOver(e,cell.id);
+  el.ondrop=e=>onCellDrop(e,cell.id);
 
   const isCode=cell.type==='code';
   const execLbl=cell.exec_count!==null?`[${cell.exec_count}]`:'[ ]';
@@ -757,6 +841,22 @@ function buildCellEl(cell,i){
 }
 
 function escH(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatProError(errText, code){
+  const lines = code ? code.split('\n') : [];
+  const lineMatch = errText.match(/line[^\d]*(\d+)/i)||errText.match(/línea[^\d]*(\d+)/i);
+  const errLine = lineMatch ? parseInt(lineMatch[1]) : null;
+  const types = {'SyntaxError':'Sintaxis','NameError':'Variable no definida','TypeError':'Tipo incorrecto','ValueError':'Valor inválido','ImportError':'Importación fallida','AttributeError':'Atributo no existe','IndentationError':'Indentación incorrecta'};
+  const typeMatch = errText.match(/(SyntaxError|NameError|TypeError|ValueError|ImportError|AttributeError|IndentationError)/);
+  const errType = typeMatch ? typeMatch[1] : 'Error';
+  const tips = {'SyntaxError':'Revisa paréntesis, dos puntos o indentación.','NameError':'Variable no definida — ¿escribiste bien el nombre?','IndentationError':'Verifica los espacios al inicio de la línea.','ImportError':'La librería no está disponible.'};
+  let html = `<span class="out-err">❌ ${types[errType]||errType}${errLine?' en línea '+errLine:''}\n</span>`;
+  if(errLine && lines[errLine-1]) html += `<span class="err-line"><span class="err-arrow">→ L${errLine}:</span> <span style="color:#ffa198;">${escH(lines[errLine-1])}</span></span>\n`;
+  const lastMsg = errText.split('\n').filter(l=>l.trim()).pop()||errText;
+  html += `<span class="err-msg">${escH(lastMsg)}</span>\n`;
+  if(tips[errType]) html += `<span class="out-warn">💡 ${tips[errType]}</span>`;
+  return html;
+}
 
 function editMd(id){
   const cell=cells.find(c=>c.id===id);
@@ -870,8 +970,53 @@ function changeCellType(id){
   renderCells(); focusCell(id);
 }
 
+// ── DRAG & DROP CELDAS ────────────────────────────
+let dragSrcId = null;
+let dragOverId = null;
+
+function onCellDragStart(e, id){
+  dragSrcId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  setTimeout(()=>{
+    const el = document.querySelector(`.nb-cell[data-id="${id}"]`);
+    if(el) el.style.opacity = '0.4';
+  },0);
+}
+function onCellDragEnd(e, id){
+  dragSrcId = null; dragOverId = null;
+  document.querySelectorAll('.nb-cell').forEach(el=>{
+    el.style.opacity='';
+    el.classList.remove('drag-over');
+  });
+}
+function onCellDragOver(e, id){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if(id===dragSrcId) return;
+  if(id!==dragOverId){
+    document.querySelectorAll('.nb-cell').forEach(el=>el.classList.remove('drag-over'));
+    dragOverId = id;
+    const el = document.querySelector(`.nb-cell[data-id="${id}"]`);
+    if(el) el.classList.add('drag-over');
+  }
+}
+function onCellDrop(e, id){
+  e.preventDefault();
+  if(!dragSrcId||dragSrcId===id) return;
+  const srcIdx = cells.findIndex(c=>c.id===dragSrcId);
+  const dstIdx = cells.findIndex(c=>c.id===id);
+  if(srcIdx<0||dstIdx<0) return;
+  const [moved] = cells.splice(srcIdx,1);
+  cells.splice(dstIdx,0,moved);
+  renderCells();
+  focusCell(dragSrcId);
+  notify('↕ Celda movida');
+}
+
 // ── EJECUTAR ───────────────────────────────────────
 async function runCell(id){
+  if(!requireAuth()) return;
   if(running){ notify('Ya hay una ejecución en curso'); return; }
   const cell=cells.find(c=>c.id===id);
   if(!cell||cell.type!=='code') return;
@@ -930,8 +1075,9 @@ async function runCell(id){
         if(outEl){ outEl.innerHTML=html; outEl.className='cell-output show'; }
         setSbRun(false,'✅ Completado en '+(result.time||0)+'s');
       } else {
-        cell.output=`<span class="out-err">${escH(result.output||'Error')}</span>`;
-        if(outEl){ outEl.innerHTML=cell.output; outEl.className='cell-output show'; }
+        const errHtml = formatProError(result.output||'Error', cell.code);
+        cell.output=errHtml;
+        if(outEl){ outEl.innerHTML=errHtml; outEl.className='cell-output show'; }
         setSbRun(false,'❌ Error','err');
       }
     } else {
@@ -1143,10 +1289,36 @@ function showPublish(){
 }
 function closePublish(){ document.getElementById('pub-modal').classList.remove('open'); }
 function publishNb(){
+  if(!requireAuth()) return;
   saveCurrentNb();
+  // Publicar directamente en el módulo Proyectos via postMessage
+  const name = document.getElementById('nb-name-inp').value||'Sin título';
+  const desc = document.getElementById('pub-desc').value.trim();
+  const tags = document.getElementById('pub-tags').value.trim();
+  const id   = name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+
+  // 1. Guardar en qcol_projs para que aparezca en Proyectos
+  const projs = JSON.parse(localStorage.getItem('qcol_projs')||'[]');
+  const existing = projs.findIndex(p=>p.id===id);
+  const entry = {
+    id, title:name, type:'nb', desc, tags,
+    size: cells.length,
+    time: Math.max(5, cells.length*2),
+    added: new Date().toLocaleDateString(),
+    author: curUser?.name||'Admin',
+    cells: JSON.parse(JSON.stringify(cells))  // guardar celdas completas
+  };
+  if(existing>=0) projs[existing]=entry;
+  else projs.unshift(entry);
+  localStorage.setItem('qcol_projs', JSON.stringify(projs));
+
+  // 2. Notificar al ecosistema para refrescar Proyectos
+  postCore('QCOL_SAVE', {key:'qcol_projs', val:projs});
+
+  // 3. Descargar .ipynb para subir a GitHub
   downloadNb();
   closePublish();
-  notify('📤 Descargado — súbelo a GitHub /notebooks');
+  notify('✅ Publicado en Proyectos: '+name);
 }
 
 // Auto-guardar cada 60s
