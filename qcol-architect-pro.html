@@ -4,10 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QCOL — Arquitecto Profesional</title>
+
+<!-- Fuentes -->
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;600&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- CodeMirror 6 desde CDN -->
+<script type="importmap">
+{
+  "imports": {
+    "codemirror": "https://esm.sh/codemirror@6.0.1",
+    "@codemirror/lang-python": "https://esm.sh/@codemirror/lang-python@6.1.6",
+    "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2",
+    "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.3.3",
+    "@codemirror/view": "https://esm.sh/@codemirror/view@6.26.3",
+    "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1",
+    "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.2",
+    "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.16.0",
+    "@codemirror/lint": "https://esm.sh/@codemirror/lint@6.7.0",
+    "@codemirror/search": "https://esm.sh/@codemirror/search@6.5.6",
+    "@lezer/highlight": "https://esm.sh/@lezer/highlight@1.2.1",
+    "@lezer/common": "https://esm.sh/@lezer/common@1.2.1"
+  }
+}
+</script>
+
+<!-- Markdown y Highlight.js -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/dist/highlight.min.js"></script>
+
 <style>
 :root{
   --bg:#0a0e1a;--bg2:#0d1117;--bg3:#0c1525;
@@ -61,12 +86,9 @@ body{display:flex;flex-direction:column;overflow:hidden;}
   background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.3);border-radius:4px;
   font-family:var(--orb);font-size:.43rem;color:var(--gr);flex-shrink:0;letter-spacing:.05em;}
 .tb-right{margin-left:auto;display:flex;align-items:center;gap:.28rem;}
-.engine-url-input{background:rgba(0,0,0,.4);border:1px solid var(--bd2);border-radius:5px;
-  padding:.17rem .42rem;font-family:var(--mono);font-size:.52rem;color:var(--tx2);width:155px;outline:none;}
-.engine-url-input:focus{border-color:var(--bl2);}
 .eng-pill{padding:.17rem .44rem;border-radius:10px;font-family:var(--orb);font-size:.42rem;
-  background:rgba(74,106,154,.1);border:1px solid rgba(74,106,154,.2);color:var(--mu);}
-.eng-pill.on{background:rgba(0,255,136,.07);border-color:rgba(0,255,136,.3);color:var(--gr);animation:puls 2.5s infinite;}
+  background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.3);color:var(--gr);}
+.eng-pill.on{animation:puls 2.5s infinite;}
 @keyframes puls{0%,100%{opacity:1;}50%{opacity:.6;}}
 .user-pill{padding:.17rem .42rem;border-radius:10px;font-family:var(--orb);font-size:.44rem;
   background:rgba(189,147,249,.07);border:1px solid rgba(189,147,249,.18);color:var(--pu);}
@@ -108,7 +130,6 @@ body{display:flex;flex-direction:column;overflow:hidden;}
 .nb-cell:hover{border-color:rgba(189,147,249,.18);box-shadow:0 2px 12px rgba(0,0,0,.3);}
 .nb-cell.active{border-color:rgba(189,147,249,.45);box-shadow:0 2px 20px rgba(189,147,249,.06);}
 .nb-cell.running{border-color:rgba(0,136,255,.5);box-shadow:0 0 18px rgba(0,136,255,.08);}
-/* Celda Qiskit — borde izquierdo cian */
 .nb-cell.qk-cell{border-left:3px solid rgba(0,255,221,.35);}
 .nb-cell.qk-cell:hover{border-color:rgba(0,255,221,.35);border-left-color:rgba(0,255,221,.6);}
 .nb-cell.qk-cell.active{border-color:rgba(0,255,221,.55);border-left-color:var(--cy);}
@@ -136,42 +157,36 @@ body{display:flex;flex-direction:column;overflow:hidden;}
 .ctb-qk{color:var(--cy);}
 .ctb-md{color:rgba(0,255,136,.7);}
 
-/* ── EDITOR ── */
+/* ── EDITOR (CodeMirror) ── */
 .cell-code-area{position:relative;background:var(--bg2);
-  border:1px solid var(--bd3);border-radius:6px;overflow:hidden;min-height:42px;
-  transition:border-color .15s;}
+  border:1px solid var(--bd3);border-radius:6px;overflow:hidden;
+  transition:border-color .15s;min-height:42px;}
 .nb-cell.active .cell-code-area{border-color:rgba(189,147,249,.3);}
 .qk-cell .cell-code-area{border-color:rgba(0,255,221,.15);background:#0a1018;}
 .qk-cell.active .cell-code-area{border-color:rgba(0,255,221,.35);}
-/* Número de línea integrado */
-.cell-code-wrap{display:flex;height:100%;}
-.cell-linenos{width:32px;flex-shrink:0;padding:.55rem .3rem;
-  background:rgba(0,0,0,.25);border-right:1px solid var(--bd3);
-  font-family:var(--mono);font-size:.62rem;line-height:1.65;
-  color:var(--mu2);text-align:right;user-select:none;overflow:hidden;}
-.qk-cell .cell-linenos{background:rgba(0,20,30,.4);}
-.cell-code-inner{flex:1;position:relative;overflow:hidden;min-height:42px;}
-.cell-syn-layer{position:absolute;inset:0;padding:.55rem .7rem;
-  font-family:var(--mono);font-size:.7rem;line-height:1.65;
-  pointer-events:none;z-index:1;overflow:hidden;white-space:pre;
-  color:var(--tx2);background:transparent;tab-size:4;}
-.cell-textarea{position:absolute;inset:0;
-  background:transparent;color:transparent;caret-color:var(--cy);
-  padding:.55rem .7rem;font-family:var(--mono);font-size:.7rem;
-  border:none;outline:none;resize:none;line-height:1.65;
-  z-index:2;white-space:pre;overflow:auto;tab-size:4;min-height:42px;
-  letter-spacing:0;}
-.cell-textarea::-webkit-scrollbar{width:4px;height:4px;}
-.cell-textarea::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
 
-/* ── OUTPUT — terminal JupyterLab ── */
+.cm-editor{background:transparent !important;}
+.cm-editor .cm-scroller{font-family:var(--mono) !important;font-size:.7rem !important;line-height:1.65 !important;overflow:auto !important;}
+.cm-editor .cm-content{padding:.55rem 0 .55rem .7rem !important;caret-color:var(--cy) !important;}
+.cm-editor .cm-gutters{background:rgba(0,0,0,.25) !important;border-right:1px solid var(--bd3) !important;color:var(--mu2) !important;font-size:.62rem !important;}
+.qk-cell .cm-editor .cm-gutters{background:rgba(0,20,30,.4) !important;}
+.cm-editor .cm-lineNumbers .cm-gutterElement{padding:0 8px 0 4px !important;min-width:36px !important;text-align:right !important;}
+.cm-editor .cm-activeLineGutter{background:rgba(0,136,255,.1) !important;color:var(--bl2) !important;}
+.cm-editor .cm-activeLine{background:rgba(0,136,255,.05) !important;}
+.cm-editor .cm-selectionBackground{background:rgba(0,136,255,.25) !important;}
+.cm-editor .cm-selectionMatch{background:rgba(0,255,221,.1) !important;}
+.cm-editor .cm-cursor{border-left:2px solid var(--cy) !important;}
+.cm-editor .cm-tooltip{background:var(--p) !important;border:1px solid var(--bd2) !important;color:var(--tx) !important;}
+.cm-editor .cm-tooltip-autocomplete > ul > li{background:var(--p) !important;color:var(--tx) !important;}
+.cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected]{background:rgba(0,136,255,.2) !important;color:var(--cy) !important;}
+
+/* ── OUTPUT ── */
 .cell-output-area{margin-top:.28rem;border-radius:6px;overflow:hidden;
   border:1px solid var(--bd3);background:#050810;}
 .out-header{display:flex;align-items:center;gap:.4rem;padding:.25rem .65rem;
   background:rgba(0,0,0,.4);border-bottom:1px solid var(--bd3);font-family:var(--orb);font-size:.4rem;}
 .out-header-ok{color:var(--gr);}
 .out-header-err{color:var(--rd);}
-/* Texto terminal */
 .out-stdout{padding:.5rem .7rem;font-family:var(--mono);font-size:.67rem;line-height:1.62;
   white-space:pre-wrap;overflow-x:auto;color:#c8e0ff;background:#050810;
   max-height:400px;overflow-y:auto;}
@@ -180,21 +195,15 @@ body{display:flex;flex-direction:column;overflow:hidden;}
 .out-stderr{padding:.5rem .7rem;font-family:var(--mono);font-size:.67rem;line-height:1.62;
   white-space:pre-wrap;color:#ff9999;background:rgba(255,60,60,.04);
   border-top:1px solid rgba(255,68,102,.15);}
-/* Circuito texto — estilo visual mejorado */
 .out-circuit-text{padding:.5rem .7rem;font-family:var(--mono);font-size:.65rem;line-height:1.7;
   white-space:pre;overflow-x:auto;color:var(--cl);background:#040d18;
   border-top:1px solid rgba(0,170,255,.1);}
-.out-circuit-text::-webkit-scrollbar{height:4px;}
-.out-circuit-text::-webkit-scrollbar-thumb{background:var(--bd2);}
-/* Bloch sphere canvas por celda */
 .out-bloch-wrap{padding:.55rem .7rem;background:#04080f;
   border-top:1px solid rgba(0,255,221,.08);display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-start;}
 .bloch-item{display:flex;flex-direction:column;align-items:center;gap:.25rem;}
 .bloch-item canvas{border-radius:50%;box-shadow:0 0 20px rgba(0,136,255,.15);}
 .bloch-item-lbl{font-family:var(--mono);font-size:.52rem;color:var(--mu);}
-/* Probabilidades */
-.out-probs{padding:.55rem .7rem;background:#040c18;
-  border-top:1px solid rgba(0,136,255,.1);}
+.out-probs{padding:.55rem .7rem;background:#040c18;border-top:1px solid rgba(0,136,255,.1);}
 .out-probs-title{font-family:var(--orb);font-size:.42rem;color:var(--mu);
   letter-spacing:.06em;margin-bottom:.4rem;}
 .prob-row{display:flex;align-items:center;gap:.45rem;margin-bottom:.2rem;
@@ -206,10 +215,8 @@ body{display:flex;flex-direction:column;overflow:hidden;}
   background:linear-gradient(90deg,rgba(0,136,255,.8),rgba(0,255,221,.8));}
 .prob-pct{color:var(--tx2);min-width:40px;text-align:right;font-size:.62rem;}
 .prob-count{color:var(--mu);min-width:45px;text-align:right;font-size:.58rem;}
-/* Imagen matplotlib / gráficas */
 .out-img{display:block;max-width:100%;border-radius:5px;
   margin:.4rem .6rem;box-shadow:0 4px 20px rgba(0,0,0,.5);}
-/* Resultados tipo dict */
 .out-dict{padding:.5rem .7rem;font-family:var(--mono);font-size:.66rem;line-height:1.6;
   color:var(--yw);background:#060c10;border-top:1px solid rgba(255,215,0,.08);
   white-space:pre-wrap;}
@@ -237,9 +244,7 @@ body{display:flex;flex-direction:column;overflow:hidden;}
 .cell-md-rendered th,.cell-md-rendered td{border:1px solid var(--bd2);padding:.28rem .5rem;}
 .cell-md-rendered th{background:rgba(0,136,255,.08);color:var(--bl2);}
 .cell-md-rendered img{max-width:100%;border-radius:5px;}
-/* Math display */
 .cell-md-rendered .MJX-TEX{color:var(--nm);}
-/* Markdown editor split */
 .md-split{display:flex;gap:.4rem;background:var(--bg2);
   border:1px solid var(--bd);border-radius:6px;min-height:130px;}
 .md-editor-pane{flex:1;border-right:1px solid var(--bd);}
@@ -269,7 +274,6 @@ body.expo-mode .nb-cell.qk-cell .cell-toolbar .ct-btn:not(.ct-run){display:none!
   display:flex;align-items:center;justify-content:center;transition:all .14s;}
 .ct-btn:hover{border-color:var(--bl2);color:var(--bl2);}
 .ct-btn.danger:hover{border-color:var(--rd);color:var(--rd);}
-/* Botón restaurar celda */
 .cell-restore-btn{display:none;position:absolute;bottom:.25rem;right:.4rem;
   padding:.1rem .3rem;background:rgba(255,215,0,.07);
   border:1px solid rgba(255,215,0,.22);border-radius:3px;
@@ -369,17 +373,6 @@ textarea.fi{resize:vertical;min-height:58px;line-height:1.5;}
   border:1px solid var(--bd2);border-radius:6px;color:var(--mu);
   font-family:var(--orb);font-size:.5rem;cursor:pointer;}
 
-/* ── SYNTAX COLORS ── */
-.kw{color:var(--kw);font-weight:600;}
-.fn{color:var(--fn);}
-.st{color:var(--st);}
-.nm{color:var(--nm);}
-.cmt{color:var(--cmt);font-style:italic;}
-.cl{color:var(--cl);}
-.qt{color:var(--qt);}/* Qiskit class names */
-.blt{color:#ffb86c;}/* builtins */
-.op{color:#ff79c6;}/* operators */
-
 /* ── DRAG ── */
 .nb-cell.drag-over{border-color:var(--cy)!important;box-shadow:0 0 0 1px rgba(0,255,221,.2)!important;}
 .nb-cell[draggable]{cursor:grab;}
@@ -390,8 +383,6 @@ textarea.fi{resize:vertical;min-height:58px;line-height:1.5;}
   .cell-gutter{width:36px;}
   .topbar{padding:0 .4rem;gap:.18rem;}
   .tbtn span{display:none;}
-  .engine-url-input{width:110px;}
-  .cell-linenos{width:24px;font-size:.54rem;}
 }
 </style>
 </head>
@@ -419,8 +410,7 @@ textarea.fi{resize:vertical;min-height:58px;line-height:1.5;}
   <input class="nb-name-inp" id="nb-name-inp" placeholder="Sin título" value="Nuevo Notebook">
   <span id="expo-badge">👁 EXPOSICIÓN</span>
   <div class="tb-right">
-    <input type="text" id="engine-url-input" class="engine-url-input" placeholder="https://...hf.space" onchange="setEngineURL(this.value)">
-    <div class="eng-pill" id="eng-badge">● SIN COMPILADOR</div>
+    <div class="eng-pill on" id="eng-badge">⚡ MOTOR CONECTADO</div>
     <div class="admin-pill" id="admin-pill" style="display:none;">ADMIN+</div>
     <div class="user-pill" id="user-pill">—</div>
   </div>
@@ -470,7 +460,7 @@ textarea.fi{resize:vertical;min-height:58px;line-height:1.5;}
 <div class="statusbar" id="statusbar" style="display:none;">
   <div class="sb-dot sb-idle" id="sb-dot"></div>
   <span id="sb-txt">Listo</span>
-  <span>Qiskit · Python</span>
+  <span>Qiskit · Python · CodeMirror</span>
   <div class="sb-right">
     <span id="sb-cells-info">0 celdas</span>
     <span id="sb-save-status">─</span>
@@ -496,35 +486,46 @@ textarea.fi{resize:vertical;min-height:58px;line-height:1.5;}
 
 <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},startup:{typeset:false}};</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
-<script>
+
+<script type="module">
 // ═══════════════════════════════════════════════════════════════
-// QCOL ARQUITECTO PROFESIONAL v4.1 — Output completo + Expo mode
+// QCOL ARQUITECTO PROFESIONAL v5.0 — CodeMirror 6
 // ═══════════════════════════════════════════════════════════════
-let curUser=null,engineURL='',engineOK=false,running=false;
+import {EditorView, basicSetup} from "codemirror";
+import {python} from "@codemirror/lang-python";
+import {oneDarkTheme} from "@codemirror/theme-one-dark";
+import {indentWithTab, defaultKeymap, history, historyKeymap} from "@codemirror/commands";
+import {keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine} from "@codemirror/view";
+import {indentUnit} from "@codemirror/language";
+import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete";
+import {lintKeymap} from "@codemirror/lint";
+import {searchKeymap, highlightSelectionMatches} from "@codemirror/search";
+import {EditorState} from "@codemirror/state";
+
+// Estado global
+let curUser=null,engineURL='',engineOK=true,running=false;
 let curView='notebook',cells=[],curCellId=null,execCounter=0;
 let _initialized=false,lastSaveTime=Date.now(),debounceTimer=null,dragSrcId=null;
 let _expositionMode=false,_originalCells=null;
 let md=null;
+const editorMap=new Map();
+const DEFAULT_ENGINE_KEY='qcol_colab_url';
 
 function postCore(type,data={}){try{window.parent.postMessage({type,...data},'*');}catch(e){}}
 function notify(msg,ms=2800){const el=document.getElementById('notif');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),ms);}
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function genId(){return 'c'+Date.now()+Math.random().toString(36).slice(2,6);}
 
-// ── NAVEGACIÓN ────────────────────────────────────────────────
+// Navegación
 function goBack(){
-  if(_expositionMode){
-    deactivateExpositionMode();
-    postCore('QCOL_NAV',{screen:'projects'});
-  } else {
-    postCore('QCOL_NAV',{screen:'home'});
-  }
+  if(_expositionMode){deactivateExpositionMode();postCore('QCOL_NAV',{screen:'projects'});}
+  else postCore('QCOL_NAV',{screen:'home'});
 }
+window.goBack=goBack;
 
-// ── MODO EXPOSICIÓN ───────────────────────────────────────────
+// Modo exposición
 function activateExpositionMode(){
-  _expositionMode=true;
-  _originalCells=JSON.parse(JSON.stringify(cells));
+  _expositionMode=true;_originalCells=JSON.parse(JSON.stringify(cells));
   document.body.classList.add('expo-mode');
   document.getElementById('expo-badge').style.display='inline-flex';
   ['btn-add-code','btn-add-qk','btn-add-md','btn-import','btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
@@ -535,8 +536,7 @@ function activateExpositionMode(){
   notify('👁 Modo exposición — ejecuta y experimenta libremente');
 }
 function deactivateExpositionMode(){
-  _expositionMode=false;_originalCells=null;
-  document.body.classList.remove('expo-mode');
+  _expositionMode=false;_originalCells=null;document.body.classList.remove('expo-mode');
   document.getElementById('expo-badge').style.display='none';
   ['btn-add-code','btn-add-qk','btn-add-md','btn-import','btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='';
@@ -557,24 +557,33 @@ function restoreCell(id){
   cells[idx]={...orig,id:cells[idx].id,output:'',exec_count:null,mdEdit:false};
   renderCells();notify('↺ Celda restaurada');
 }
+window.activateExpositionMode=activateExpositionMode;
+window.deactivateExpositionMode=deactivateExpositionMode;
+window.restoreAllCells=restoreAllCells;
+window.restoreCell=restoreCell;
 
-// ── MOTOR ─────────────────────────────────────────────────────
+// Motor
 async function checkEngine(){
-  if(!engineURL)return;
   const badge=document.getElementById('eng-badge');
+  if(!engineURL){badge.textContent='⚠️ SIN MOTOR';badge.className='eng-pill';return;}
   try{
     const r=await fetch(engineURL+'/run/predict',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({data:[''],fn_index:1}),
-      signal:AbortSignal.timeout(12000)
+      signal:AbortSignal.timeout(8000)
     });
-    if(r.ok){const j=await r.json();if(j&&j.data){engineOK=true;badge.textContent='● MOTOR ACTIVO';badge.className='eng-pill on';}else throw new Error();}
-    else throw new Error('HTTP '+r.status);
-  }catch(e){engineOK=false;badge.textContent='● SIN COMPILADOR';badge.className='eng-pill';}
+    if(r.ok){engineOK=true;badge.textContent='⚡ MOTOR CONECTADO';badge.className='eng-pill on';}
+    else{engineOK=false;badge.textContent='⚠️ SIN CONEXIÓN';badge.className='eng-pill';}
+  }catch(e){engineOK=false;badge.textContent='⚠️ SIN CONEXIÓN';badge.className='eng-pill';}
 }
-function setEngineURL(url){engineURL=url;localStorage.setItem('qcol_colab_url',url);checkEngine();notify('🌐 Motor actualizado');}
+function loadEngineFromStorage(){
+  const stored=localStorage.getItem(DEFAULT_ENGINE_KEY);
+  if(stored){engineURL=stored;checkEngine();}
+  else postCore('QCOL_GET_CONFIG',{key:'engine_url'});
+}
+window.setEngineURL=function(url){engineURL=url;localStorage.setItem(DEFAULT_ENGINE_KEY,url);checkEngine();notify('🌐 Motor actualizado');};
 
-// ── PREAMBLE QISKIT ───────────────────────────────────────────
+// Preamble Qiskit
 const QISKIT_PREAMBLE=`from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.quantum_info import Statevector, DensityMatrix, Operator
 from qiskit.visualization import plot_histogram, plot_bloch_multivector, plot_state_city
@@ -590,137 +599,69 @@ import matplotlib.pyplot as plt
 import io, base64
 `;
 
-// ── PARSEAR RESPUESTA DEL SERVIDOR ────────────────────────────
+// Parse respuesta
 function parseServerResponse(raw){
-  // raw.data[0] puede ser string JSON o dict ya parseado
   let d=null;
-  try{
-    const item=raw?.data?.[0];
-    d=(typeof item==='string')?JSON.parse(item):item;
-  }catch(e){d={success:false,output:'Error al parsear respuesta del servidor'};}
-  if(!d)d={success:false,output:'Respuesta vacía del servidor'};
+  try{const item=raw?.data?.[0];d=(typeof item==='string')?JSON.parse(item):item;}
+  catch(e){d={success:false,output:'Error al parsear respuesta'};}
+  if(!d)d={success:false,output:'Respuesta vacía'};
   return d;
 }
 
-// ── RENDER DE OUTPUT COMPLETO ─────────────────────────────────
+// Render output
 function renderOutput(outArea, d, elapsed){
   if(!outArea)return;
-  const t0=elapsed?`${elapsed}s`:null;
   let html='';
-
-  // Cabecera
   const isOk=d.success!==false;
-  const hdrCls=isOk?'out-header-ok':'out-header-err';
-  const hdrIcon=isOk?'✅':'❌';
-  html+=`<div class="out-header ${hdrCls}">${hdrIcon} ${isOk?'Ejecutado':'Error'}${t0?' · '+t0:''}</div>`;
-
-  // ── STDOUT completo ──
-  if(d.output&&d.output.trim()){
-    // Detectar si la salida contiene un diagrama de circuito (líneas con ─, │, ┤, ├, etc.)
+  html+=`<div class="out-header ${isOk?'out-header-ok':'out-header-err'}">${isOk?'✅':'❌'} ${isOk?'Ejecutado':'Error'}${elapsed?' · '+elapsed+'s':''}</div>`;
+  if(d.output?.trim()){
     const lines=d.output.split('\n');
-    let circuitBlock=[];
-    let textBlock=[];
-    let inCircuit=false;
+    let circuitBlock=[],textBlock=[],inCircuit=false;
     for(const line of lines){
-      const isCircLine=/[─┤├┼╫│┐┘└┌╥╨╩╦╣╠═║╗╚╔╝╞╡╟╢]/.test(line)||/q_?\d+\s*:/.test(line)||/c:\s*\d/.test(line)||/^\s*(q\[|c\[|cr\[|qr\[)/.test(line);
+      const isCircLine=/[─┤├┼╫│┐┘└┌╥╨╩╦╣╠═║╗╚╔╝╞╡╟╢]/.test(line)||/q_?\d+\s*:/.test(line)||/c:\s*\d/.test(line)||/^\s*(q\[|c\[|qr\[)/.test(line);
       if(isCircLine){if(!inCircuit&&textBlock.length){html+=buildTextOut(textBlock.join('\n'));textBlock=[];}inCircuit=true;circuitBlock.push(line);}
       else{if(inCircuit){html+=buildCircuitOut(circuitBlock.join('\n'));circuitBlock=[];inCircuit=false;}textBlock.push(line);}
     }
     if(inCircuit)html+=buildCircuitOut(circuitBlock.join('\n'));
-    if(textBlock.length&&textBlock.join('').trim())html+=buildTextOut(textBlock.join('\n'));
+    if(textBlock.length)html+=buildTextOut(textBlock.join('\n'));
   }
-
-  // ── STDERR ──
-  if(d.stderr&&d.stderr.trim()){
-    html+=`<div class="out-stderr">${escH(d.stderr)}</div>`;
-  }
-
-  // ── PROBABILIDADES / COUNTS ──
-  if(d.bloch&&d.bloch.probabilities){
-    html+=buildProbsOut(d.bloch.probabilities,d.bloch.shots||1024,d.bloch.simulator||'AerSimulator');
-  }else if(d.counts){
-    html+=buildProbsOut(d.counts,d.bloch?.shots||1024,'');
-  }
-
-  // ── ESFERA DE BLOCH ──
-  if(d.bloch&&d.bloch.probabilities){
-    html+=buildBlochOut(d.bloch.probabilities);
-  }
-
-  // ── IMAGEN matplotlib ──
-  if(d.plot_png){
-    html+=`<div style="padding:.3rem .5rem;background:#04080e;border-top:1px solid rgba(0,136,255,.08);">
-      <div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.2rem 0 .3rem;letter-spacing:.05em;">GRÁFICA MATPLOTLIB</div>
-      <img class="out-img" src="data:image/png;base64,${d.plot_png}" alt="Gráfica">
-    </div>`;
-  }
-
-  // ── IMAGEN extra (plot_svg como fallback) ──
-  if(d.plot_svg){
-    html+=`<div style="padding:.3rem .5rem;background:#04080e;border-top:1px solid rgba(0,136,255,.08);">
-      <div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.2rem 0 .3rem;">DIAGRAMA SVG</div>
-      <div style="overflow-x:auto;">${d.plot_svg}</div>
-    </div>`;
-  }
-
-  // ── ERROR detallado ──
-  if(!isOk&&d.output){
-    html+=buildErrorOut(d.output);
-  }
-
+  if(d.stderr?.trim())html+=`<div class="out-stderr">${escH(d.stderr)}</div>`;
+  if(d.bloch?.probabilities)html+=buildProbsOut(d.bloch.probabilities,d.bloch.shots||1024,d.bloch.simulator||'AerSimulator');
+  else if(d.counts)html+=buildProbsOut(d.counts,d.bloch?.shots||1024,'');
+  if(d.bloch?.probabilities)html+=buildBlochOut(d.bloch.probabilities);
+  if(d.plot_png)html+=`<div style="padding:.3rem .5rem;background:#04080e;border-top:1px solid rgba(0,136,255,.08);"><div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.2rem 0 .3rem;">GRÁFICA MATPLOTLIB</div><img class="out-img" src="data:image/png;base64,${d.plot_png}" alt="Gráfica"></div>`;
+  if(d.plot_svg)html+=`<div style="padding:.3rem .5rem;background:#04080e;border-top:1px solid rgba(0,136,255,.08);"><div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.2rem 0 .3rem;">DIAGRAMA SVG</div><div style="overflow-x:auto;">${d.plot_svg}</div></div>`;
+  if(!isOk&&d.output)html+=buildErrorOut(d.output);
   outArea.innerHTML=html||'<div class="out-stdout" style="color:var(--mu);">Sin salida</div>';
 }
-
 function buildTextOut(text){
   if(!text.trim())return'';
-  // Detectar si es dict de resultados como {'00': 512, '11': 512}
-  if(/^\{['"0-9a-zA-Z_,:\s]+\}$/.test(text.trim())){
-    return`<div class="out-dict">${escH(text)}</div>`;
-  }
+  if(/^\{['"0-9a-zA-Z_,:\s]+\}$/.test(text.trim()))return`<div class="out-dict">${escH(text)}</div>`;
   return`<div class="out-stdout">${escH(text)}</div>`;
 }
-
 function buildCircuitOut(text){
   if(!text.trim())return'';
-  // Colorear el diagrama ASCII del circuito
   let colored=escH(text);
   colored=colored.replace(/([HXYZSTshxyzts])\s*(?=─|├|┤|\s)/g,'<span style="color:#00aaff;font-weight:700">$1</span>');
   colored=colored.replace(/(cx|cy|cz|ch|rx|ry|rz|ccx|mcx)\s*(?=[\s─])/gi,'<span style="color:#00ffdd;font-weight:700">$1</span>');
   colored=colored.replace(/(M)\s*(?=[─├┤])/g,'<span style="color:#ff9580;font-weight:700">$1</span>');
   colored=colored.replace(/(q_?\d+|q\[\d+\]|c\[\d+\]|qr\[\d+\]|cr\[\d+\])\s*:/g,'<span style="color:#bd93f9">$1</span>:');
-  colored=colored.replace(/(c:\s*\d+\/)/g,'<span style="color:#636e8a">$1</span>');
-  return`<div style="padding:.4rem 0 .3rem .5rem;background:#020c18;border-top:1px solid rgba(0,136,255,.1);">
-    <div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.1rem .2rem .25rem;letter-spacing:.05em;">⚛ DIAGRAMA DEL CIRCUITO</div>
-    <div class="out-circuit-text">${colored}</div>
-  </div>`;
+  return`<div style="padding:.4rem 0 .3rem .5rem;background:#020c18;border-top:1px solid rgba(0,136,255,.1);"><div style="font-family:var(--orb);font-size:.4rem;color:var(--mu);padding:.1rem .2rem .25rem;">⚛ DIAGRAMA DEL CIRCUITO</div><div class="out-circuit-text">${colored}</div></div>`;
 }
-
 function buildProbsOut(probs,shots,sim){
   const entries=Object.entries(probs).sort((a,b)=>b[1]-a[1]);
   if(!entries.length)return'';
   const total=entries.reduce((s,[,v])=>s+v,0);
   const rows=entries.map(([st,v])=>{
-    // v puede ser count (int) o probability (float)
     const isCount=v>1;
     const prob=isCount?v/total:v;
     const count=isCount?v:Math.round(v*shots);
     const pct=(prob*100).toFixed(1);
-    const fill=Math.round(prob*100);
-    return`<div class="prob-row">
-      <span class="prob-state">|${escH(st)}⟩</span>
-      <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${fill}%"></div></div>
-      <span class="prob-pct">${pct}%</span>
-      <span class="prob-count">${count}/${shots}</span>
-    </div>`;
+    return`<div class="prob-row"><span class="prob-state">|${escH(st)}⟩</span><div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${Math.round(prob*100)}%"></div></div><span class="prob-pct">${pct}%</span><span class="prob-count">${count}/${shots}</span></div>`;
   }).join('');
-  return`<div class="out-probs">
-    <div class="out-probs-title">RESULTADOS${sim?' · '+sim:''} · ${shots} shots</div>
-    ${rows}
-  </div>`;
+  return`<div class="out-probs"><div class="out-probs-title">RESULTADOS${sim?' · '+sim:''} · ${shots} shots</div>${rows}</div>`;
 }
-
 function buildBlochOut(probs){
-  // Calcular estados de Bloch por qubit desde los counts/probs
   const qubits=Object.keys(probs)[0]?.length||0;
   if(qubits===0)return'';
   const total=Object.values(probs).reduce((s,v)=>s+v,0);
@@ -737,83 +678,44 @@ function buildBlochOut(probs){
   const spheres=blochData.map(({qi,theta,p0})=>{
     const cid='bloch-'+genId();
     setTimeout(()=>drawBlochSphere(cid,theta,qi),50);
-    return`<div class="bloch-item">
-      <canvas id="${cid}" width="90" height="90"></canvas>
-      <div class="bloch-item-lbl">q[${qi}] P₀=${(p0*100).toFixed(0)}%</div>
-    </div>`;
+    return`<div class="bloch-item"><canvas id="${cid}" width="90" height="90"></canvas><div class="bloch-item-lbl">q[${qi}] P₀=${(p0*100).toFixed(0)}%</div></div>`;
   }).join('');
-  return`<div class="out-bloch-wrap">
-    <div style="width:100%;font-family:var(--orb);font-size:.4rem;color:var(--mu);margin-bottom:.3rem;letter-spacing:.05em;">🌐 ESFERAS DE BLOCH</div>
-    ${spheres}
-  </div>`;
+  return`<div class="out-bloch-wrap"><div style="width:100%;font-family:var(--orb);font-size:.4rem;color:var(--mu);margin-bottom:.3rem;">🌐 ESFERAS DE BLOCH</div>${spheres}</div>`;
 }
-
 function drawBlochSphere(canvasId,theta,qi){
-  const c=document.getElementById(canvasId);
-  if(!c)return;
-  const ctx=c.getContext('2d');
-  const w=c.width,h=c.height,cx=w/2,cy=h/2,r=w*0.38;
+  const c=document.getElementById(canvasId);if(!c)return;
+  const ctx=c.getContext('2d'),w=c.width,h=c.height,cx=w/2,cy=h/2,r=w*0.38;
   ctx.clearRect(0,0,w,h);
-  // Fondo
   const bg=ctx.createRadialGradient(cx,cy-r*.2,r*.1,cx,cy,r);
   bg.addColorStop(0,'#0d1a2e');bg.addColorStop(1,'#040810');
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
-  // Esfera exterior
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,136,255,.35)';ctx.lineWidth=1.2;ctx.stroke();
-  // Elipses de latitud
-  [.3,.6,.9].forEach(f=>{
-    ctx.beginPath();ctx.ellipse(cx,cy,r*f,r*f*.3,0,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(0,136,255,${.08+f*.04})`;ctx.lineWidth=.7;ctx.stroke();
-  });
-  // Ejes
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(0,136,255,.35)';ctx.lineWidth=1.2;ctx.stroke();
+  [.3,.6,.9].forEach(f=>{ctx.beginPath();ctx.ellipse(cx,cy,r*f,r*f*.3,0,0,Math.PI*2);ctx.strokeStyle=`rgba(0,136,255,${.08+f*.04})`;ctx.lineWidth=.7;ctx.stroke();});
   ctx.strokeStyle='rgba(0,200,255,.18)';ctx.lineWidth=.8;
   ctx.beginPath();ctx.moveTo(cx-r*1.05,cy);ctx.lineTo(cx+r*1.05,cy);ctx.stroke();
   ctx.beginPath();ctx.moveTo(cx,cy-r*1.05);ctx.lineTo(cx,cy+r*1.05);ctx.stroke();
-  // Vector de estado
-  const x=r*Math.sin(theta)*Math.cos(0);
-  const y=-r*Math.cos(theta);
+  const x=r*Math.sin(theta)*Math.cos(0),y=-r*Math.cos(theta);
   const grad=ctx.createLinearGradient(cx,cy,cx+x,cy+y);
-  grad.addColorStop(0,'rgba(0,255,221,.3)');
-  grad.addColorStop(1,'rgba(0,255,221,1)');
-  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+x,cy+y);
-  ctx.strokeStyle=grad;ctx.lineWidth=2.2;ctx.stroke();
-  // Punto del estado
+  grad.addColorStop(0,'rgba(0,255,221,.3)');grad.addColorStop(1,'rgba(0,255,221,1)');
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+x,cy+y);ctx.strokeStyle=grad;ctx.lineWidth=2.2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx+x,cy+y,5,0,Math.PI*2);
   const dotGrad=ctx.createRadialGradient(cx+x,cy+y,0,cx+x,cy+y,5);
   dotGrad.addColorStop(0,'#ffffff');dotGrad.addColorStop(1,'#00ffdd');
   ctx.fillStyle=dotGrad;ctx.fill();
-  // Etiquetas
   ctx.font='bold 9px JetBrains Mono,monospace';ctx.fillStyle='rgba(138,160,196,.8)';
   ctx.fillText('|0⟩',cx+3,cy-r-3);ctx.fillText('|1⟩',cx+3,cy+r+11);
 }
-
 function buildErrorOut(errText){
   if(!errText)return'';
   const lineMatch=errText.match(/[Ll]ine\s+(\d+)|línea\s+(\d+)/i);
   const lineNum=lineMatch?(lineMatch[1]||lineMatch[2]):'';
   const typeMatch=errText.match(/(SyntaxError|NameError|TypeError|ValueError|ImportError|AttributeError|IndentationError|KeyError|IndexError|ZeroDivisionError|ModuleNotFoundError)[:\s]/);
   const errType=typeMatch?typeMatch[1]:'Error';
-  const tips={
-    SyntaxError:'Revisa paréntesis, dos puntos o indentación.',
-    NameError:'Variable o función no definida. ¿Hay un typo?',
-    TypeError:'Tipo de dato incorrecto para la operación.',
-    ImportError:'Librería no disponible en el servidor.',
-    ModuleNotFoundError:'Módulo no instalado. Verifica el nombre.',
-    IndentationError:'Error de indentación. Revisa los espacios.',
-    AttributeError:'El objeto no tiene ese atributo/método.',
-  };
-  const tip=tips[errType]||'Revisa el código en la línea indicada.';
-  return`<div class="out-stderr" style="padding:.5rem .7rem;">
-    <div style="color:#ff9999;font-family:var(--orb);font-size:.46rem;margin-bottom:.3rem;">
-      ${errType}${lineNum?' · Línea '+lineNum:''}
-    </div>
-    <div style="color:#ff7070;white-space:pre-wrap;">${escH(errText.split('\n').slice(-3).join('\n'))}</div>
-    <div style="color:#ffb86c;font-family:var(--orb);font-size:.42rem;margin-top:.3rem;">💡 ${tip}</div>
-  </div>`;
+  const tips={SyntaxError:'Revisa paréntesis, dos puntos o indentación.',NameError:'Variable o función no definida.',TypeError:'Tipo de dato incorrecto.',ImportError:'Librería no disponible.',ModuleNotFoundError:'Módulo no instalado.',IndentationError:'Error de indentación.',AttributeError:'El objeto no tiene ese atributo/método.'};
+  return`<div class="out-stderr" style="padding:.5rem .7rem;"><div style="color:#ff9999;font-family:var(--orb);font-size:.46rem;margin-bottom:.3rem;">${errType}${lineNum?' · Línea '+lineNum:''}</div><div style="color:#ff7070;white-space:pre-wrap;">${escH(errText.split('\n').slice(-3).join('\n'))}</div><div style="color:#ffb86c;font-family:var(--orb);font-size:.42rem;margin-top:.3rem;">💡 ${tips[errType]||'Revisa el código.'}</div></div>`;
 }
 
-// ── EJECUCIÓN ─────────────────────────────────────────────────
+// Ejecución
 async function runCell(id){
   if(!_expositionMode&&!requireAuth())return;
   if(running){notify('Ya hay una ejecución en curso');return;}
@@ -824,10 +726,8 @@ async function runCell(id){
   const code=isQk?(QISKIT_PREAMBLE+'\n'+cell.code.trim()):cell.code.trim();
   if(!code.trim())return;
   running=true;setSbRun(true);
-  const rbtn=document.getElementById('rbtn-'+id);
-  if(rbtn)rbtn.classList.add('spinning');
-  const outArea=document.getElementById('out-'+id);
-  if(outArea)outArea.innerHTML='<div class="out-stdout" style="color:var(--mu);">⚙️ Ejecutando…</div>';
+  const rbtn=document.getElementById('rbtn-'+id);if(rbtn)rbtn.classList.add('spinning');
+  const outArea=document.getElementById('out-'+id);if(outArea)outArea.innerHTML='<div class="out-stdout" style="color:var(--mu);">⚙️ Ejecutando…</div>';
   const t0=Date.now();
   try{
     if(engineOK&&engineURL){
@@ -839,34 +739,36 @@ async function runCell(id){
       const raw=await resp.json();
       const d=parseServerResponse(raw);
       execCounter++;cell.exec_count=execCounter;
-      const elapsed=((Date.now()-t0)/1000).toFixed(2);
-      renderOutput(outArea,d,elapsed);
-      setSbRun(false,'✅ '+elapsed+'s');
-    } else {
+      renderOutput(outArea,d,((Date.now()-t0)/1000).toFixed(2));
+      setSbRun(false,'✅ Listo');
+    }else{
       execCounter++;cell.exec_count=execCounter;
-      if(outArea)outArea.innerHTML='<div class="out-stdout" style="color:var(--mu);">⚡ Sin motor — configura la URL del compilador en la barra superior</div>';
+      if(outArea)outArea.innerHTML='<div class="out-stdout" style="color:var(--mu);">⚡ Sin motor — configura la URL del compilador</div>';
       setSbRun(false,'Sin motor');
     }
   }catch(e){
-    const isTO=e.name==='AbortError'||e.name==='TimeoutError';
-    if(outArea)outArea.innerHTML=`<div class="out-stderr">❌ ${escH(isTO?'Tiempo agotado (90s) — circuito muy complejo':e.message)}</div>`;
+    if(outArea)outArea.innerHTML=`<div class="out-stderr">❌ ${escH(e.name==='AbortError'?'Tiempo agotado (90s)':e.message)}</div>`;
     setSbRun(false,'❌ Error','err');
   }
-  running=false;
-  if(rbtn)rbtn.classList.remove('spinning');
+  running=false;if(rbtn)rbtn.classList.remove('spinning');
   renderCellNum(id);
 }
+window.runCell=runCell;
 function renderCellNum(id){const cell=cells.find(c=>c.id===id);if(!cell)return;const el=document.querySelector(`[data-id="${id}"] .cell-num`);if(el)el.textContent=cell.exec_count!==null?`[${cell.exec_count}]`:'[ ]';}
 async function runCurCell(){if(curCellId)await runCell(curCellId);}
+window.runCurCell=runCurCell;
 async function runAll(){for(const cell of cells){if(cell.type!=='markdown'&&cell.code.trim()){await runCell(cell.id);await new Promise(r=>setTimeout(r,200));}}}
+window.runAll=runAll;
 function setSbRun(r,msg='',st=''){const dot=document.getElementById('sb-dot');const txt=document.getElementById('sb-txt');if(dot)dot.className='sb-dot '+(r?'sb-run':st==='err'?'sb-err':'sb-idle');if(txt&&msg)txt.textContent=msg;}
 function updateStatus(){const el=document.getElementById('sb-cells-info');if(el)el.textContent=cells.length+' celdas';}
 
-// ── GUARDADO ──────────────────────────────────────────────────
+// Guardado
+function syncAllCells(){cells.forEach(c=>{const rec=editorMap.get(c.id);if(rec)c.code=rec.view.state.doc.toString();});}
+function syncCellCode(id){const cell=cells.find(c=>c.id===id);if(!cell)return;const rec=editorMap.get(id);if(rec)cell.code=rec.view.state.doc.toString();}
 function saveCurrentNb(showNotify=true){
   if(_expositionMode)return;
   if(!curUser)return;
-  cells.forEach(c=>{const ta=document.getElementById('ta-'+c.id);const mta=document.getElementById('mta-'+c.id);if(ta)c.code=ta.value;if(mta)c.code=mta.value;});
+  syncAllCells();
   const name=document.getElementById('nb-name-inp').value||'Sin título';
   const key='qcol_nbs_'+(curUser.username||'dev');
   const nbs=JSON.parse(localStorage.getItem(key)||'[]');
@@ -875,29 +777,28 @@ function saveCurrentNb(showNotify=true){
   if(existing>=0)nbs[existing]=entry;else nbs.unshift(entry);
   localStorage.setItem(key,JSON.stringify(nbs.slice(0,50)));
   lastSaveTime=Date.now();
-  const ss=document.getElementById('sb-save-status');
-  if(ss)ss.textContent='💾 Guardado';
+  const ss=document.getElementById('sb-save-status');if(ss)ss.textContent='💾 Guardado';
   setTimeout(()=>{const s=document.getElementById('sb-save-status');if(s)s.textContent='✓';},2500);
   if(showNotify)notify('💾 Guardado: '+name);
 }
+window.saveCurrentNb=saveCurrentNb;
 function downloadNb(){
   if(_expositionMode){notify('👁 Modo exposición — descarga desactivada');return;}
+  syncAllCells();
   const name=document.getElementById('nb-name-inp').value||'qcol_notebook';
-  cells.forEach(c=>{const ta=document.getElementById('ta-'+c.id);const mta=document.getElementById('mta-'+c.id);if(ta)c.code=ta.value;if(mta)c.code=mta.value;});
   const nb={nbformat:4,nbformat_minor:5,metadata:{name,kernelspec:{display_name:'Python 3',language:'python',name:'python3'}},cells:cells.map(c=>({cell_type:c.type==='markdown'?'markdown':'code',source:[c.code],metadata:{tags:c.type==='qiskit'?['qiskit-cell']:[]},outputs:[],execution_count:c.exec_count}))};
   const blob=new Blob([JSON.stringify(nb,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name.replace(/\.ipynb$/,'')+'.ipynb';a.click();
   notify('📥 '+a.download);
 }
-setInterval(()=>{if(!_expositionMode&&curUser&&cells.length>0){const mins=Math.floor((Date.now()-lastSaveTime)/60000);const ss=document.getElementById('sb-save-status');if(ss)ss.textContent=mins>0?`⏱️ hace ${mins}min`:'✓';}},60000);
-document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveCurrentNb(true);}
-  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='Enter'){e.preventDefault();runAll();}
-});
+window.downloadNb=downloadNb;
+setInterval(()=>{if(!_expositionMode&&curUser&&cells.length>0){const ss=document.getElementById('sb-save-status');if(ss)ss.textContent=Math.floor((Date.now()-lastSaveTime)/60000)>0?`⏱️ hace ${Math.floor((Date.now()-lastSaveTime)/60000)}min`:'✓';}},60000);
 
-// ── GESTIÓN NOTEBOOKS ─────────────────────────────────────────
+// Gestión notebooks
 function newNotebook(){if(!confirm('¿Crear nuevo notebook?'))return;cells=[];execCounter=0;curCellId=null;document.getElementById('nb-name-inp').value='Nuevo Notebook';addCellAt(-1,'code');notify('✅ Nuevo notebook');}
+window.newNotebook=newNotebook;
 function importNb(){document.getElementById('import-file').click();}
+window.importNb=importNb;
 function handleImport(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -905,8 +806,7 @@ function handleImport(e){
     try{
       const nb=JSON.parse(ev.target.result);
       cells=[];execCounter=0;
-      const name=nb.metadata?.name||file.name.replace('.ipynb','');
-      document.getElementById('nb-name-inp').value=name;
+      document.getElementById('nb-name-inp').value=nb.metadata?.name||file.name.replace('.ipynb','');
       (nb.cells||[]).forEach(c=>{
         const src=Array.isArray(c.source)?c.source.join(''):c.source||'';
         const tags=c.metadata?.tags||[];
@@ -915,22 +815,28 @@ function handleImport(e){
       });
       if(cells.length===0)addCellAt(-1,'code');
       else{renderCells();focusCell(cells[0].id);}
-      setView('notebook');notify(`✅ Importado: ${name}`);
+      setView('notebook');notify(`✅ Importado`);
     }catch(err){notify('❌ Error: '+err.message);}
   };
   reader.readAsText(file);e.target.value='';
 }
-function getSavedNbs(){if(!curUser)return[];const key='qcol_nbs_'+(curUser.username||'dev');return JSON.parse(localStorage.getItem(key)||'[]');}
-function loadNb(name){const nbs=getSavedNbs();const nb=nbs.find(n=>n.name===name);if(!nb)return;cells=nb.cells.map(c=>({...c,mdEdit:false}));document.getElementById('nb-name-inp').value=nb.name;renderCells();if(cells[0])focusCell(cells[0].id);setView('notebook');notify('📂 '+nb.name);}
+window.handleImport=handleImport;
+function getSavedNbs(){if(!curUser)return[];return JSON.parse(localStorage.getItem('qcol_nbs_'+(curUser.username||'dev'))||'[]');}
+function loadNb(name){const nb=getSavedNbs().find(n=>n.name===name);if(!nb)return;cells=nb.cells.map(c=>({...c,mdEdit:false}));document.getElementById('nb-name-inp').value=nb.name;renderCells();if(cells[0])focusCell(cells[0].id);setView('notebook');notify('📂 '+nb.name);}
+window.loadNb=loadNb;
 function deleteNb(name){if(!confirm('¿Eliminar "'+name+'"?'))return;const key='qcol_nbs_'+(curUser?.username||'dev');localStorage.setItem(key,JSON.stringify(getSavedNbs().filter(n=>n.name!==name)));refreshNbs();notify('🗑 Eliminado');}
+window.deleteNb=deleteNb;
 function refreshNbs(){
   const grid=document.getElementById('nb-grid');if(!grid)return;
   const nbs=getSavedNbs();
   if(!nbs.length){grid.innerHTML=`<div class="nb-empty-state"><div class="nb-empty-icon">📓</div><div class="nb-empty-ttl">Sin notebooks guardados</div></div>`;return;}
   grid.innerHTML=nbs.map(nb=>`<div class="nb-card"><div class="nb-card-hdr"><div class="nb-card-title">${escH(nb.name)}</div><div class="nb-card-badge">${nb.cells?.length||0} celdas</div></div><div class="nb-card-body"><div class="nb-card-meta">${new Date(nb.saved).toLocaleDateString()}</div><div class="nb-card-actions"><button class="btn-edit-nb" onclick="loadNb('${escH(nb.name)}')">📝 Editar</button><button class="btn-pub-nb" onclick="loadNb('${escH(nb.name)}');showPublish()">📤</button><button class="btn-del-nb" onclick="deleteNb('${escH(nb.name)}')">🗑</button></div></div></div>`).join('');
 }
-function showPublish(){const name=document.getElementById('nb-name-inp').value||'';document.getElementById('pub-title').value=name;document.getElementById('pub-modal').classList.add('open');}
+window.refreshNbs=refreshNbs;
+function showPublish(){document.getElementById('pub-title').value=document.getElementById('nb-name-inp').value||'';document.getElementById('pub-modal').classList.add('open');}
+window.showPublish=showPublish;
 function closePublish(){document.getElementById('pub-modal').classList.remove('open');}
+window.closePublish=closePublish;
 function publishNb(){
   if(!requireAuth())return;
   saveCurrentNb(false);
@@ -946,19 +852,21 @@ function publishNb(){
   postCore('QCOL_SAVE',{key:'qcol_projs',val:projs});
   downloadNb();closePublish();notify('✅ Publicado: '+name);
 }
+window.publishNb=publishNb;
 function setView(v){
   curView=v;
   document.getElementById('view-notebook').style.display=v==='notebook'?'flex':'none';
   document.getElementById('view-manage').style.display=v==='manage'?'flex':'none';
   document.getElementById('stab-1').classList.toggle('on',v==='notebook');
-  const s2=document.getElementById('stab-2');if(s2)s2.classList.toggle('on',v==='manage');
+  document.getElementById('stab-2')?.classList.toggle('on',v==='manage');
   if(v==='manage')refreshNbs();
 }
+window.setView=setView;
 
-// ── CELDAS ────────────────────────────────────────────────────
+// Celdas
 function addCellAt(afterIdx,type='code'){
   if(_expositionMode)return;
-  const defaultQk=`# Celda Qiskit — imports automáticos: qc, AerSimulator, np, pi, plt
+  const defaultCode=type==='qiskit'?`# Celda Qiskit — imports automáticos incluidos
 qc = QuantumCircuit(2, 2)
 qc.h(0)
 qc.cx(0, 1)
@@ -972,47 +880,128 @@ sim = AerSimulator()
 result = sim.run(transpile(qc, sim), shots=1024).result()
 counts = result.get_counts()
 print("\\nResultados:", counts)
+`:`# Celda Python
+print("¡Hola, mundo cuántico!")
 `;
-  const cell={id:genId(),type,code:type==='qiskit'?defaultQk:'',output:'',exec_count:null,mdEdit:false};
+  const cell={id:genId(),type,code:defaultCode,output:'',exec_count:null,mdEdit:false};
   if(afterIdx===-1||afterIdx>=cells.length)cells.push(cell);
   else cells.splice(afterIdx+1,0,cell);
   renderCells();focusCell(cell.id);updateStatus();
 }
-function deleteCell(id){if(_expositionMode)return;if(cells.length<=1){notify('Debes tener al menos 1 celda');return;}cells=cells.filter(c=>c.id!==id);if(curCellId===id)curCellId=cells[0]?.id||null;renderCells();updateStatus();}
+window.addCellAt=addCellAt;
+function deleteCell(id){if(_expositionMode)return;if(cells.length<=1){notify('Debes tener al menos 1 celda');return;}cells=cells.filter(c=>c.id!==id);if(curCellId===id)curCellId=cells[0]?.id||null;editorMap.delete(id);renderCells();updateStatus();}
+window.deleteCell=deleteCell;
 function moveCellUp(id){const i=cells.findIndex(c=>c.id===id);if(i<=0)return;[cells[i-1],cells[i]]=[cells[i],cells[i-1]];renderCells();focusCell(id);}
+window.moveCellUp=moveCellUp;
 function moveCellDown(id){const i=cells.findIndex(c=>c.id===id);if(i<0||i>=cells.length-1)return;[cells[i],cells[i+1]]=[cells[i+1],cells[i]];renderCells();focusCell(id);}
-function syncCellCode(id){const cell=cells.find(c=>c.id===id);if(!cell)return;const ta=document.getElementById('ta-'+id);const mta=document.getElementById('mta-'+id);if(ta)cell.code=ta.value;if(mta)cell.code=mta.value;}
-function focusCell(id){curCellId=id;document.querySelectorAll('.nb-cell').forEach(el=>{el.classList.toggle('active',el.dataset.id===id);});const ta=document.getElementById('ta-'+id)||document.getElementById('mta-'+id);if(ta)ta.focus();}
-function changeCellType(id){if(_expositionMode)return;const cell=cells.find(c=>c.id===id);if(!cell)return;cell.type=cell.type==='code'||cell.type==='qiskit'?'markdown':'code';cell.mdEdit=true;renderCells();focusCell(id);}
+window.moveCellDown=moveCellDown;
+function focusCell(id){
+  curCellId=id;
+  document.querySelectorAll('.nb-cell').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  const rec=editorMap.get(id);
+  if(rec)rec.view.focus();
+  else document.getElementById('mta-'+id)?.focus();
+}
+window.focusCell=focusCell;
+function changeCellType(id){
+  if(_expositionMode)return;
+  const cell=cells.find(c=>c.id===id);if(!cell)return;
+  syncCellCode(id);
+  cell.type=cell.type==='code'||cell.type==='qiskit'?'markdown':'code';
+  cell.mdEdit=true;
+  editorMap.delete(id);
+  renderCells();focusCell(id);
+}
+window.changeCellType=changeCellType;
 
-// ── MARKDOWN ──────────────────────────────────────────────────
+// Markdown
 function initMarkdown(){
   if(!window.markdownit)return;
   md=window.markdownit({html:true,linkify:true,highlight:(str,lang)=>{
-    if(lang&&window.hljs&&hljs.getLanguage(lang)){try{return hljs.highlight(str,{language:lang}).value;}catch(e){}}
+    if(lang&&hljs.getLanguage(lang))try{return hljs.highlight(str,{language:lang}).value;}catch(e){}
     return'';
   }});
 }
 async function renderMdPreview(cellId){
-  const cell=cells.find(c=>c.id===cellId);
-  if(!cell||cell.type!=='markdown')return;
+  const cell=cells.find(c=>c.id===cellId);if(!cell||cell.type!=='markdown')return;
   const div=document.getElementById('mdprev-'+cellId);if(!div)return;
   if(!md)initMarkdown();
   div.innerHTML=md?md.render(cell.code||''):`<pre>${escH(cell.code||'')}</pre>`;
-  if(window.hljs)div.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b));
-  if(window.MathJax){try{await MathJax.typesetPromise([div]);}catch(e){}}
+  div.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b));
+  if(window.MathJax)try{await MathJax.typesetPromise([div]);}catch(e){}
 }
-function renderMdFull(text){
-  if(!md)initMarkdown();
-  return md?md.render(text||''):escH(text||'').replace(/\n/g,'<br>');
-}
+window.renderMdPreview=renderMdPreview;
+function renderMdFull(text){if(!md)initMarkdown();return md?md.render(text||''):escH(text||'').replace(/\n/g,'<br>');}
 function editMd(id){if(_expositionMode)return;const cell=cells.find(c=>c.id===id);if(cell){cell.mdEdit=true;renderCells();focusCell(id);}}
+window.editMd=editMd;
 
-// ── RENDER CELDAS ─────────────────────────────────────────────
+// CodeMirror
+function createCodeMirror(parent, initialCode){
+  const extensions=[
+    basicSetup,
+    python(),
+    oneDarkTheme,
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    drawSelection(),
+    dropCursor(),
+    EditorState.allowMultipleSelections.of(true),
+    indentUnit.of("    "),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    autocompletion(),
+    closeBrackets(),
+    highlightSelectionMatches(),
+    keymap.of([...closeBracketsKeymap,...defaultKeymap,...searchKeymap,...historyKeymap,...completionKeymap,...lintKeymap,indentWithTab]),
+    EditorView.updateListener.of(update=>{
+      if(update.docChanged){
+        const id=parent.id.replace('cm-','');
+        const cell=cells.find(c=>c.id===id);
+        if(cell)cell.code=update.state.doc.toString();
+        if(!_expositionMode&&debounceTimer)clearTimeout(debounceTimer);
+        debounceTimer=setTimeout(()=>{if(curUser&&cells.length)saveCurrentNb(false);},3000);
+        updateStatusBar();
+      }
+    }),
+    EditorView.theme({
+      "&":{backgroundColor:"transparent!important"},
+      ".cm-scroller":{fontFamily:"var(--mono)!important",fontSize:".7rem!important",lineHeight:"1.65!important"},
+      ".cm-content":{padding:".55rem 0 .55rem .7rem!important",caretColor:"var(--cy)!important"},
+      ".cm-gutters":{backgroundColor:"rgba(0,0,0,.25)!important",borderRight:"1px solid var(--bd3)!important",color:"var(--mu2)!important",fontSize:".62rem!important"},
+      ".cm-lineNumbers .cm-gutterElement":{padding:"0 8px 0 4px!important",minWidth:"36px!important",textAlign:"right!important"},
+      ".cm-activeLineGutter":{backgroundColor:"rgba(0,136,255,.1)!important",color:"var(--bl2)!important"},
+      ".cm-activeLine":{backgroundColor:"rgba(0,136,255,.05)!important"},
+      ".cm-selectionBackground":{backgroundColor:"rgba(0,136,255,.25)!important"},
+      ".cm-selectionMatch":{backgroundColor:"rgba(0,255,221,.1)!important"},
+      ".cm-cursor":{borderLeft:"2px solid var(--cy)!important"},
+      ".cm-tooltip":{background:"var(--p)!important",border:"1px solid var(--bd2)!important",color:"var(--tx)!important"},
+      ".cm-tooltip-autocomplete > ul > li":{background:"var(--p)!important",color:"var(--tx)!important"},
+      ".cm-tooltip-autocomplete > ul > li[aria-selected]":{background:"rgba(0,136,255,.2)!important",color:"var(--cy)!important"}
+    })
+  ];
+  return new EditorView({doc:initialCode||'',extensions,parent});
+}
+function updateStatusBar(){
+  const sb=document.getElementById('sb-cur');if(!sb)return;
+  if(curCellId){
+    const rec=editorMap.get(curCellId);
+    if(rec){
+      const pos=rec.view.state.selection.main.head;
+      const line=rec.view.state.doc.lineAt(pos);
+      sb.textContent=`Ln ${line.number}, Col ${pos-line.from+1}`;
+    }else sb.textContent='Ln 1, Col 1';
+  }else sb.textContent='Ln 1, Col 1';
+}
+
+// Render
 function renderCells(){
   const scroll=document.getElementById('nb-scroll');
   const bottom=scroll.querySelector('.nb-bottom');
   scroll.querySelectorAll('.nb-cell,.add-cell-row').forEach(el=>el.remove());
+  editorMap.clear();
   cells.forEach((cell,i)=>{
     scroll.insertBefore(buildAddRow(i-1),bottom);
     scroll.insertBefore(buildCellEl(cell,i),bottom);
@@ -1026,40 +1015,6 @@ function buildAddRow(idx){
   row.innerHTML=`<div class="add-cell-line"></div><div class="add-cell-btns"><button class="add-btn" onclick="addCellAt(${idx},'code')">＋ Código</button><button class="add-btn" onclick="addCellAt(${idx},'qiskit')">⚛ Qiskit</button><button class="add-btn" onclick="addCellAt(${idx},'markdown')">✦ Texto</button></div><div class="add-cell-line"></div>`;
   return row;
 }
-
-// Clases Qiskit para coloreo especial
-const QK_CLASSES=new Set(['QuantumCircuit','QuantumRegister','ClassicalRegister','AerSimulator','Statevector','DensityMatrix','Operator','Sampler','Estimator','transpile','plot_histogram','plot_bloch_multivector','plot_state_city']);
-const BUILTINS=new Set(['print','len','range','int','float','str','list','dict','set','tuple','type','isinstance','enumerate','zip','map','filter','sum','max','min','abs','round','sorted','reversed','open','input','format','repr','hash','id','callable','hasattr','getattr','setattr','delattr','super','property','classmethod','staticmethod','object']);
-
-function highlight(code,isQk=false){
-  const KW=['import','from','as','def','class','return','if','else','elif','for','while','in','not','and','or','True','False','None','with','try','except','finally','lambda','pass','break','continue','yield','raise','del','global','assert','is','async','await'];
-  let h=escH(code);
-  // Comentarios primero (más prioritario)
-  h=h.replace(/(#[^\n]*)/g,'<span class="cmt">$1</span>');
-  // Strings multilinea
-  h=h.replace(/("""[\s\S]*?"""|'''[\s\S]*?''')/g,'<span class="st">$1</span>');
-  // Strings normales
-  h=h.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,(m)=>m.includes('class="')?m:`<span class="st">${m}</span>`);
-  // Números
-  h=h.replace(/\b(\d+\.?\d*(?:[eEjJ][+-]?\d+)?)\b/g,(m)=>m.includes('class="')?m:`<span class="nm">${m}</span>`);
-  // Keywords
-  KW.forEach(k=>{const re=new RegExp(`\\b(${k})\\b`,'g');h=h.replace(re,(m,w)=>m.includes('class="')?m:`<span class="kw">${w}</span>`);});
-  // Clases Qiskit (cian brillante)
-  if(isQk){QK_CLASSES.forEach(k=>{const re=new RegExp(`\\b(${k})\\b`,'g');h=h.replace(re,(m,w)=>m.includes('class="')?m:`<span class="qt">${w}</span>`);});}
-  // Builtins
-  BUILTINS.forEach(k=>{const re=new RegExp(`\\b(${k})\\b(?=\\s*\\()`, 'g');h=h.replace(re,(m,w)=>m.includes('class="')?m:`<span class="blt">${w}</span>`);});
-  // Funciones
-  h=h.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()/g,(m,fn)=>m.includes('class="')?m:`<span class="fn">${fn}</span>`);
-  // Decoradores
-  h=h.replace(/(@[A-Za-z_][A-Za-z0-9_.]*)/g,(m)=>m.includes('class="')?m:`<span class="kw">${m}</span>`);
-  return h;
-}
-
-function buildLinenos(code){
-  const n=code.split('\n').length;
-  return Array.from({length:n},(_,i)=>i+1).join('\n');
-}
-
 function buildCellEl(cell,i){
   const el=document.createElement('div');
   const isQk=cell.type==='qiskit';
@@ -1071,167 +1026,54 @@ function buildCellEl(cell,i){
   el.onclick=()=>focusCell(cell.id);
   el.ondragstart=e=>{if(_expositionMode)return;dragSrcId=cell.id;e.dataTransfer.setData('text/plain',cell.id);};
   el.ondragend=()=>{dragSrcId=null;document.querySelectorAll('.nb-cell').forEach(c=>c.classList.remove('drag-over'));};
-  el.ondragover=e=>{e.preventDefault();if(dragSrcId&&dragSrcId!==cell.id){el.classList.add('drag-over');}};
+  el.ondragover=e=>{e.preventDefault();if(dragSrcId&&dragSrcId!==cell.id)el.classList.add('drag-over');};
   el.ondragleave=()=>el.classList.remove('drag-over');
   el.ondrop=e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragSrcId||dragSrcId===cell.id)return;const si=cells.findIndex(c=>c.id===dragSrcId);const di=cells.findIndex(c=>c.id===cell.id);if(si<0||di<0)return;const[m]=cells.splice(si,1);cells.splice(di,0,m);renderCells();focusCell(dragSrcId);notify('↕ Celda movida');};
-
   const execLbl=cell.exec_count!==null?`[${cell.exec_count}]`:'[ ]';
-
-  // Toolbar
-  const toolbar=_expositionMode
-    ?`<div class="cell-toolbar">${isCode?`<button class="ct-btn ct-run" onclick="event.stopPropagation();runCell('${cell.id}')" title="Ejecutar">▶</button>`:''}
-      </div>`
-    :`<div class="cell-toolbar">
-        <button class="ct-btn" onclick="event.stopPropagation();moveCellUp('${cell.id}')" title="Subir">↑</button>
-        <button class="ct-btn" onclick="event.stopPropagation();moveCellDown('${cell.id}')" title="Bajar">↓</button>
-        <button class="ct-btn" onclick="event.stopPropagation();changeCellType('${cell.id}')" title="Cambiar tipo">${isCode?'Md':'{ }'}</button>
-        <button class="ct-btn danger" onclick="event.stopPropagation();deleteCell('${cell.id}')" title="Eliminar">✕</button>
-      </div>`;
-
+  const toolbar=_expositionMode?`<div class="cell-toolbar">${isCode?`<button class="ct-btn ct-run" onclick="event.stopPropagation();runCell('${cell.id}')" title="Ejecutar">▶</button>`:''}</div>`:`<div class="cell-toolbar"><button class="ct-btn" onclick="event.stopPropagation();moveCellUp('${cell.id}')" title="Subir">↑</button><button class="ct-btn" onclick="event.stopPropagation();moveCellDown('${cell.id}')" title="Bajar">↓</button><button class="ct-btn" onclick="event.stopPropagation();changeCellType('${cell.id}')" title="Cambiar tipo">${isCode?'Md':'{ }'}</button><button class="ct-btn danger" onclick="event.stopPropagation();deleteCell('${cell.id}')" title="Eliminar">✕</button></div>`;
   if(isCode){
-    const badge=isQk
-      ?`<span style="color:rgba(0,255,221,.8)">⚛</span> Qiskit · <span style="color:var(--mu)">QuantumCircuit · AerSimulator · NumPy · Matplotlib incluidos</span>`
-      :`<span style="color:rgba(0,170,255,.7)">{}</span> Python`;
-    const badgeCls=isQk?'ctb-qk':'ctb-code';
-    const hl=highlight(cell.code||'',isQk);
-    const lnos=buildLinenos(cell.code||'');
+    const badge=isQk?`<span style="color:rgba(0,255,221,.8)">⚛</span> Qiskit · <span style="color:var(--mu)">QuantumCircuit · AerSimulator · NumPy · Matplotlib</span>`:`<span style="color:rgba(0,170,255,.7)">{}</span> Python`;
     const restoreBtn=_expositionMode?`<button class="cell-restore-btn" onclick="event.stopPropagation();restoreCell('${cell.id}')">↺ Original</button>`:'';
-    const outContent=cell.output?`<div class="out-stdout">${escH(cell.output)}</div>`:'';
-    el.innerHTML=`${toolbar}
-      <div class="cell-gutter">
-        <div class="cell-num">${execLbl}</div>
-        <button class="cell-run-btn" id="rbtn-${cell.id}" onclick="event.stopPropagation();runCell('${cell.id}')">▶</button>
-      </div>
-      <div class="cell-body">
-        <div class="cell-type-badge ${badgeCls}">${badge}</div>
-        <div class="cell-code-area" id="area-${cell.id}">
-          <div class="cell-code-wrap">
-            <div class="cell-linenos" id="lnos-${cell.id}">${lnos}</div>
-            <div class="cell-code-inner">
-              <div class="cell-syn-layer" id="syn-${cell.id}">${hl}
-</div>
-              <textarea class="cell-textarea" id="ta-${cell.id}" spellcheck="false"
-                oninput="onCellInput('${cell.id}')"
-                onkeydown="onCellKeydown(event,'${cell.id}')"
-                onfocus="focusCell('${cell.id}')"
-                onscroll="syncScroll('${cell.id}')"
-              >${escH(cell.code||'')}</textarea>
-            </div>
-          </div>
-        </div>
-        <div class="cell-output-area" id="out-${cell.id}">${outContent}</div>
-        ${restoreBtn}
-      </div>`;
-  } else {
-    // Markdown
+    el.innerHTML=`${toolbar}<div class="cell-gutter"><div class="cell-num">${execLbl}</div><button class="cell-run-btn" id="rbtn-${cell.id}" onclick="event.stopPropagation();runCell('${cell.id}')">▶</button></div><div class="cell-body"><div class="cell-type-badge ${isQk?'ctb-qk':'ctb-code'}">${badge}</div><div class="cell-code-area"><div id="cm-${cell.id}" style="height:100%;min-height:42px;"></div></div><div class="cell-output-area" id="out-${cell.id}">${cell.output?`<div class="out-stdout">${escH(cell.output)}</div>`:''}</div>${restoreBtn}</div>`;
+    setTimeout(()=>{
+      const parent=document.getElementById('cm-'+cell.id);
+      if(parent){const view=createCodeMirror(parent,cell.code);editorMap.set(cell.id,{view});}
+    },10);
+  }else{
     if(cell.mdEdit&&!_expositionMode){
-      el.innerHTML=`${toolbar}
-        <div class="cell-gutter"><div class="cell-num" style="color:var(--gr)">Md</div></div>
-        <div class="cell-body">
-          <div class="cell-type-badge ctb-md">✦ Markdown / LaTeX</div>
-          <div class="md-split">
-            <div class="md-editor-pane">
-              <textarea class="cell-md-split-area" id="mta-${cell.id}"
-                placeholder="# Título&#10;LaTeX inline: $E=mc^2$&#10;LaTeX bloque: $$\\hat{H}\\psi=E\\psi$$"
-                oninput="syncCellCode('${cell.id}');renderMdPreview('${cell.id}')"
-                onkeydown="onMdKeydown(event,'${cell.id}')"
-                rows="7">${escH(cell.code||'')}</textarea>
-            </div>
-            <div class="md-preview-pane cell-md-rendered" id="mdprev-${cell.id}"></div>
-          </div>
-        </div>`;
+      el.innerHTML=`${toolbar}<div class="cell-gutter"><div class="cell-num" style="color:var(--gr)">Md</div></div><div class="cell-body"><div class="cell-type-badge ctb-md">✦ Markdown / LaTeX</div><div class="md-split"><div class="md-editor-pane"><textarea class="cell-md-split-area" id="mta-${cell.id}" placeholder="# Título&#10;LaTeX: $E=mc^2$" oninput="syncCellCode('${cell.id}');renderMdPreview('${cell.id}')" rows="7">${escH(cell.code||'')}</textarea></div><div class="md-preview-pane cell-md-rendered" id="mdprev-${cell.id}"></div></div></div>`;
       setTimeout(()=>renderMdPreview(cell.id),10);
-    } else {
+    }else{
       const dbl=_expositionMode?'':` ondblclick="editMd('${cell.id}')" title="Doble clic para editar"`;
-      el.innerHTML=`${toolbar}
-        <div class="cell-gutter"><div class="cell-num" style="color:var(--gr)">Md</div></div>
-        <div class="cell-body">
-          <div class="cell-type-badge ctb-md">✦ Markdown${_expositionMode?'':' — doble clic para editar'}</div>
-          <div class="cell-md-rendered" id="mren-${cell.id}" ${dbl}>${renderMdFull(cell.code||'')}</div>
-        </div>`;
-      setTimeout(()=>{
-        const div=document.getElementById('mren-'+cell.id);
-        if(div&&window.MathJax)MathJax.typesetPromise([div]).catch(()=>{});
-      },50);
+      el.innerHTML=`${toolbar}<div class="cell-gutter"><div class="cell-num" style="color:var(--gr)">Md</div></div><div class="cell-body"><div class="cell-type-badge ctb-md">✦ Markdown${_expositionMode?'':' — doble clic para editar'}</div><div class="cell-md-rendered" id="mren-${cell.id}" ${dbl}>${renderMdFull(cell.code||'')}</div></div>`;
+      setTimeout(()=>{const div=document.getElementById('mren-'+cell.id);if(div&&window.MathJax)MathJax.typesetPromise([div]).catch(()=>{});},50);
     }
   }
-  setTimeout(()=>{const ta=document.getElementById('ta-'+cell.id);if(ta)autoResize(ta);},0);
   return el;
 }
+window.renderCells=renderCells;
 
-// ── EDITOR HANDLERS ────────────────────────────────────────────
-function syncScroll(id){
-  const ta=document.getElementById('ta-'+id);
-  const syn=document.getElementById('syn-'+id);
-  const lnos=document.getElementById('lnos-'+id);
-  if(ta&&syn){syn.scrollTop=ta.scrollTop;syn.scrollLeft=ta.scrollLeft;}
-  if(ta&&lnos)lnos.scrollTop=ta.scrollTop;
-}
-function onCellInput(id){
-  const ta=document.getElementById('ta-'+id);
-  const syn=document.getElementById('syn-'+id);
-  const lnos=document.getElementById('lnos-'+id);
-  if(ta&&syn){
-    const cell=cells.find(c=>c.id===id);
-    if(cell)cell.code=ta.value;
-    const isQk=cell?.type==='qiskit';
-    syn.innerHTML=highlight(ta.value,isQk)+'\n';
-    if(lnos)lnos.textContent=buildLinenos(ta.value);
-    autoResize(ta);
-    syn.scrollTop=ta.scrollTop;syn.scrollLeft=ta.scrollLeft;
-    if(lnos)lnos.scrollTop=ta.scrollTop;
-  }
-  if(!_expositionMode){
-    if(debounceTimer)clearTimeout(debounceTimer);
-    debounceTimer=setTimeout(()=>{if(curUser&&cells.length)saveCurrentNb(false);},3000);
-  }
-}
-function autoResize(ta){
-  ta.style.height='auto';
-  const h=Math.max(42,ta.scrollHeight);
-  ta.style.height=h+'px';
-  const area=ta.closest('.cell-code-area');if(area)area.style.height=h+'px';
-  const inner=ta.closest('.cell-code-inner');if(inner)inner.style.height=h+'px';
-  const syn=document.getElementById('syn-'+ta.id.replace('ta-',''));if(syn)syn.style.height=h+'px';
-  const lnos=document.getElementById('lnos-'+ta.id.replace('ta-',''));if(lnos)lnos.style.height=h+'px';
-}
-function onCellKeydown(e,id){
-  const ta=document.getElementById('ta-'+id);
-  if(e.key==='Tab'){e.preventDefault();const s=ta.selectionStart,en=ta.selectionEnd;ta.value=ta.value.substring(0,s)+'    '+ta.value.substring(en);ta.selectionStart=ta.selectionEnd=s+4;onCellInput(id);return;}
-  if(e.shiftKey&&e.key==='Enter'){e.preventDefault();runCell(id);const idx=cells.findIndex(c=>c.id===id);if(idx<cells.length-1)focusCell(cells[idx+1].id);else if(!_expositionMode)addCellAt(-1,'code');return;}
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runCell(id);}
-}
-function onMdKeydown(e,id){
-  if(e.key==='Escape'){syncCellCode(id);const cell=cells.find(c=>c.id===id);if(cell){cell.mdEdit=false;renderCells();}}
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();syncCellCode(id);const cell=cells.find(c=>c.id===id);if(cell){cell.mdEdit=false;renderCells();}const idx=cells.findIndex(c=>c.id===id);if(idx<cells.length-1)focusCell(cells[idx+1].id);}
-}
-
-// ── SHOW UI ────────────────────────────────────────────────────
+// UI
 function showUI(user){
   const role=user?.role||'guest';
-  const alreadyOK=_initialized&&(curUser?.role==='admin'||curUser?.role==='founder');
-  const sameUser=alreadyOK&&curUser?.username===user?.username;
-  if(sameUser)return;
-  _initialized=true;curUser=user;
   if(role!=='admin'&&role!=='founder'&&!_expositionMode){
     document.getElementById('access-denied').classList.add('show');
     ['topbar','secbar','main-area','statusbar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     return;
   }
+  _initialized=true;curUser=user;
   document.getElementById('access-denied').classList.remove('show');
   ['topbar','secbar','main-area','statusbar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
   if(user&&(role==='admin'||role==='founder')){
-    const pill=document.getElementById('user-pill');
-    if(pill)pill.textContent=(role==='founder'?'👑 ':'🔑 ')+(user.name||'—').split(' ')[0];
-    const ap=document.getElementById('admin-pill');if(ap)ap.style.display='';
+    const pill=document.getElementById('user-pill');if(pill)pill.textContent=(role==='founder'?'👑 ':'🔑 ')+(user.name||'—').split(' ')[0];
+    document.getElementById('admin-pill').style.display='';
   }
-  const stored=localStorage.getItem('qcol_colab_url')||'';
-  if(stored){engineURL=stored;const inp=document.getElementById('engine-url-input');if(inp)inp.value=stored;checkEngine();}
   if(role==='admin'||role==='founder')refreshNbs();
   if(cells.length===0&&!_expositionMode)addCellAt(-1,'qiskit');
 }
+window.showUI=showUI;
 
-// ── MENSAJES DEL CORE ─────────────────────────────────────────
+// Mensajes Core
 window.addEventListener('message',e=>{
   const d=e.data||{};
   if(d.type==='QCOL_USER'||d.type==='QCOL_USER_UPDATE'){
@@ -1239,41 +1081,33 @@ window.addEventListener('message',e=>{
     if(role==='admin'||role==='founder')showUI(d.user);
     else if(!d.user){_initialized=false;showUI(null);}
   }
-  if(d.type==='QCOL_CONFIG_UPDATED'){const url=localStorage.getItem('qcol_colab_url');if(url){engineURL=url;checkEngine();}}
+  if(d.type==='QCOL_CONFIG_UPDATED'||d.type==='QCOL_CONFIG'){
+    if(d.key==='engine_url'&&d.value){engineURL=d.value;localStorage.setItem(DEFAULT_ENGINE_KEY,d.value);checkEngine();}
+  }
   if(d.type==='QCOL_LOAD_NB'&&d.nb){
     const isExpo=!!d.expositionMode;
     if(!isExpo&&!requireAuth())return;
     const nb=d.nb;
     document.getElementById('nb-name-inp').value=nb.title||nb.name||'Sin título';
-    if(nb.cells&&nb.cells.length>0){
-      cells=nb.cells.map(c=>({...c,id:genId(),output:'',exec_count:null,mdEdit:false}));
-    } else cells=[];
+    cells=(nb.cells||[]).map(c=>({...c,id:genId(),output:'',exec_count:null,mdEdit:false}));
     if(isExpo){
-      _initialized=true;
-      curUser=curUser||{name:'Invitado',role:'guest'};
+      _initialized=true;curUser=curUser||{name:'Invitado',role:'guest'};
       document.getElementById('access-denied').classList.remove('show');
-      ['topbar','secbar','main-area','statusbar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+      ['topbar','secbar','main-area','statusbar'].forEach(id=>{document.getElementById(id).style.display='flex';});
     }
-    renderCells();
-    if(cells[0])focusCell(cells[0].id);
-    setView('notebook');
-    if(isExpo)activateExpositionMode();
-    else deactivateExpositionMode();
-    notify((isExpo?'👁 ':'📂 ')+'Cargado: '+(nb.title||nb.name||'Notebook'));
+    renderCells();if(cells[0])focusCell(cells[0].id);setView('notebook');
+    if(isExpo)activateExpositionMode();else deactivateExpositionMode();
+    notify((isExpo?'👁 ':'📂 ')+'Cargado');
   }
 });
-
-// Pedir usuario
 postCore('QCOL_GET_USER');
+postCore('QCOL_GET_CONFIG',{key:'engine_url'});
 setTimeout(()=>{if(!_initialized){try{const s=localStorage.getItem('qcol_cur_user');if(s)showUI(JSON.parse(s));}catch(e){}}},700);
-setTimeout(()=>{if(!_initialized){document.getElementById('access-denied').classList.add('show');document.getElementById('topbar').style.display='flex';_initialized=true;}},3000);
-window.addEventListener('message',e=>{const d=e.data||{};if(d.type==='QCOL_USER_UPDATE'){const role=d.user?.role||'guest';if(role==='admin'||role==='founder'){_initialized=false;showUI(d.user);}}});
-
 function requireAuth(){const role=curUser?.role||'guest';if(role!=='admin'&&role!=='founder'&&!_expositionMode){notify('❌ Requiere cuenta Admin o Founder');postCore('QCOL_LOGIN');return false;}return true;}
+window.requireAuth=requireAuth;
 
 // Init
-function initEngine(){const s=localStorage.getItem('qcol_colab_url');if(s){engineURL=s;const inp=document.getElementById('engine-url-input');if(inp)inp.value=s;checkEngine();}}
-initEngine();
+loadEngineFromStorage();
 setTimeout(()=>initMarkdown(),400);
 </script>
 </body>
