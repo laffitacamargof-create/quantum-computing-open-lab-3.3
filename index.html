@@ -791,6 +791,66 @@ body::before{content:'';position:fixed;inset:0;
       return;
     }
 
+    // ═══ CELDA CIRCUIT: NOTEBOOK → ARCHITECT (abrir editor) ═══
+    // El Quantum Notebook pide abrir el Arquitecto para editar una celda circuito
+    if (d.type === 'QCOL_OPEN_ARCHITECT_EDIT') {
+      // 1. Navegar a la pantalla del arquitecto
+      nav('architect');
+      // 2. Reenviar el mensaje al arquitecto cuando esté listo
+      const sendToArchitect = () => {
+        const archFrame = iframes['architect'];
+        if (archFrame && archFrame.contentWindow) {
+          archFrame.contentWindow.postMessage(d, '*');
+        }
+      };
+      if (iframes['architect']) {
+        // Ya cargado — esperar un tick para que la pantalla sea visible
+        setTimeout(sendToArchitect, 150);
+      } else {
+        // Aún cargando — reintentar varias veces hasta que esté listo
+        let attempts = 0;
+        const retry = setInterval(() => {
+          attempts++;
+          if (iframes['architect'] && iframes['architect'].contentWindow) {
+            clearInterval(retry);
+            iframes['architect'].contentWindow.postMessage(d, '*');
+          } else if (attempts > 20) {
+            clearInterval(retry); // desistir tras 4s
+          }
+        }, 200);
+      }
+      return;
+    }
+
+    // ═══ CELDA CIRCUIT: ARCHITECT → NOTEBOOK (devolver datos) ═══
+    // El Arquitecto envía el código + circuitData al Quantum Notebook
+    if (d.type === 'QCOL_CIRCUIT_RETURN') {
+      // Navegar de vuelta al Quantum Notebook
+      nav('architect-pro');
+      // Reenviar los datos al Quantum Notebook
+      const sendToNB = () => {
+        const nbFrame = iframes['architect-pro'];
+        if (nbFrame && nbFrame.contentWindow) {
+          nbFrame.contentWindow.postMessage(d, '*');
+        }
+      };
+      if (iframes['architect-pro']) {
+        setTimeout(sendToNB, 150);
+      } else {
+        let attempts = 0;
+        const retry = setInterval(() => {
+          attempts++;
+          if (iframes['architect-pro'] && iframes['architect-pro'].contentWindow) {
+            clearInterval(retry);
+            iframes['architect-pro'].contentWindow.postMessage(d, '*');
+          } else if (attempts > 20) {
+            clearInterval(retry);
+          }
+        }, 200);
+      }
+      return;
+    }
+
     // ── Resto del código original sin cambios ──
     if (d.type === 'QCOL_NAV')          nav(d.screen);
     if (d.type === 'QCOL_NOTIFY')       notify(d.msg);
