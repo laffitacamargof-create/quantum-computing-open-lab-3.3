@@ -17,7 +17,9 @@
       "@codemirror/language": "https://esm.sh/@codemirror/language@6.11.0",
       "@lezer/common": "https://esm.sh/@lezer/common@1.2.3",
       "@lezer/highlight": "https://esm.sh/@lezer/highlight@1.2.1",
-      "marked": "https://esm.sh/marked@15.0.12"
+      "marked": "https://esm.sh/marked@15.0.12",
+      "firebase/app":       "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"
     }
   }
 </script>
@@ -636,6 +638,9 @@ body::before{content:'';position:fixed;inset:0;
   import { EditorView, basicSetup } from 'codemirror';
   import { markdown } from '@codemirror/lang-markdown';
   import { marked } from 'marked';
+  import { initializeApp } from 'firebase/app';
+  import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+  import { firebaseConfig } from './firebase-config.js';
 
   window.marked = marked;
 
@@ -662,26 +667,20 @@ body::before{content:'';position:fixed;inset:0;
   let cmEditor = null;
 
   // ══════════════════════════════════════════════
-  // BASE DE DATOS COMPARTIDA — GitHub como storage
+  // BASE DE DATOS — Firebase Firestore
   // ══════════════════════════════════════════════
-  const DB_PATH = 'data/qcol_db.json';
+  const fbApp   = initializeApp(firebaseConfig);
+  const fbStore = getFirestore(fbApp);
+  const DB_REF  = doc(fbStore, 'qcol', 'db');
+
   let _db = null;
   let _dbSyncing = false;
 
-  function getGH() {
-      return JSON.parse(localStorage.getItem('qcol_gh') || '{}');
-  }
-
   async function dbLoad() {
-      const gh = getGH();
-      if (!gh.user || !gh.repo) return null;
       try {
-          const ts = Date.now();
-          const url = `https://raw.githubusercontent.com/${gh.user}/${gh.repo}/main/${DB_PATH}?t=${ts}`;
-          const res = await fetch(url);
-          if (!res.ok) return null;
-          _db = await res.json();
-          return _db;
+          const snap = await getDoc(DB_REF);
+          if (snap.exists()) { _db = snap.data(); return _db; }
+          return null;
       } catch(e) {
           console.warn('dbLoad error:', e);
           return null;
@@ -691,29 +690,11 @@ body::before{content:'';position:fixed;inset:0;
   async function dbSave(newData) {
       if (_dbSyncing) return false;
       _dbSyncing = true;
-      const gh = getGH();
-      if (!gh.token || !gh.user || !gh.repo) { _dbSyncing = false; return false; }
       try {
-          const apiURL = `https://api.github.com/repos/${gh.user}/${gh.repo}/contents/${DB_PATH}`;
-          const headers = {
-              'Authorization': `token ${gh.token}`,
-              'Accept': 'application/vnd.github.v3+json',
-              'Content-Type': 'application/json'
-          };
-          let sha = null;
-          const check = await fetch(apiURL, { headers });
-          if (check.ok) { const j = await check.json(); sha = j.sha; }
-          
-          const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
-          const body = { message: 'QCOL DB update', content };
-          if (sha) body.sha = sha;
-          
-          const res = await fetch(apiURL, {
-              method: 'PUT', headers,
-              body: JSON.stringify(body)
-          });
+          await setDoc(DB_REF, newData);
+          _db = newData;
           _dbSyncing = false;
-          return res.ok;
+          return true;
       } catch(e) {
           console.error('dbSave error:', e);
           _dbSyncing = false;
@@ -747,13 +728,12 @@ body::before{content:'';position:fixed;inset:0;
                   ignored_attrs: JSON.parse(localStorage.getItem('qcol_ignored_attrs') || '[]'),
                   ignored_attrs_reasons: JSON.parse(localStorage.getItem('qcol_ignored_attrs_reasons') || '{}')
               },
-              users: JSON.parse(localStorage.getItem('qcol_users') || '[]'),
+              users: [],
               circuits: {},
               notebooks: {},
               ai_history: {}
           };
           await dbSave(empty);
-          _db = empty;
       }
       if (_db?.config) {
           const c = _db.config;
@@ -763,9 +743,6 @@ body::before{content:'';position:fixed;inset:0;
           if (c.mistral_enabled !== undefined) localStorage.setItem('qcol_mistral_enabled', c.mistral_enabled);
           if (c.ignored_attrs)   localStorage.setItem('qcol_ignored_attrs',      JSON.stringify(c.ignored_attrs));
           if (c.ignored_attrs_reasons) localStorage.setItem('qcol_ignored_attrs_reasons', JSON.stringify(c.ignored_attrs_reasons));
-      }
-      if (_db?.users?.length) {
-          localStorage.setItem('qcol_users', JSON.stringify(_db.users));
       }
       broadcast({ type: 'QCOL_CONFIG_UPDATED', db: _db });
   }
@@ -922,10 +899,19 @@ body::before{content:'';position:fixed;inset:0;
     }
     if (d.type === 'QCOL_GET_DB') {
         dbGet(d.section).then(data => {
-            if (data && d.section === 'users') {
-                localStorage.setItem('qcol_users', JSON.stringify(data));
-            }
             broadcast({ type: 'QCOL_DB_DATA', section: d.section, data });
+        });
+    }
+    if (d.type === 'QCOL_DEL_CIRCUIT' && d.username && d.index !== undefined) {
+        dbGet('circuits').then(circuits => {
+            const all = circuits || {};
+            if (d.index === -1) {
+                all[d.username] = [];
+            } else if (all[d.username]) {
+                all[d.username].splice(d.index, 1);
+            }
+            dbSet('circuits', all);
+            broadcast({ type: 'QCOL_DB_DATA', section: 'circuits', data: all });
         });
     }
   });
@@ -1156,40 +1142,30 @@ body::before{content:'';position:fixed;inset:0;
   }
   function closeAuth() { document.getElementById('auth-modal').classList.remove('open'); }
 
-  function doLogin() {
+  async function doLogin() {
     const u = document.getElementById('l-user').value.trim();
     const p = document.getElementById('l-pass').value;
     if (!u || !p) return notify('Completa todos los campos');
-    const users = JSON.parse(localStorage.getItem('qcol_users') || '[]');
+    const users = await dbGet('users') || [];
     const f = users.find(x => x.username === u && x.password === p);
     if (!f) return notify('Usuario o contraseña incorrectos');
     curUser = f;
     localStorage.setItem('qcol_cur_user', JSON.stringify(curUser));
-    dbLoad().then(data => {
-        if (data?.users) {
-            localStorage.setItem('qcol_users', JSON.stringify(data.users));
-        }
-    });
     closeAuth(); updateUI(); renderMenu();
     notify(`¡Bienvenido, ${f.name}!`);
     broadcast({ type:'QCOL_USER_UPDATE', user:curUser });
   }
 
-  function doRegister() {
+  async function doRegister() {
     const name = document.getElementById('r-name').value.trim();
     const u    = document.getElementById('r-user').value.trim();
     const p    = document.getElementById('r-pass').value;
     if (!name||!u||!p) return notify('Completa todos los campos');
-    const users = JSON.parse(localStorage.getItem('qcol_users') || '[]');
+    const users = await dbGet('users') || [];
     if (users.find(x => x.username === u)) return notify('Ese usuario ya existe');
     const nu = { name, username:u, password:p, role:'user', canUpload:false, joined:new Date().toLocaleDateString() };
     users.push(nu);
-    localStorage.setItem('qcol_users', JSON.stringify(users));
-    dbGet('users').then(dbUsers => {
-        const merged = dbUsers || [];
-        if (!merged.find(u => u.username === nu.username)) merged.push(nu);
-        dbSet('users', merged);
-    });
+    await dbSet('users', users);
     curUser = nu;
     localStorage.setItem('qcol_cur_user', JSON.stringify(curUser));
     closeAuth(); updateUI(); renderMenu();
@@ -1426,6 +1402,11 @@ body::before{content:'';position:fixed;inset:0;
     }, 650);
 
     setupAI();
+
+    // Restaurar sesión local si existía
+    const saved = localStorage.getItem('qcol_cur_user');
+    if (saved) try { curUser = JSON.parse(saved); } catch(e) {}
+
     await dbInit().then(() => {
         renderMenu();
         checkEngine();
