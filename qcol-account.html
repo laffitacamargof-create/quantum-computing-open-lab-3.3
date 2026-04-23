@@ -89,36 +89,56 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 </div>
 
 <script>
-let curUser=null;
-function postCore(t,d={}){window.parent.postMessage({type:t,...d},'*');}
-function notify(msg){const n=document.getElementById('notif');n.textContent=msg;n.classList.add('show');clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove('show'),3000);}
-window.addEventListener('message',e=>{
-  const d=e.data;if(!d?.type)return;
-  if(d.type==='QCOL_USER_UPDATE'){curUser=d.user;renderProfile();renderCircuits();}
-});
-postCore('QCOL_GET_CONFIG');
-function showTab(id,el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('tab-'+id).classList.add('on');
-  el.classList.add('on');
-  if(id==='circuits')renderCircuits();
+let curUser = null;
+let cachedCircuits = [];
+
+function postCore(t, d={}) { window.parent.postMessage({ type:t, ...d }, '*'); }
+function notify(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg; n.classList.add('show');
+  clearTimeout(n._t); n._t = setTimeout(() => n.classList.remove('show'), 3000);
 }
-function renderProfile(){
-  const c=document.getElementById('profile-content');
-  if(!curUser){
-    c.innerHTML=`<div class="no-login">
+
+window.addEventListener('message', e => {
+  const d = e.data; if (!d?.type) return;
+  if (d.type === 'QCOL_USER_UPDATE') {
+    curUser = d.user;
+    renderProfile();
+    renderCircuits();
+  }
+  if (d.type === 'QCOL_DB_DATA' && d.section === 'circuits') {
+    const all = d.data || {};
+    cachedCircuits = curUser ? (all[curUser.username] || []) : [];
+    renderCircuitsFromCache();
+    const el = document.getElementById('circuits-count');
+    if (el) el.textContent = cachedCircuits.length;
+  }
+});
+
+postCore('QCOL_GET_CONFIG');
+
+function showTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('tab-' + id).classList.add('on');
+  el.classList.add('on');
+  if (id === 'circuits') renderCircuits();
+}
+
+function renderProfile() {
+  const c = document.getElementById('profile-content');
+  if (!curUser) {
+    c.innerHTML = `<div class="no-login">
       <span class="no-login-icon">👤</span>
       <div class="no-login-title">Sin sesión activa</div>
       <div style="font-size:.72rem;max-width:300px;margin:0 auto;line-height:1.7;">Inicia sesión para acceder a tu perfil, circuitos guardados e historial.</div>
       <button class="btn btn-pri" onclick="postCore('QCOL_LOGIN')">INICIAR SESIÓN</button>
-    </div>`;return;
+    </div>`; return;
   }
-  const ini=curUser.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-  const roleCls=curUser.role==='founder'?'role-f':curUser.role==='admin'?'role-a':'role-u';
-  const roleLabel=curUser.role==='founder'?'👑 FUNDADOR':curUser.role==='admin'?'🔑 ADMIN':'👤 USUARIO';
-  const circuits=JSON.parse(localStorage.getItem('qcol_circuits_'+curUser.username)||'[]');
-  c.innerHTML=`<div class="sec">
+  const ini = curUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const roleCls = curUser.role === 'founder' ? 'role-f' : curUser.role === 'admin' ? 'role-a' : 'role-u';
+  const roleLabel = curUser.role === 'founder' ? '👑 FUNDADOR' : curUser.role === 'admin' ? '🔑 ADMIN' : '👤 USUARIO';
+  c.innerHTML = `<div class="sec">
     <div class="sec-title">👤 Mi perfil</div>
     <div class="profile-row">
       <div class="avatar">${ini}</div>
@@ -129,52 +149,63 @@ function renderProfile(){
       </div>
     </div>
     <div class="stat-grid">
-      <div class="stat"><span class="stat-num">${circuits.length}</span><div class="stat-label">Circuitos guardados</div></div>
-      <div class="stat"><span class="stat-num">${curUser.canUpload?'✅':'❌'}</span><div class="stat-label">Permiso subida</div></div>
-      <div class="stat"><span class="stat-num">${curUser.joined||'—'}</span><div class="stat-label">Registro</div></div>
+      <div class="stat"><span class="stat-num" id="circuits-count">—</span><div class="stat-label">Circuitos guardados</div></div>
+      <div class="stat"><span class="stat-num">${curUser.canUpload ? '✅' : '❌'}</span><div class="stat-label">Permiso subida</div></div>
+      <div class="stat"><span class="stat-num">${curUser.joined || '—'}</span><div class="stat-label">Registro</div></div>
     </div>
     <button class="btn btn-pri" onclick="postCore('QCOL_LOGOUT')">Cerrar sesión</button>
   </div>`;
+  // Cargar conteo de circuitos desde Firebase
+  postCore('QCOL_GET_DB', { section: 'circuits' });
 }
-function renderCircuits(){
-  if(!curUser){
-    document.getElementById('circuits-list').innerHTML='<div style="text-align:center;color:var(--mu);font-size:.7rem;padding:1rem;">Inicia sesión para ver tus circuitos</div>';return;
+
+function renderCircuits() {
+  if (!curUser) {
+    document.getElementById('circuits-list').innerHTML =
+      '<div style="text-align:center;color:var(--mu);font-size:.7rem;padding:1rem;">Inicia sesión para ver tus circuitos</div>';
+    return;
   }
-  const key='qcol_circuits_'+curUser.username;
-  const circuits=JSON.parse(localStorage.getItem(key)||'[]');
-  if(circuits.length===0){
-    document.getElementById('circuits-list').innerHTML='<div style="text-align:center;color:var(--mu);font-size:.7rem;padding:1rem;opacity:.7;">Sin circuitos guardados. Crea uno en el Arquitecto.</div>';return;
+  document.getElementById('circuits-list').innerHTML =
+    '<div style="text-align:center;color:var(--mu);font-size:.7rem;padding:1rem;">Cargando...</div>';
+  postCore('QCOL_GET_DB', { section: 'circuits' });
+}
+
+function renderCircuitsFromCache() {
+  if (cachedCircuits.length === 0) {
+    document.getElementById('circuits-list').innerHTML =
+      '<div style="text-align:center;color:var(--mu);font-size:.7rem;padding:1rem;opacity:.7;">Sin circuitos guardados. Crea uno en el Arquitecto.</div>';
+    return;
   }
-  document.getElementById('circuits-list').innerHTML='<div class="circuit-list">'+
-    circuits.map((c,i)=>`<div class="ci-item">
+  document.getElementById('circuits-list').innerHTML = '<div class="circuit-list">' +
+    cachedCircuits.map((c, i) => `<div class="ci-item">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#00ccff" stroke-width="1.5"/><polyline points="14 2 14 8 20 8" stroke="#00ccff" stroke-width="1.5"/></svg>
       <span class="ci-name">${c.name}</span>
-      <span class="ci-lib">${c.lib||'qiskit'}</span>
-      <span class="ci-date">${c.date||''}</span>
+      <span class="ci-lib">${c.lib || 'qiskit'}</span>
+      <span class="ci-date">${c.date || ''}</span>
       <button class="ci-del" onclick="delCircuit(${i})">✕</button>
-    </div>`).join('')+'</div>';
+    </div>`).join('') + '</div>';
 }
-function delCircuit(i){
-  if(!curUser)return;const key='qcol_circuits_'+curUser.username;
-  const c=JSON.parse(localStorage.getItem(key)||'[]');c.splice(i,1);
-  localStorage.setItem(key,JSON.stringify(c));renderCircuits();renderProfile();notify('Circuito eliminado');
+
+function delCircuit(i) {
+  if (!curUser) return;
+  postCore('QCOL_DEL_CIRCUIT', { username: curUser.username, index: i });
+  notify('Circuito eliminado');
 }
-function changePass(){
-  if(!curUser){notify('Sin sesión');return;}
-  const cur=document.getElementById('cp-cur').value,nw=document.getElementById('cp-new').value,conf=document.getElementById('cp-conf').value;
-  if(!cur||!nw){notify('Completa los campos');return;}
-  if(nw!==conf){notify('Las contraseñas no coinciden');return;}
-  const users=JSON.parse(localStorage.getItem('qcol_users')||'[]');
-  const u=users.find(x=>x.username===curUser.username);
-  if(!u||u.password!==cur){notify('Contraseña actual incorrecta');return;}
-  u.password=nw;localStorage.setItem('qcol_users',JSON.stringify(users));
-  notify('✅ Contraseña actualizada');['cp-cur','cp-new','cp-conf'].forEach(k=>document.getElementById(k).value='');
+
+function changePass() {
+  notify('Para cambiar la contraseña usa la consola de Firebase.');
 }
-function clearMyData(){
-  if(!curUser||!confirm('¿Borrar todos tus datos guardados?'))return;
-  localStorage.removeItem('qcol_circuits_'+curUser.username);
-  renderProfile();renderCircuits();notify('Datos eliminados');
+
+function clearMyData() {
+  if (!curUser || !confirm('¿Borrar todos tus circuitos guardados?')) return;
+  postCore('QCOL_DEL_CIRCUIT', { username: curUser.username, index: -1 });
+  cachedCircuits = [];
+  renderCircuitsFromCache();
+  const el = document.getElementById('circuits-count');
+  if (el) el.textContent = '0';
+  notify('Datos eliminados');
 }
+
 renderProfile();
 </script>
 </body>
