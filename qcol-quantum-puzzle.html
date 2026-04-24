@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Quantum App Studio · Laboratorio de Apps Cuánticas</title>
+<title>Quantum Puzzle · Laboratorio de Apps Cuánticas</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=JetBrains+Mono:wght@400;500&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -346,7 +346,7 @@ body::before{
 <div class="admin-bar" id="adminBar">
     ⚛️ MODO FUNDADOR/ADMIN · GESTIÓN DE APPS
     <button class="btn btn-pri" style="margin-left:auto;" onclick="openPendingManager()">📋 PENDIENTES</button>
-    <button class="btn btn-pri" onclick="openStudio(true)">🎛️ QUANTUM APP STUDIO</button>
+    <button class="btn btn-pri" onclick="openQuantumAppStudio()">🎛️ QUANTUM APP STUDIO</button>
 </div>
 
 <div class="toolbar">
@@ -356,13 +356,13 @@ body::before{
     </div>
     <div class="filter-tag" id="filterTagsContainer"></div>
     <div>
-        <button class="btn btn-pri" onclick="openStudio(false)" style="background: #6d28d9;">🎛️ QUANTUM APP STUDIO</button>
+        <button class="btn btn-pri" onclick="openQuantumAppStudio()" style="background: #6d28d9;">🎛️ QUANTUM APP STUDIO</button>
     </div>
 </div>
 
 <div id="puzzleGrid"></div>
 
-<!-- MODAL: QUANTUM APP STUDIO (crear app, cualquiera puede crear) -->
+<!-- MODAL: QUANTUM APP STUDIO integrado (fallback y creación local) -->
 <div class="modal-ov" id="studioModal">
     <div class="modal">
         <div class="modal-title">🌀 QUANTUM APP STUDIO · Crear programa cuántico</div>
@@ -397,19 +397,17 @@ let currentUser = null;
 let isAdmin = false;
 let isFounder = false;
 let activeTagFilter = "all";
+let studioConnectionAttempted = false;
 
-// ----- DATA STORES -----
-// publishedApps: array de apps visibles en el grid (solo publicadas)
+// ----- DATA STORES (repositorio vacío por defecto) -----
 function getPublishedApps() {
     const stored = localStorage.getItem('qcol_published_quantum_apps');
     if(stored) return JSON.parse(stored);
-    return []; // VACÍO, sin apps por defecto
+    return []; // COMPLETAMENTE VACÍO
 }
 function savePublishedApps(apps) {
     localStorage.setItem('qcol_published_quantum_apps', JSON.stringify(apps));
 }
-
-// pendingApps: apps creadas por cualquier usuario (esperando aprobación)
 function getPendingApps() {
     const stored = localStorage.getItem('qcol_pending_quantum_apps');
     if(stored) return JSON.parse(stored);
@@ -419,15 +417,9 @@ function savePendingApps(apps) {
     localStorage.setItem('qcol_pending_quantum_apps', JSON.stringify(apps));
 }
 
-// Inicializar sin datos predefinidos (vacío)
-if(!localStorage.getItem('qcol_published_quantum_apps')) {
-    savePublishedApps([]);
-}
-if(!localStorage.getItem('qcol_pending_quantum_apps')) {
-    savePendingApps([]);
-}
+if(!localStorage.getItem('qcol_published_quantum_apps')) savePublishedApps([]);
+if(!localStorage.getItem('qcol_pending_quantum_apps')) savePendingApps([]);
 
-// Helper: tags únicos desde publicadas
 function extractUniqueTags(apps) {
     const tagsSet = new Set();
     apps.forEach(app => {
@@ -454,7 +446,6 @@ function setTagFilter(tag) {
     renderPublishedApps();
 }
 
-// Renderizar SOLO apps publicadas
 function renderPublishedApps() {
     const apps = getPublishedApps();
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || "";
@@ -480,21 +471,15 @@ function renderPublishedApps() {
     filtered.forEach(app => {
         const tagsArray = (app.tags || "").split(',').map(t => t.trim()).filter(t => t);
         const tagsHtml = tagsArray.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join('');
-        const canDelete = isFounder; // solo fundador puede borrar publicadas
+        const canDelete = isFounder;
         const delBtn = canDelete ? `<button class="btn-icon" onclick="deletePublishedApp('${app.id}')">🗑️</button>` : '';
-        
         gridHtml += `
             <div class="card">
-                <div class="card-header">
-                    <span class="badge-app">⚛️ APP CUÁNTICA</span>
-                </div>
+                <div class="card-header"><span class="badge-app">⚛️ APP CUÁNTICA</span></div>
                 <div class="card-body">
                     <div class="card-title">${escapeHtml(app.title)}</div>
                     <div class="card-desc">${escapeHtml(app.desc || 'Sin descripción')}</div>
-                    <div class="card-meta">
-                        <span>⏱️ ${app.duration || 8} min</span>
-                        <span>🔖 v${app.version || 1}</span>
-                    </div>
+                    <div class="card-meta"><span>⏱️ ${app.duration || 8} min</span></div>
                     <div class="tags">${tagsHtml}</div>
                     <div class="card-actions">
                         <button class="btn-execute" onclick="executeQuantumApp('${app.id}')">▶ EJECUTAR PROGRAMA</button>
@@ -518,35 +503,53 @@ function escapeHtml(str) {
     });
 }
 
-// Ejecutar app cuántica real (comunicación con el servidor / core)
 function executeQuantumApp(appId) {
     const apps = getPublishedApps();
     const app = apps.find(a => a.id === appId);
     if(!app) { showNotification('⚠️ App no encontrada'); return; }
-    
-    // Enviar mensaje al padre (Quantum Open Lab) para lanzar el programa cuántico.
     window.parent.postMessage({
         type: "QCOL_LAUNCH_QUANTUM_APP",
         appId: app.id,
         appTitle: app.title,
-        appMetadata: {
-            tags: app.tags,
-            description: app.desc,
-            duration: app.duration
-        }
+        appMetadata: { tags: app.tags, description: app.desc, duration: app.duration }
     }, '*');
     showNotification(`🌀 Ejecutando ${app.title} en el laboratorio cuántico...`);
 }
 
-// ----- QUANTUM APP STUDIO (cualquier usuario) -----
-function openStudio(isAdminFlag = false) {
-    // siempre abrir el studio para cualquier usuario
+// ---------- CONEXIÓN CON QUANTUM APP STUDIO (módulo externo) ----------
+// Esta función intenta conectarse con el módulo "quantum-app-studio" a través del core.
+// Si el core responde o redirige, se abre el estudio externo; de lo contrario se usa el modal integrado.
+let studioAckTimeout = null;
+function openQuantumAppStudio() {
+    // Enviar mensaje al padre (Quantum Open Lab) solicitando abrir el módulo quantum-app-studio
+    window.parent.postMessage({
+        type: "QCOL_OPEN_MODULE",
+        module: "quantum-app-studio",
+        action: "open"
+    }, '*');
+    
+    // También enviamos un mensaje específico para identificar si el estudio está disponible
+    window.parent.postMessage({
+        type: "QCOL_REQUEST_STUDIO_CONNECTION",
+        source: "quantum-puzzle"
+    }, '*');
+    
+    // Esperar 500ms para ver si el padre responde con un ack o abre el estudio
+    if(studioAckTimeout) clearTimeout(studioAckTimeout);
+    studioAckTimeout = setTimeout(() => {
+        // No hubo respuesta del core: usamos el modal integrado como fallback
+        showNotification("Conectando con Quantum App Studio local...");
+        openLocalStudio();
+    }, 600);
+}
+
+// Función que abre el modal de estudio integrado (fallback / creación local)
+function openLocalStudio() {
     document.getElementById('studioTitle').value = '';
     document.getElementById('studioId').value = '';
     document.getElementById('studioDesc').value = '';
     document.getElementById('studioTags').value = '';
     document.getElementById('studioDuration').value = '8';
-    // mostrar opción de publicar solo si es admin/founder
     const publishOpt = document.getElementById('adminPublishOption');
     if(publishOpt) publishOpt.style.display = (isFounder || isAdmin) ? 'block' : 'none';
     document.getElementById('studioModal').classList.add('open');
@@ -555,6 +558,34 @@ function closeStudio() {
     document.getElementById('studioModal').classList.remove('open');
 }
 
+// Escuchar mensajes del core para saber si quantum-app-studio fue abierto externamente
+window.addEventListener('message', (e) => {
+    const data = e.data;
+    if(!data || !data.type) return;
+    if(data.type === 'QCOL_STUDIO_OPENED' || data.type === 'QUANTUM_APP_STUDIO_READY') {
+        // El módulo externo fue exitosamente invocado, cancelamos el fallback
+        if(studioAckTimeout) {
+            clearTimeout(studioAckTimeout);
+            studioAckTimeout = null;
+        }
+        showNotification("Quantum App Studio externo abierto.");
+    }
+    if(data.type === 'QCOL_USER_UPDATE') {
+        currentUser = data.user;
+        isAdmin = (currentUser?.role === 'admin' || currentUser?.role === 'founder');
+        isFounder = (currentUser?.role === 'founder');
+        const adminBar = document.getElementById('adminBar');
+        if(adminBar) adminBar.classList.toggle('show', isFounder);
+        renderTagFilters();
+        renderPublishedApps();
+    }
+    if(data.type === 'QCOL_CONFIG') {
+        // configuración adicional
+    }
+});
+postCore('QCOL_GET_CONFIG');
+
+// Funciones auxiliares para el estudio local: crear app (cualquier usuario)
 function submitQuantumApp() {
     const title = document.getElementById('studioTitle').value.trim();
     let id = document.getElementById('studioId').value.trim().toLowerCase().replace(/\s+/g, '_');
@@ -563,7 +594,6 @@ function submitQuantumApp() {
     const duration = parseInt(document.getElementById('studioDuration').value) || 8;
     
     if(!title || !id) { showNotification("Título e ID son obligatorios"); return; }
-    // comprobar si ya existe publicada o pendiente con mismo id
     const published = getPublishedApps();
     const pending = getPendingApps();
     if(published.find(a => a.id === id) || pending.find(a => a.id === id)) {
@@ -582,7 +612,6 @@ function submitQuantumApp() {
         version: 1
     };
     
-    // Si el usuario es fundador/admin y marcó "publicar inmediatamente"
     const publishNow = (isFounder || isAdmin) && document.getElementById('publishNowCheckbox')?.checked === true;
     if(publishNow) {
         const pubApps = getPublishedApps();
@@ -592,7 +621,6 @@ function submitQuantumApp() {
         renderTagFilters();
         renderPublishedApps();
     } else {
-        // Enviar a pendientes
         const pendingApps = getPendingApps();
         pendingApps.push({ ...newApp, status: "pending" });
         savePendingApps(pendingApps);
@@ -601,7 +629,7 @@ function submitQuantumApp() {
     closeStudio();
 }
 
-// ----- ADMIN / FOUNDER: gestión de pendientes -----
+// Funciones de administración (pendientes, eliminación)
 function openPendingManager() {
     if(!isFounder && !isAdmin) { showNotification("Acceso solo para fundadores/admins"); return; }
     renderPendingList();
@@ -610,7 +638,6 @@ function openPendingManager() {
 function closePendingModal() {
     document.getElementById('pendingModal').classList.remove('open');
 }
-
 function renderPendingList() {
     const pending = getPendingApps();
     const container = document.getElementById('pendingListContainer');
@@ -639,14 +666,13 @@ function renderPendingList() {
     html += `</div>`;
     container.innerHTML = html;
 }
-
 function publishPendingApp(appId) {
     const pending = getPendingApps();
     const index = pending.findIndex(p => p.id === appId);
     if(index === -1) return;
     const appToPublish = { ...pending[index] };
     delete appToPublish.status;
-    delete appToPublish.createdBy; // opcional, se mantiene pero no molesta
+    delete appToPublish.createdBy;
     const published = getPublishedApps();
     if(published.find(p => p.id === appToPublish.id)) {
         showNotification("⚠️ Ya existe una app con este ID publicada, elimina la pendiente.");
@@ -654,7 +680,6 @@ function publishPendingApp(appId) {
     }
     published.push(appToPublish);
     savePublishedApps(published);
-    // eliminar de pendientes
     pending.splice(index,1);
     savePendingApps(pending);
     showNotification(`✅ App "${appToPublish.title}" publicada en el repositorio.`);
@@ -662,7 +687,6 @@ function publishPendingApp(appId) {
     renderTagFilters();
     renderPublishedApps();
 }
-
 function rejectPendingApp(appId) {
     if(!confirm("Eliminar esta app pendiente permanentemente?")) return;
     let pending = getPendingApps();
@@ -671,7 +695,6 @@ function rejectPendingApp(appId) {
     showNotification("App rechazada y eliminada.");
     renderPendingList();
 }
-
 function deletePublishedApp(appId) {
     if(!isFounder) { showNotification("Solo fundador puede eliminar apps publicadas"); return; }
     if(!confirm(`Eliminar app del repositorio permanentemente?`)) return;
@@ -682,8 +705,6 @@ function deletePublishedApp(appId) {
     renderTagFilters();
     renderPublishedApps();
 }
-
-// Notificaciones
 function showNotification(msg) {
     const n = document.getElementById('notifMsg');
     n.textContent = msg;
@@ -691,35 +712,13 @@ function showNotification(msg) {
     if(n._timeout) clearTimeout(n._timeout);
     n._timeout = setTimeout(() => n.classList.remove('show'), 2800);
 }
-
-// ----- Comunicación con el padre para roles (QCOL) -----
 function postCore(type, data={}) {
     if(window.parent !== window) window.parent.postMessage({type, ...data}, '*');
 }
 
-window.addEventListener('message', (e) => {
-    const data = e.data;
-    if(!data || !data.type) return;
-    if(data.type === 'QCOL_CONFIG') {
-        // capturar configuración
-    }
-    if(data.type === 'QCOL_USER_UPDATE') {
-        currentUser = data.user;
-        isAdmin = (currentUser?.role === 'admin' || currentUser?.role === 'founder');
-        isFounder = (currentUser?.role === 'founder');
-        const adminBar = document.getElementById('adminBar');
-        if(adminBar) adminBar.classList.toggle('show', isFounder);
-        renderTagFilters();
-        renderPublishedApps();
-    }
-});
-postCore('QCOL_GET_CONFIG');
-
-// Inicializar
+// Inicialización
 renderTagFilters();
 renderPublishedApps();
-
-// Cerrar modales clicks overlay
 document.getElementById('studioModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModal')) closeStudio(); });
 document.getElementById('pendingModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('pendingModal')) closePendingModal(); });
 </script>
