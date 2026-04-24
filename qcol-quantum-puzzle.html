@@ -1,692 +1,727 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Quantum Lab · Puzzle Store (Catálogo Vacío)</title>
-    <style>
-        /* --- Estilos mínimos, funcionales, sin adornos excesivos --- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: #0a0f1a;
-            color: #e2e8ff;
-            font-family: 'Segoe UI', 'Exo 2', system-ui, -apple-system, monospace;
-            padding: 0;
-            margin: 0;
-        }
-        /* barra simple */
-        .toolbar {
-            background: #0f1725;
-            padding: 12px 20px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            border-bottom: 1px solid #2a3a55;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        .search-area {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            background: #03070f;
-            border: 1px solid #2c405e;
-            border-radius: 8px;
-            padding: 6px 12px;
-        }
-        .search-area input {
-            background: transparent;
-            border: none;
-            color: #cbd5ff;
-            font-size: 0.8rem;
-            width: 220px;
-            outline: none;
-        }
-        .search-area input::placeholder {
-            color: #5a6e8c;
-        }
-        button, .btn-studio {
-            background: #1e2a44;
-            border: 1px solid #3e5a7c;
-            color: #bbd9ff;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.7rem;
-            font-family: inherit;
-            cursor: pointer;
-            transition: 0.1s linear;
-        }
-        button:hover, .btn-studio:hover {
-            background: #2c3f62;
-            border-color: #6c8db0;
-            color: white;
-        }
-        .btn-primary {
-            background: #0f2b3f;
-            border-color: #2f6a8f;
-            color: #9ed9ff;
-        }
-        .admin-bar {
-            display: none;
-            background: #0b101c;
-            padding: 6px 18px;
-            font-size: 0.7rem;
-            border-bottom: 1px solid #436;
-            align-items: center;
-            gap: 12px;
-        }
-        .admin-bar.show {
-            display: flex;
-        }
-        /* grid simple */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 18px;
-            padding: 24px 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .card {
-            background: #0f1726;
-            border: 1px solid #26344b;
-            border-radius: 14px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .card-header {
-            background: #0a1020;
-            padding: 12px 16px;
-            border-bottom: 1px solid #1f2c40;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .badge-app {
-            font-size: 0.6rem;
-            background: #1a2a40;
-            padding: 3px 9px;
-            border-radius: 30px;
-            font-family: monospace;
-            letter-spacing: 0.3px;
-            color: #88b8ff;
-        }
-        .card-body {
-            padding: 16px;
-            flex: 1;
-        }
-        .card-title {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #ecf5ff;
-        }
-        .card-desc {
-            font-size: 0.75rem;
-            color: #9aaec9;
-            line-height: 1.45;
-            margin-bottom: 14px;
-        }
-        .card-tags {
-            font-size: 0.65rem;
-            color: #6f8fbc;
-            margin-bottom: 16px;
-            font-family: monospace;
-            word-break: break-word;
-        }
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .btn-exec {
-            flex: 1;
-            background: #19273e;
-            border: 1px solid #2d4970;
-            border-radius: 40px;
-            padding: 8px 0;
-            font-weight: bold;
-            font-size: 0.7rem;
-            text-align: center;
-            cursor: pointer;
-            color: #b8d0ff;
-        }
-        .btn-exec:hover {
-            background: #23355a;
-        }
-        .btn-icon {
-            background: #191f2e;
-            border: 1px solid #3e506c;
-            border-radius: 40px;
-            padding: 5px 12px;
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 70px 20px;
-            color: #7c8aa8;
-        }
-        .empty-icon {
-            font-size: 3rem;
-            opacity: 0.6;
-            margin-bottom: 12px;
-        }
-        /* modales minimales */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.92);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal.open {
-            display: flex;
-        }
-        .modal-content {
-            background: #0d1222;
-            border: 1px solid #2a4570;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            padding: 24px;
-        }
-        .modal-content h3 {
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            font-weight: 500;
-            border-left: 3px solid #3b82f6;
-            padding-left: 12px;
-        }
-        .field {
-            margin-bottom: 16px;
-        }
-        .field label {
-            display: block;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #7f9bc0;
-            margin-bottom: 5px;
-        }
-        .field input, .field textarea {
-            width: 100%;
-            background: #03060e;
-            border: 1px solid #2a3a58;
-            padding: 8px 12px;
-            border-radius: 10px;
-            color: #eef4ff;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        .field textarea {
-            resize: vertical;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            justify-content: flex-end;
-        }
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #101826;
-            border-left: 3px solid #2f8fff;
-            padding: 8px 18px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            z-index: 1100;
-            transform: translateX(150%);
-            transition: 0.2s ease;
-        }
-        .notification.show {
-            transform: translateX(0);
-        }
-        hr {
-            border-color: #1e2a3a;
-        }
-        .studio-btn {
-            background: #113355;
-            border-color: #2f79b0;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Quantum App Studio · Laboratorio de Apps Cuánticas</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=JetBrains+Mono:wght@400;500&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+    --bg: #010608;
+    --s: #071220;
+    --s2: #0c1c30;
+    --b: #0d2a4a;
+    --b2: #1a3a5c;
+    --bl: #0088ff;
+    --bl2: #00ccff;
+    --gr: #00ff88;
+    --gd: #ffd700;
+    --rd: #ff4466;
+    --pu: #c084fc;
+    --tx: #ddeeff;
+    --mu: #4a7a9b;
+    --orb: 'Orbitron', monospace;
+    --mono: 'JetBrains Mono', monospace;
+    --exo: 'Exo 2', sans-serif;
+}
+body{
+    background: var(--bg);
+    color: var(--tx);
+    font-family: var(--exo);
+    min-height: 100vh;
+}
+body::before{
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,200,255,.05) 0.8px, transparent 0.8px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index:0;
+}
+.notif{
+    position:fixed;
+    top:.8rem;
+    right:.8rem;
+    z-index:1000;
+    padding:.6rem 1.2rem;
+    background:rgba(4,14,28,.98);
+    border-left:3px solid var(--bl2);
+    border-radius:10px;
+    font-family:var(--orb);
+    font-size:.65rem;
+    color:var(--bl2);
+    backdrop-filter:blur(10px);
+    transform:translateX(130%);
+    transition:transform .25s;
+    box-shadow:0 4px 15px rgba(0,0,0,0.5);
+}
+.notif.show{transform:translateX(0);}
+.admin-bar{
+    display:none;
+    background:rgba(0,20,50,.75);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--gd);
+    padding:.6rem 1.5rem;
+    font-family:var(--orb);
+    font-size:.58rem;
+    color:var(--gd);
+    align-items:center;
+    gap:.8rem;
+    z-index:20;
+}
+.admin-bar.show{display:flex;}
+.toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.8rem;
+    padding:.9rem 1.5rem;
+    background:linear-gradient(135deg, rgba(7,18,32,0.85), rgba(12,28,48,0.9));
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--b);
+    flex-wrap:wrap;
+    position:sticky;
+    top:0;
+    z-index:15;
+}
+.search-box{
+    display:flex;
+    align-items:center;
+    gap:.45rem;
+    background:rgba(0,0,0,.45);
+    border:1px solid var(--b2);
+    border-radius:40px;
+    padding:.38rem 1rem;
+    flex:1;
+    max-width:300px;
+}
+.search-box input{
+    background:transparent;
+    border:none;
+    color:var(--tx);
+    font-size:.78rem;
+    outline:none;
+    width:100%;
+}
+.filter-tag{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+}
+.tag-chip{
+    background:transparent;
+    border:1px solid var(--b2);
+    padding:.28rem .85rem;
+    border-radius:40px;
+    color:var(--mu);
+    font-family:var(--orb);
+    font-size:.55rem;
+    cursor:pointer;
+    transition:all .2s;
+}
+.tag-chip.active{
+    background:linear-gradient(135deg, rgba(0,136,255,0.2), rgba(0,200,255,0.1));
+    border-color:var(--bl);
+    color:var(--bl2);
+}
+.btn{
+    padding:.4rem .9rem;
+    border:none;
+    border-radius:40px;
+    font-family:var(--orb);
+    font-size:.55rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s;
+}
+.btn-pri{
+    background:linear-gradient(125deg, #0055aa, var(--bl));
+    color:white;
+}
+.btn-pri:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 14px rgba(0,136,255,0.5);
+}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:1.4rem;
+    padding:1.8rem;
+    max-width:1400px;
+    margin:0 auto;
+}
+.card{
+    background:linear-gradient(145deg, var(--s), #081828);
+    border:1px solid rgba(0,136,255,0.25);
+    border-radius:24px;
+    overflow:hidden;
+    transition:all 0.3s;
+    animation:fadeUp 0.4s ease both;
+}
+@keyframes fadeUp{
+    from{opacity:0; transform:translateY(16px);}
+    to{opacity:1;transform:translateY(0);}
+}
+.card:hover{
+    border-color:rgba(0,200,255,0.6);
+    transform:translateY(-3px);
+}
+.card-header{
+    padding:.9rem 1.2rem;
+    background:rgba(0,40,65,0.5);
+    border-bottom:1px solid var(--b);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.badge-app{
+    background:linear-gradient(95deg, #7c3aed, #c084fc);
+    padding:.2rem .65rem;
+    border-radius:40px;
+    font-family:var(--orb);
+    font-size:.5rem;
+    font-weight:bold;
+    color:#f0e6ff;
+}
+.card-body{padding:1.1rem 1.2rem 1.2rem;}
+.card-title{
+    font-family:var(--orb);
+    font-size:.85rem;
+    font-weight:700;
+    letter-spacing:-0.2px;
+    color:var(--bl2);
+    margin-bottom:.45rem;
+}
+.card-desc{
+    font-size:.7rem;
+    color:var(--mu);
+    line-height:1.55;
+    margin-bottom:.9rem;
+}
+.card-meta{
+    display:flex;
+    gap:1rem;
+    font-size:.6rem;
+    font-family:var(--mono);
+    color:#5f8ab0;
+    margin-bottom:.9rem;
+}
+.tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.35rem;
+    margin-bottom:1rem;
+}
+.tag{
+    background:rgba(100,100,200,0.1);
+    border-radius:12px;
+    padding:.18rem .6rem;
+    font-size:.55rem;
+    font-family:var(--mono);
+    color:var(--bl2);
+}
+.card-actions{
+    display:flex;
+    gap:.6rem;
+    margin-top:.5rem;
+}
+.btn-execute{
+    flex:1;
+    background:linear-gradient(95deg, rgba(0,136,255,0.2), rgba(0,200,255,0.05));
+    border:1px solid rgba(0,136,255,0.5);
+    border-radius:40px;
+    padding:.55rem 0;
+    font-family:var(--orb);
+    font-size:.6rem;
+    font-weight:bold;
+    color:var(--bl2);
+    cursor:pointer;
+    text-align:center;
+}
+.btn-execute:hover{
+    background:rgba(0,136,255,0.4);
+}
+.btn-icon{
+    background:rgba(255,68,102,0.1);
+    border:1px solid rgba(255,68,102,0.3);
+    border-radius:40px;
+    padding:.5rem .9rem;
+    font-size:.6rem;
+    cursor:pointer;
+    color:#ff99aa;
+}
+.btn-icon.edit{
+    background:rgba(0,255,136,0.08);
+    border-color:rgba(0,255,136,0.3);
+    color:#aaffcc;
+}
+.empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:4rem 1.5rem;
+    text-align:center;
+}
+.empty-icon{font-size:4rem;opacity:0.5;margin-bottom:1rem;}
+.empty-title{font-family:var(--orb);font-size:1rem;color:var(--mu);}
+.modal-ov{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.96);
+    backdrop-filter:blur(8px);
+    z-index:500;
+    align-items:center;
+    justify-content:center;
+}
+.modal-ov.open{display:flex;}
+.modal{
+    background:linear-gradient(145deg, #0a1428, #030a14);
+    border:1px solid var(--bl);
+    border-radius:28px;
+    padding:1.8rem;
+    width:min(520px, 92vw);
+    max-height:90vh;
+    overflow-y:auto;
+}
+.modal-title{
+    font-family:var(--orb);
+    font-size:.95rem;
+    color:var(--bl2);
+    margin-bottom:1.4rem;
+    border-left:3px solid var(--bl);
+    padding-left:.8rem;
+}
+.fg{margin-bottom:1rem;}
+.fl{
+    font-family:var(--orb);
+    font-size:.52rem;
+    letter-spacing:1px;
+    color:var(--mu);
+    display:block;
+    margin-bottom:.3rem;
+}
+.fi{
+    width:100%;
+    background:rgba(0,0,0,0.6);
+    border:1px solid var(--b2);
+    border-radius:14px;
+    padding:.6rem .9rem;
+    color:var(--tx);
+    font-family:var(--exo);
+    font-size:.8rem;
+    outline:none;
+}
+.fi:focus{border-color:var(--bl);}
+.btn-row{display:flex;gap:.7rem;margin-top:1.2rem;}
+.btn-cancel{
+    background:transparent;
+    border:1px solid var(--b2);
+    border-radius:40px;
+    padding:.5rem 1rem;
+    color:var(--mu);
+    font-family:var(--orb);
+    cursor:pointer;
+}
+.pending-grid {
+    background: rgba(0,0,0,0.3);
+    border-radius: 20px;
+    padding: 0.8rem;
+    margin: 0 1rem 1rem 1rem;
+}
+.pending-title {
+    font-family: var(--orb);
+    font-size: 0.7rem;
+    color: var(--gd);
+    margin-bottom: 0.5rem;
+}
+</style>
 </head>
 <body>
 
-<div id="notifyBox" class="notification"></div>
-<div id="adminBar" class="admin-bar">
-    <span>⚛️ MODO FUNDADOR — control total del catálogo</span>
-    <button id="studioFromAdmin" style="margin-left:auto;" onclick="openStudio()">🎛️ QUANTUM APP STUDIO</button>
+<div class="notif" id="notifMsg"></div>
+<div class="admin-bar" id="adminBar">
+    ⚛️ MODO FUNDADOR/ADMIN · GESTIÓN DE APPS
+    <button class="btn btn-pri" style="margin-left:auto;" onclick="openPendingManager()">📋 PENDIENTES</button>
+    <button class="btn btn-pri" onclick="openStudio(true)">🎛️ QUANTUM APP STUDIO</button>
 </div>
 
 <div class="toolbar">
-    <div class="search-area">
-        <span>🔍</span>
-        <input type="text" id="searchQuantum" placeholder="Buscar app cuántica..." oninput="renderCatalog()">
+    <div class="search-box">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#4a7a9b" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="#4a7a9b" stroke-width="2"/></svg>
+        <input id="searchInput" placeholder="Buscar app cuántica..." oninput="renderPublishedApps()">
     </div>
+    <div class="filter-tag" id="filterTagsContainer"></div>
     <div>
-        <button id="studioMainBtn" class="studio-btn" onclick="openStudio()">⚛️ QUANTUM APP STUDIO — CREAR APP</button>
+        <button class="btn btn-pri" onclick="openStudio(false)" style="background: #6d28d9;">🎛️ QUANTUM APP STUDIO</button>
     </div>
 </div>
 
-<div id="catalogContainer">
-    <div class="empty-state">
-        <div class="empty-icon">🧪🌀</div>
-        <div style="font-size:1rem; margin-bottom:6px;">Catálogo cuántico vacío</div>
-        <p style="font-size:0.8rem;">Usa el botón <strong>QUANTUM APP STUDIO</strong> para subir tu primer programa cuántico real.<br>Las apps aparecerán aquí y se pueden ejecutar directamente en el laboratorio.</p>
+<div id="puzzleGrid"></div>
+
+<!-- MODAL: QUANTUM APP STUDIO (crear app, cualquiera puede crear) -->
+<div class="modal-ov" id="studioModal">
+    <div class="modal">
+        <div class="modal-title">🌀 QUANTUM APP STUDIO · Crear programa cuántico</div>
+        <div class="fg"><label class="fl">TÍTULO</label><input class="fi" id="studioTitle" placeholder="Ej: Quantum Entanglement Puzzle"></div>
+        <div class="fg"><label class="fl">ID ÚNICA (sin espacios)</label><input class="fi" id="studioId" placeholder="quantum_entangler"></div>
+        <div class="fg"><label class="fl">DESCRIPCIÓN</label><textarea class="fi" id="studioDesc" rows="2" placeholder="Describe la mecánica cuántica / juego"></textarea></div>
+        <div class="fg"><label class="fl">TAGS (separados por coma)</label><input class="fi" id="studioTags" placeholder="entrelazamiento, juego, algoritmo"></div>
+        <div class="fg"><label class="fl">DURACIÓN ESTIMADA (min)</label><input class="fi" id="studioDuration" type="number" value="8"></div>
+        <div id="adminPublishOption" style="display:none;" class="fg">
+            <label class="fl"><input type="checkbox" id="publishNowCheckbox"> PUBLICAR INMEDIATAMENTE (solo fundador/admin)</label>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-pri" onclick="submitQuantumApp()">📡 ENVIAR APP</button>
+            <button class="btn-cancel" onclick="closeStudio()">CANCELAR</button>
+        </div>
+        <p style="font-size:0.55rem; color:#4a7a9b; margin-top:12px;">* Cualquier usuario puede crear apps. Solo fundadores/admins pueden publicarlas abiertamente.</p>
     </div>
 </div>
 
-<!-- MODAL STUDIO: crear nueva app cuántica -->
-<div id="studioModal" class="modal">
-    <div class="modal-content">
-        <h3>🌀 QUANTUM APP STUDIO — Crear nuevo programa cuántico</h3>
-        <div class="field">
-            <label>TÍTULO *</label>
-            <input type="text" id="studioTitle" placeholder="Ej: Algoritmo de Shor Lite">
-        </div>
-        <div class="field">
-            <label>ID ÚNICA (sin espacios, solo letras/números/guion bajo) *</label>
-            <input type="text" id="studioId" placeholder="shor_lite_v1">
-        </div>
-        <div class="field">
-            <label>DESCRIPCIÓN</label>
-            <textarea id="studioDesc" rows="2" placeholder="Breve explicación del programa cuántico..."></textarea>
-        </div>
-        <div class="field">
-            <label>ETIQUETAS (separadas por coma)</label>
-            <input type="text" id="studioTags" placeholder="shor, factorización, qiskit">
-        </div>
-        <div class="modal-buttons">
-            <button id="cancelStudioBtn">CANCELAR</button>
-            <button id="saveAppBtn" style="background:#1e3a5f;">✅ PUBLICAR APP</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL EDITAR APP (solo para fundadores) -->
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <h3>✏️ EDITAR PROGRAMA CUÁNTICO</h3>
-        <div class="field">
-            <label>TÍTULO</label>
-            <input type="text" id="editTitle">
-        </div>
-        <div class="field">
-            <label>ID (no modificable)</label>
-            <input type="text" id="editId" readonly disabled style="opacity:0.7;">
-        </div>
-        <div class="field">
-            <label>DESCRIPCIÓN</label>
-            <textarea id="editDesc" rows="2"></textarea>
-        </div>
-        <div class="field">
-            <label>ETIQUETAS</label>
-            <input type="text" id="editTags">
-        </div>
-        <div class="modal-buttons">
-            <button id="cancelEditBtn">CANCELAR</button>
-            <button id="updateAppBtn" style="background:#1e5a4a;">💾 GUARDAR CAMBIOS</button>
-        </div>
+<!-- MODAL: PENDIENTES (solo admin/founder) -->
+<div class="modal-ov" id="pendingModal">
+    <div class="modal" style="max-width:680px;">
+        <div class="modal-title">📋 APPS PENDIENTES DE APROBACIÓN</div>
+        <div id="pendingListContainer" style="max-height: 60vh; overflow-y: auto;"></div>
+        <div class="btn-row"><button class="btn-cancel" onclick="closePendingModal()">CERRAR</button></div>
     </div>
 </div>
 
 <script>
-    // ---------- CATÁLOGO DE APPS CUÁNTICAS (comienza VACÍO) ----------
-    // No hay datos por defecto. Solo se almacenan los que el usuario agregue mediante STUDIO.
-    const STORAGE_KEY = 'qcol_quantum_pure_store';
-    
-    function getQuantumApps() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (!stored) {
-            // Retornar array vacío: repositorio completamente en blanco.
-            return [];
+// ---------- GLOBALS ----------
+let currentUser = null;
+let isAdmin = false;
+let isFounder = false;
+let activeTagFilter = "all";
+
+// ----- DATA STORES -----
+// publishedApps: array de apps visibles en el grid (solo publicadas)
+function getPublishedApps() {
+    const stored = localStorage.getItem('qcol_published_quantum_apps');
+    if(stored) return JSON.parse(stored);
+    return []; // VACÍO, sin apps por defecto
+}
+function savePublishedApps(apps) {
+    localStorage.setItem('qcol_published_quantum_apps', JSON.stringify(apps));
+}
+
+// pendingApps: apps creadas por cualquier usuario (esperando aprobación)
+function getPendingApps() {
+    const stored = localStorage.getItem('qcol_pending_quantum_apps');
+    if(stored) return JSON.parse(stored);
+    return [];
+}
+function savePendingApps(apps) {
+    localStorage.setItem('qcol_pending_quantum_apps', JSON.stringify(apps));
+}
+
+// Inicializar sin datos predefinidos (vacío)
+if(!localStorage.getItem('qcol_published_quantum_apps')) {
+    savePublishedApps([]);
+}
+if(!localStorage.getItem('qcol_pending_quantum_apps')) {
+    savePendingApps([]);
+}
+
+// Helper: tags únicos desde publicadas
+function extractUniqueTags(apps) {
+    const tagsSet = new Set();
+    apps.forEach(app => {
+        (app.tags || '').split(',').forEach(t => { let tt = t.trim().toLowerCase(); if(tt) tagsSet.add(tt); });
+    });
+    return Array.from(tagsSet);
+}
+
+function renderTagFilters() {
+    const apps = getPublishedApps();
+    const allTags = extractUniqueTags(apps);
+    const container = document.getElementById('filterTagsContainer');
+    if(!container) return;
+    let html = `<span class="tag-chip ${activeTagFilter === 'all' ? 'active' : ''}" data-tag="all" onclick="setTagFilter('all')">🎲 TODAS</span>`;
+    allTags.forEach(tag => {
+        html += `<span class="tag-chip ${activeTagFilter === tag ? 'active' : ''}" data-tag="${tag}" onclick="setTagFilter('${tag}')">#${tag}</span>`;
+    });
+    container.innerHTML = html;
+}
+
+function setTagFilter(tag) {
+    activeTagFilter = tag;
+    renderTagFilters();
+    renderPublishedApps();
+}
+
+// Renderizar SOLO apps publicadas
+function renderPublishedApps() {
+    const apps = getPublishedApps();
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || "";
+    let filtered = apps.filter(app => {
+        const matchSearch = app.title.toLowerCase().includes(searchTerm) || (app.desc || "").toLowerCase().includes(searchTerm) || (app.tags || "").toLowerCase().includes(searchTerm);
+        let matchTag = true;
+        if(activeTagFilter !== 'all') {
+            const appTags = (app.tags || "").toLowerCase().split(',').map(t => t.trim());
+            matchTag = appTags.includes(activeTagFilter);
         }
-        try {
-            return JSON.parse(stored);
-        } catch(e) {
-            return [];
-        }
-    }
-    
-    function saveQuantumApps(apps) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
-    }
-    
-    // --- variables de usuario y permisos (comunicación con QCOL) ---
-    let currentUser = null;
-    let isFounder = false;    // solo el founder puede editar/eliminar (como en el contexto original)
-    let isAdmin = false;
-    
-    // elementos del DOM
-    const container = document.getElementById('catalogContainer');
-    const searchInput = document.getElementById('searchQuantum');
-    
-    // notificaciones simples
-    function showMessage(msg, isError = false) {
-        const notif = document.getElementById('notifyBox');
-        notif.textContent = msg;
-        notif.style.borderLeftColor = isError ? '#ff5577' : '#2f8fff';
-        notif.classList.add('show');
-        if (window.notifTimeout) clearTimeout(window.notifTimeout);
-        window.notifTimeout = setTimeout(() => {
-            notif.classList.remove('show');
-        }, 2800);
-    }
-    
-    // renderizar catálogo (vacío o con apps)
-    function renderCatalog() {
-        let apps = getQuantumApps();
-        const searchTerm = searchInput.value.trim().toLowerCase();
-        if (searchTerm) {
-            apps = apps.filter(app => 
-                app.title.toLowerCase().includes(searchTerm) ||
-                (app.desc || '').toLowerCase().includes(searchTerm) ||
-                (app.tags || '').toLowerCase().includes(searchTerm)
-            );
-        }
-        
-        if (apps.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">⚛️📦</div>
-                    <div style="font-size:1rem; margin-bottom:6px;">Sin programas cuánticos</div>
-                    <p style="font-size:0.8rem;">Haz clic en <strong>QUANTUM APP STUDIO</strong> y crea tu primera app cuántica.<br>
-                    Los programas aparecerán aquí listos para ejecutar sin instalación.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = `<div class="grid">`;
-        apps.forEach(app => {
-            const canModify = isFounder === true;  // solo founder puede editar o eliminar
-            const editBtn = canModify ? `<button class="btn-icon" onclick="editApp('${app.id}')">✏️</button>` : '';
-            const delBtn = canModify ? `<button class="btn-icon" onclick="deleteApp('${app.id}')">🗑️</button>` : '';
-            const tagsHtml = (app.tags || '')
-                .split(',')
-                .map(t => t.trim())
-                .filter(t => t)
-                .map(t => `<span style="background:#18233a; padding:2px 8px; border-radius:20px; margin-right:6px; font-size:0.6rem;">#${escapeHtml(t)}</span>`)
-                .join('');
-            
-            html += `
-                <div class="card" data-id="${app.id}">
-                    <div class="card-header">
-                        <span class="badge-app">⚛️ APPS CUÁNTICAS</span>
-                        <span style="font-family:monospace; font-size:0.55rem;">🔬 laboratorio</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-title">${escapeHtml(app.title)}</div>
-                        <div class="card-desc">${escapeHtml(app.desc || 'Programa cuántico listo para ejecutar en el servidor Quantum Open Lab.')}</div>
-                        <div class="card-tags">${tagsHtml || '<span style="opacity:0.6;">sin etiquetas</span>'}</div>
-                        <div class="card-actions">
-                            <button class="btn-exec" onclick="executeQuantumApp('${app.id}')">▶ EJECUTAR PROGRAMA</button>
-                            ${editBtn}
-                            ${delBtn}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-    }
-    
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    
-    // ---------- QUANTUM APP STUDIO (crear nueva app) ----------
-    const studioModal = document.getElementById('studioModal');
-    function openStudio() {
-        // Limpiar campos
-        document.getElementById('studioTitle').value = '';
-        document.getElementById('studioId').value = '';
-        document.getElementById('studioDesc').value = '';
-        document.getElementById('studioTags').value = '';
-        studioModal.classList.add('open');
-    }
-    function closeStudio() {
-        studioModal.classList.remove('open');
-    }
-    
-    function createQuantumAppFromStudio() {
-        const title = document.getElementById('studioTitle').value.trim();
-        let rawId = document.getElementById('studioId').value.trim();
-        const desc = document.getElementById('studioDesc').value.trim();
-        let tags = document.getElementById('studioTags').value.trim();
-        
-        if (!title) {
-            showMessage('❌ El título es obligatorio', true);
-            return;
-        }
-        if (!rawId) {
-            showMessage('❌ Debes elegir un ID único para la app (sin espacios)', true);
-            return;
-        }
-        const id = rawId.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_\-]/g, '');
-        if (id.length === 0) {
-            showMessage('ID inválido: solo letras, números, guión bajo', true);
-            return;
-        }
-        
-        const apps = getQuantumApps();
-        if (apps.find(app => app.id === id)) {
-            showMessage(`⚠️ Ya existe una app con ID "${id}". Elige otro.`, true);
-            return;
-        }
-        
-        const newApp = {
-            id: id,
-            title: title,
-            desc: desc || 'Sin descripción',
-            tags: tags || '',
-            created: new Date().toISOString().slice(0,10)
-        };
-        apps.push(newApp);
-        saveQuantumApps(apps);
-        closeStudio();
-        renderCatalog();
-        showMessage(`✅ Programa cuántico "${title}" agregado al catálogo.`);
-        
-        // Opcional: notificar al core
-        if (window.parent !== window) {
-            window.parent.postMessage({ type: 'QCOL_QUANTUM_APP_CREATED', app: newApp }, '*');
-        }
-    }
-    
-    // ---------- FUNCION EJECUTAR APP (enlace con Quantum Open Lab) ----------
-    function executeQuantumApp(appId) {
-        const apps = getQuantumApps();
-        const app = apps.find(a => a.id === appId);
-        if (!app) {
-            showMessage('App no encontrada', true);
-            return;
-        }
-        
-        // Enviar al padre (Quantum Open Lab) la orden de lanzar el programa cuántico.
-        // El laboratorio se encargará de ejecutar sin instalación, en su propio entorno.
-        const launchEvent = {
-            type: "QCOL_LAUNCH_QUANTUM_APP",
-            appId: app.id,
-            appTitle: app.title,
-            appMetadata: {
-                description: app.desc,
-                tags: app.tags
-            },
-            source: "quantum_puzzle_store"
-        };
-        
-        if (window.parent !== window) {
-            window.parent.postMessage(launchEvent, '*');
-            showMessage(`🌀 Ejecutando "${app.title}" en el laboratorio cuántico...`);
-        } else {
-            // Modo standalone: mensaje demostrativo pero funcional para pruebas locales
-            showMessage(`🌌 Simulación: "${app.title}" se ejecutaría en el servidor Quantum Lab. (modo independiente)`);
-            console.log("[Quantum App Studio] Lanzar app:", app);
-            alert(`⚛️ ${app.title}\n\n${app.desc}\n\nEste programa cuántico se ejecutaría sin instalación en el Laboratorio Quantum Open Lab.`);
-        }
-    }
-    
-    // ---------- EDITAR Y ELIMINAR (solo para founder) ----------
-    let currentEditId = null;
-    const editModal = document.getElementById('editModal');
-    
-    function editApp(id) {
-        if (!isFounder) {
-            showMessage('❌ Solo el fundador puede editar aplicaciones.', true);
-            return;
-        }
-        const apps = getQuantumApps();
-        const app = apps.find(a => a.id === id);
-        if (!app) return;
-        currentEditId = id;
-        document.getElementById('editTitle').value = app.title;
-        document.getElementById('editId').value = app.id;
-        document.getElementById('editDesc').value = app.desc || '';
-        document.getElementById('editTags').value = app.tags || '';
-        editModal.classList.add('open');
-    }
-    
-    function closeEditModal() {
-        editModal.classList.remove('open');
-        currentEditId = null;
-    }
-    
-    function updateApp() {
-        if (!isFounder || !currentEditId) return;
-        const apps = getQuantumApps();
-        const index = apps.findIndex(a => a.id === currentEditId);
-        if (index === -1) {
-            showMessage('Error: app no encontrada', true);
-            closeEditModal();
-            return;
-        }
-        const newTitle = document.getElementById('editTitle').value.trim();
-        if (!newTitle) {
-            showMessage('El título no puede estar vacío', true);
-            return;
-        }
-        const newDesc = document.getElementById('editDesc').value.trim();
-        const newTags = document.getElementById('editTags').value.trim();
-        
-        apps[index] = {
-            ...apps[index],
-            title: newTitle,
-            desc: newDesc,
-            tags: newTags
-        };
-        saveQuantumApps(apps);
-        closeEditModal();
-        renderCatalog();
-        showMessage(`✏️ App "${newTitle}" actualizada correctamente.`);
-    }
-    
-    function deleteApp(id) {
-        if (!isFounder) {
-            showMessage('Acción denegada: solo el fundador puede eliminar.', true);
-            return;
-        }
-        if (!confirm(`⚠️ ¿Eliminar permanentemente el programa cuántico? Todos los registros desaparecerán.`)) return;
-        let apps = getQuantumApps();
-        const newApps = apps.filter(a => a.id !== id);
-        if (newApps.length === apps.length) return;
-        saveQuantumApps(newApps);
-        renderCatalog();
-        showMessage(`🗑️ App eliminada del catálogo.`);
-    }
-    
-    // ------ Integración con QCOL (usuario, rol) ------
-    function postCore(type, data = {}) {
-        if (window.parent !== window) {
-            window.parent.postMessage({ type, ...data }, '*');
-        }
-    }
-    
-    window.addEventListener('message', (e) => {
-        const data = e.data;
-        if (!data || !data.type) return;
-        if (data.type === 'QCOL_CONFIG') {
-            // configuración general, opcional
-        }
-        if (data.type === 'QCOL_USER_UPDATE') {
-            currentUser = data.user;
-            isAdmin = !!(currentUser?.role === 'admin' || currentUser?.role === 'founder');
-            isFounder = (currentUser?.role === 'founder');
-            const adminBar = document.getElementById('adminBar');
-            if (adminBar) {
-                if (isFounder) adminBar.classList.add('show');
-                else adminBar.classList.remove('show');
-            }
-            renderCatalog();   // refrescar para mostrar botones editar/borrar si es fundador
-        }
+        return matchSearch && matchTag;
     });
     
-    // Solicitar estado del usuario al cargar
-    postCore('QCOL_GET_CONFIG');
-    setTimeout(() => {
-        postCore('QCOL_GET_CONFIG');
-    }, 200);
+    const container = document.getElementById('puzzleGrid');
+    if(!filtered.length){
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚛️📦</div>
+        <div class="empty-title">Repositorio cuántico vacío</div>
+        <p style="font-size:0.7rem;color:#4a7a9b;margin-top:0.5rem;">Usa "QUANTUM APP STUDIO" para crear nuevas aplicaciones.<br>Los fundadores/admins pueden publicarlas tras revisión.</p></div>`;
+        return;
+    }
     
-    // ----- Inicialización: garantizar que no existan datos demo -----
-    (function initEmptyRepo() {
-        // Si no hay key o si tiene apps predefinidas de versiones anteriores, se reinicia a vacío.
-        const existing = localStorage.getItem(STORAGE_KEY);
-        if (!existing) {
-            // Crear repositorio vacío explícito
-            saveQuantumApps([]);
-        } else {
-            // Opcional: si se desea forzar vacío por requerimiento, pero solo si el array tiene items por defecto.
-            // El enunciado pide "tiene que venir vacia hasta que suban programas cuánticos".
-            // No obstante, si por algún motivo quedaron datos de pruebas antiguos, se limpia.
-            let apps = getQuantumApps();
-            // Verificar si tiene contenido predefinido (ejemplo antiguo), pero mejor mantener lo que haya agregado el usuario.
-            // Para cumplir "repositorio debe venir blanco" aseguramos que no existan semillas.
-            // Si apps.length > 0 y ninguna de ellas fue agregada por studio? Imposible saber, pero el usuario decide.
-            // NO borramos automáticamente para no eliminar apps ya creadas por el usuario, pero como primer despliegue no hay ninguna.
-            // Solo aseguramos que la primera vez esté vacío.
-            if (!existing) saveQuantumApps([]);
+    let gridHtml = `<div class="grid">`;
+    filtered.forEach(app => {
+        const tagsArray = (app.tags || "").split(',').map(t => t.trim()).filter(t => t);
+        const tagsHtml = tagsArray.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join('');
+        const canDelete = isFounder; // solo fundador puede borrar publicadas
+        const delBtn = canDelete ? `<button class="btn-icon" onclick="deletePublishedApp('${app.id}')">🗑️</button>` : '';
+        
+        gridHtml += `
+            <div class="card">
+                <div class="card-header">
+                    <span class="badge-app">⚛️ APP CUÁNTICA</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">${escapeHtml(app.title)}</div>
+                    <div class="card-desc">${escapeHtml(app.desc || 'Sin descripción')}</div>
+                    <div class="card-meta">
+                        <span>⏱️ ${app.duration || 8} min</span>
+                        <span>🔖 v${app.version || 1}</span>
+                    </div>
+                    <div class="tags">${tagsHtml}</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="executeQuantumApp('${app.id}')">▶ EJECUTAR PROGRAMA</button>
+                        ${delBtn}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    gridHtml += `</div>`;
+    container.innerHTML = gridHtml;
+}
+
+function escapeHtml(str) {
+    if(!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if(m === '&') return '&amp;';
+        if(m === '<') return '&lt;';
+        if(m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// Ejecutar app cuántica real (comunicación con el servidor / core)
+function executeQuantumApp(appId) {
+    const apps = getPublishedApps();
+    const app = apps.find(a => a.id === appId);
+    if(!app) { showNotification('⚠️ App no encontrada'); return; }
+    
+    // Enviar mensaje al padre (Quantum Open Lab) para lanzar el programa cuántico.
+    window.parent.postMessage({
+        type: "QCOL_LAUNCH_QUANTUM_APP",
+        appId: app.id,
+        appTitle: app.title,
+        appMetadata: {
+            tags: app.tags,
+            description: app.desc,
+            duration: app.duration
         }
-        renderCatalog();
-    })();
+    }, '*');
+    showNotification(`🌀 Ejecutando ${app.title} en el laboratorio cuántico...`);
+}
+
+// ----- QUANTUM APP STUDIO (cualquier usuario) -----
+function openStudio(isAdminFlag = false) {
+    // siempre abrir el studio para cualquier usuario
+    document.getElementById('studioTitle').value = '';
+    document.getElementById('studioId').value = '';
+    document.getElementById('studioDesc').value = '';
+    document.getElementById('studioTags').value = '';
+    document.getElementById('studioDuration').value = '8';
+    // mostrar opción de publicar solo si es admin/founder
+    const publishOpt = document.getElementById('adminPublishOption');
+    if(publishOpt) publishOpt.style.display = (isFounder || isAdmin) ? 'block' : 'none';
+    document.getElementById('studioModal').classList.add('open');
+}
+function closeStudio() {
+    document.getElementById('studioModal').classList.remove('open');
+}
+
+function submitQuantumApp() {
+    const title = document.getElementById('studioTitle').value.trim();
+    let id = document.getElementById('studioId').value.trim().toLowerCase().replace(/\s+/g, '_');
+    const desc = document.getElementById('studioDesc').value.trim();
+    let tags = document.getElementById('studioTags').value.trim();
+    const duration = parseInt(document.getElementById('studioDuration').value) || 8;
     
-    // Event listeners de modales
-    document.getElementById('cancelStudioBtn').onclick = () => closeStudio();
-    document.getElementById('saveAppBtn').onclick = () => createQuantumAppFromStudio();
-    document.getElementById('cancelEditBtn').onclick = () => closeEditModal();
-    document.getElementById('updateAppBtn').onclick = () => updateApp();
-    // Cerrar modales al hacer clic fuera
-    window.onclick = (e) => {
-        if (e.target === studioModal) closeStudio();
-        if (e.target === editModal) closeEditModal();
+    if(!title || !id) { showNotification("Título e ID son obligatorios"); return; }
+    // comprobar si ya existe publicada o pendiente con mismo id
+    const published = getPublishedApps();
+    const pending = getPendingApps();
+    if(published.find(a => a.id === id) || pending.find(a => a.id === id)) {
+        showNotification("⚠️ Ya existe una app con este ID (publicada o pendiente). Elige otro.");
+        return;
+    }
+    
+    const newApp = {
+        id: id,
+        title: title,
+        desc: desc || "App cuántica creada desde Quantum App Studio",
+        tags: tags || "cuántica",
+        duration: duration,
+        createdBy: currentUser?.username || currentUser?.uid || "anonymous",
+        createdAt: new Date().toISOString(),
+        version: 1
     };
     
-    // Exponer funciones globales para los botones dinámicos
-    window.executeQuantumApp = executeQuantumApp;
-    window.editApp = editApp;
-    window.deleteApp = deleteApp;
-    window.openStudio = openStudio;
-    window.renderCatalog = renderCatalog;
+    // Si el usuario es fundador/admin y marcó "publicar inmediatamente"
+    const publishNow = (isFounder || isAdmin) && document.getElementById('publishNowCheckbox')?.checked === true;
+    if(publishNow) {
+        const pubApps = getPublishedApps();
+        pubApps.push(newApp);
+        savePublishedApps(pubApps);
+        showNotification(`✅ App "${title}" publicada directamente en el repositorio.`);
+        renderTagFilters();
+        renderPublishedApps();
+    } else {
+        // Enviar a pendientes
+        const pendingApps = getPendingApps();
+        pendingApps.push({ ...newApp, status: "pending" });
+        savePendingApps(pendingApps);
+        showNotification(`📝 App "${title}" enviada a revisión. Fundador/Admin podrá publicarla.`);
+    }
+    closeStudio();
+}
+
+// ----- ADMIN / FOUNDER: gestión de pendientes -----
+function openPendingManager() {
+    if(!isFounder && !isAdmin) { showNotification("Acceso solo para fundadores/admins"); return; }
+    renderPendingList();
+    document.getElementById('pendingModal').classList.add('open');
+}
+function closePendingModal() {
+    document.getElementById('pendingModal').classList.remove('open');
+}
+
+function renderPendingList() {
+    const pending = getPendingApps();
+    const container = document.getElementById('pendingListContainer');
+    if(!container) return;
+    if(pending.length === 0) {
+        container.innerHTML = `<div style="padding:2rem; text-align:center; color:var(--mu);">📭 No hay apps pendientes de aprobación.</div>`;
+        return;
+    }
+    let html = `<div class="pending-grid">`;
+    pending.forEach(app => {
+        html += `
+            <div style="background: #0a1222; border-radius: 16px; margin-bottom: 12px; padding: 12px; border-left: 3px solid var(--gd);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-family:var(--orb); color:var(--bl2);">${escapeHtml(app.title)}</strong>
+                    <span style="font-size:0.55rem; background:#1f2a44; padding:2px 8px; border-radius:20px;">${escapeHtml(app.id)}</span>
+                </div>
+                <div style="font-size:0.6rem; margin:6px 0;">📝 ${escapeHtml(app.desc || '')}</div>
+                <div style="font-size:0.55rem; color:#aaa; display:flex; gap:12px; flex-wrap:wrap;">🏷️ ${escapeHtml(app.tags)} | ⏱️ ${app.duration} min | 👤 creado por ${escapeHtml(app.createdBy || 'anon')}</div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <button class="btn" style="background: #00aa66; padding:4px 12px;" onclick="publishPendingApp('${app.id}')">✅ PUBLICAR</button>
+                    <button class="btn" style="background: #aa3355;" onclick="rejectPendingApp('${app.id}')">🗑️ RECHAZAR</button>
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function publishPendingApp(appId) {
+    const pending = getPendingApps();
+    const index = pending.findIndex(p => p.id === appId);
+    if(index === -1) return;
+    const appToPublish = { ...pending[index] };
+    delete appToPublish.status;
+    delete appToPublish.createdBy; // opcional, se mantiene pero no molesta
+    const published = getPublishedApps();
+    if(published.find(p => p.id === appToPublish.id)) {
+        showNotification("⚠️ Ya existe una app con este ID publicada, elimina la pendiente.");
+        return;
+    }
+    published.push(appToPublish);
+    savePublishedApps(published);
+    // eliminar de pendientes
+    pending.splice(index,1);
+    savePendingApps(pending);
+    showNotification(`✅ App "${appToPublish.title}" publicada en el repositorio.`);
+    renderPendingList();
+    renderTagFilters();
+    renderPublishedApps();
+}
+
+function rejectPendingApp(appId) {
+    if(!confirm("Eliminar esta app pendiente permanentemente?")) return;
+    let pending = getPendingApps();
+    pending = pending.filter(p => p.id !== appId);
+    savePendingApps(pending);
+    showNotification("App rechazada y eliminada.");
+    renderPendingList();
+}
+
+function deletePublishedApp(appId) {
+    if(!isFounder) { showNotification("Solo fundador puede eliminar apps publicadas"); return; }
+    if(!confirm(`Eliminar app del repositorio permanentemente?`)) return;
+    let published = getPublishedApps();
+    published = published.filter(p => p.id !== appId);
+    savePublishedApps(published);
+    showNotification("App eliminada del catálogo público.");
+    renderTagFilters();
+    renderPublishedApps();
+}
+
+// Notificaciones
+function showNotification(msg) {
+    const n = document.getElementById('notifMsg');
+    n.textContent = msg;
+    n.classList.add('show');
+    if(n._timeout) clearTimeout(n._timeout);
+    n._timeout = setTimeout(() => n.classList.remove('show'), 2800);
+}
+
+// ----- Comunicación con el padre para roles (QCOL) -----
+function postCore(type, data={}) {
+    if(window.parent !== window) window.parent.postMessage({type, ...data}, '*');
+}
+
+window.addEventListener('message', (e) => {
+    const data = e.data;
+    if(!data || !data.type) return;
+    if(data.type === 'QCOL_CONFIG') {
+        // capturar configuración
+    }
+    if(data.type === 'QCOL_USER_UPDATE') {
+        currentUser = data.user;
+        isAdmin = (currentUser?.role === 'admin' || currentUser?.role === 'founder');
+        isFounder = (currentUser?.role === 'founder');
+        const adminBar = document.getElementById('adminBar');
+        if(adminBar) adminBar.classList.toggle('show', isFounder);
+        renderTagFilters();
+        renderPublishedApps();
+    }
+});
+postCore('QCOL_GET_CONFIG');
+
+// Inicializar
+renderTagFilters();
+renderPublishedApps();
+
+// Cerrar modales clicks overlay
+document.getElementById('studioModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModal')) closeStudio(); });
+document.getElementById('pendingModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('pendingModal')) closePendingModal(); });
 </script>
 </body>
 </html>
