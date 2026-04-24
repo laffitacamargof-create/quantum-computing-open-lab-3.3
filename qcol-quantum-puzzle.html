@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Quantum Lab · Puzzle Store (Catálogo Vacío)</title>
+    <style>
+        /* --- Estilos mínimos, funcionales, sin adornos excesivos --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0f1a;
+            color: #e2e8ff;
+            font-family: 'Segoe UI', 'Exo 2', system-ui, -apple-system, monospace;
+            padding: 0;
+            margin: 0;
+        }
+        /* barra simple */
+        .toolbar {
+            background: #0f1725;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #2a3a55;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .search-area {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #03070f;
+            border: 1px solid #2c405e;
+            border-radius: 8px;
+            padding: 6px 12px;
+        }
+        .search-area input {
+            background: transparent;
+            border: none;
+            color: #cbd5ff;
+            font-size: 0.8rem;
+            width: 220px;
+            outline: none;
+        }
+        .search-area input::placeholder {
+            color: #5a6e8c;
+        }
+        button, .btn-studio {
+            background: #1e2a44;
+            border: 1px solid #3e5a7c;
+            color: #bbd9ff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.1s linear;
+        }
+        button:hover, .btn-studio:hover {
+            background: #2c3f62;
+            border-color: #6c8db0;
+            color: white;
+        }
+        .btn-primary {
+            background: #0f2b3f;
+            border-color: #2f6a8f;
+            color: #9ed9ff;
+        }
+        .admin-bar {
+            display: none;
+            background: #0b101c;
+            padding: 6px 18px;
+            font-size: 0.7rem;
+            border-bottom: 1px solid #436;
+            align-items: center;
+            gap: 12px;
+        }
+        .admin-bar.show {
+            display: flex;
+        }
+        /* grid simple */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+            padding: 24px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #0f1726;
+            border: 1px solid #26344b;
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-header {
+            background: #0a1020;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1f2c40;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .badge-app {
+            font-size: 0.6rem;
+            background: #1a2a40;
+            padding: 3px 9px;
+            border-radius: 30px;
+            font-family: monospace;
+            letter-spacing: 0.3px;
+            color: #88b8ff;
+        }
+        .card-body {
+            padding: 16px;
+            flex: 1;
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ecf5ff;
+        }
+        .card-desc {
+            font-size: 0.75rem;
+            color: #9aaec9;
+            line-height: 1.45;
+            margin-bottom: 14px;
+        }
+        .card-tags {
+            font-size: 0.65rem;
+            color: #6f8fbc;
+            margin-bottom: 16px;
+            font-family: monospace;
+            word-break: break-word;
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-exec {
+            flex: 1;
+            background: #19273e;
+            border: 1px solid #2d4970;
+            border-radius: 40px;
+            padding: 8px 0;
+            font-weight: bold;
+            font-size: 0.7rem;
+            text-align: center;
+            cursor: pointer;
+            color: #b8d0ff;
+        }
+        .btn-exec:hover {
+            background: #23355a;
+        }
+        .btn-icon {
+            background: #191f2e;
+            border: 1px solid #3e506c;
+            border-radius: 40px;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 70px 20px;
+            color: #7c8aa8;
+        }
+        .empty-icon {
+            font-size: 3rem;
+            opacity: 0.6;
+            margin-bottom: 12px;
+        }
+        /* modales minimales */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.open {
+            display: flex;
+        }
+        .modal-content {
+            background: #0d1222;
+            border: 1px solid #2a4570;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            padding: 24px;
+        }
+        .modal-content h3 {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            border-left: 3px solid #3b82f6;
+            padding-left: 12px;
+        }
+        .field {
+            margin-bottom: 16px;
+        }
+        .field label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #7f9bc0;
+            margin-bottom: 5px;
+        }
+        .field input, .field textarea {
+            width: 100%;
+            background: #03060e;
+            border: 1px solid #2a3a58;
+            padding: 8px 12px;
+            border-radius: 10px;
+            color: #eef4ff;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .field textarea {
+            resize: vertical;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #101826;
+            border-left: 3px solid #2f8fff;
+            padding: 8px 18px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            z-index: 1100;
+            transform: translateX(150%);
+            transition: 0.2s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        hr {
+            border-color: #1e2a3a;
+        }
+        .studio-btn {
+            background: #113355;
+            border-color: #2f79b0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="notifyBox" class="notification"></div>
+<div id="adminBar" class="admin-bar">
+    <span>⚛️ MODO FUNDADOR — control total del catálogo</span>
+    <button id="studioFromAdmin" style="margin-left:auto;" onclick="openStudio()">🎛️ QUANTUM APP STUDIO</button>
+</div>
+
+<div class="toolbar">
+    <div class="search-area">
+        <span>🔍</span>
+        <input type="text" id="searchQuantum" placeholder="Buscar app cuántica..." oninput="renderCatalog()">
+    </div>
+    <div>
+        <button id="studioMainBtn" class="studio-btn" onclick="openStudio()">⚛️ QUANTUM APP STUDIO — CREAR APP</button>
+    </div>
+</div>
+
+<div id="catalogContainer">
+    <div class="empty-state">
+        <div class="empty-icon">🧪🌀</div>
+        <div style="font-size:1rem; margin-bottom:6px;">Catálogo cuántico vacío</div>
+        <p style="font-size:0.8rem;">Usa el botón <strong>QUANTUM APP STUDIO</strong> para subir tu primer programa cuántico real.<br>Las apps aparecerán aquí y se pueden ejecutar directamente en el laboratorio.</p>
+    </div>
+</div>
+
+<!-- MODAL STUDIO: crear nueva app cuántica -->
+<div id="studioModal" class="modal">
+    <div class="modal-content">
+        <h3>🌀 QUANTUM APP STUDIO — Crear nuevo programa cuántico</h3>
+        <div class="field">
+            <label>TÍTULO *</label>
+            <input type="text" id="studioTitle" placeholder="Ej: Algoritmo de Shor Lite">
+        </div>
+        <div class="field">
+            <label>ID ÚNICA (sin espacios, solo letras/números/guion bajo) *</label>
+            <input type="text" id="studioId" placeholder="shor_lite_v1">
+        </div>
+        <div class="field">
+            <label>DESCRIPCIÓN</label>
+            <textarea id="studioDesc" rows="2" placeholder="Breve explicación del programa cuántico..."></textarea>
+        </div>
+        <div class="field">
+            <label>ETIQUETAS (separadas por coma)</label>
+            <input type="text" id="studioTags" placeholder="shor, factorización, qiskit">
+        </div>
+        <div class="modal-buttons">
+            <button id="cancelStudioBtn">CANCELAR</button>
+            <button id="saveAppBtn" style="background:#1e3a5f;">✅ PUBLICAR APP</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR APP (solo para fundadores) -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>✏️ EDITAR PROGRAMA CUÁNTICO</h3>
+        <div class="field">
+            <label>TÍTULO</label>
+            <input type="text" id="editTitle">
+        </div>
+        <div class="field">
+            <label>ID (no modificable)</label>
+            <input type="text" id="editId" readonly disabled style="opacity:0.7;">
+        </div>
+        <div class="field">
+            <label>DESCRIPCIÓN</label>
+            <textarea id="editDesc" rows="2"></textarea>
+        </div>
+        <div class="field">
+            <label>ETIQUETAS</label>
+            <input type="text" id="editTags">
+        </div>
+        <div class="modal-buttons">
+            <button id="cancelEditBtn">CANCELAR</button>
+            <button id="updateAppBtn" style="background:#1e5a4a;">💾 GUARDAR CAMBIOS</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- CATÁLOGO DE APPS CUÁNTICAS (comienza VACÍO) ----------
+    // No hay datos por defecto. Solo se almacenan los que el usuario agregue mediante STUDIO.
+    const STORAGE_KEY = 'qcol_quantum_pure_store';
+    
+    function getQuantumApps() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+            // Retornar array vacío: repositorio completamente en blanco.
+            return [];
+        }
+        try {
+            return JSON.parse(stored);
+        } catch(e) {
+            return [];
+        }
+    }
+    
+    function saveQuantumApps(apps) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+    }
+    
+    // --- variables de usuario y permisos (comunicación con QCOL) ---
+    let currentUser = null;
+    let isFounder = false;    // solo el founder puede editar/eliminar (como en el contexto original)
+    let isAdmin = false;
+    
+    // elementos del DOM
+    const container = document.getElementById('catalogContainer');
+    const searchInput = document.getElementById('searchQuantum');
+    
+    // notificaciones simples
+    function showMessage(msg, isError = false) {
+        const notif = document.getElementById('notifyBox');
+        notif.textContent = msg;
+        notif.style.borderLeftColor = isError ? '#ff5577' : '#2f8fff';
+        notif.classList.add('show');
+        if (window.notifTimeout) clearTimeout(window.notifTimeout);
+        window.notifTimeout = setTimeout(() => {
+            notif.classList.remove('show');
+        }, 2800);
+    }
+    
+    // renderizar catálogo (vacío o con apps)
+    function renderCatalog() {
+        let apps = getQuantumApps();
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        if (searchTerm) {
+            apps = apps.filter(app => 
+                app.title.toLowerCase().includes(searchTerm) ||
+                (app.desc || '').toLowerCase().includes(searchTerm) ||
+                (app.tags || '').toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        if (apps.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚛️📦</div>
+                    <div style="font-size:1rem; margin-bottom:6px;">Sin programas cuánticos</div>
+                    <p style="font-size:0.8rem;">Haz clic en <strong>QUANTUM APP STUDIO</strong> y crea tu primera app cuántica.<br>
+                    Los programas aparecerán aquí listos para ejecutar sin instalación.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `<div class="grid">`;
+        apps.forEach(app => {
+            const canModify = isFounder === true;  // solo founder puede editar o eliminar
+            const editBtn = canModify ? `<button class="btn-icon" onclick="editApp('${app.id}')">✏️</button>` : '';
+            const delBtn = canModify ? `<button class="btn-icon" onclick="deleteApp('${app.id}')">🗑️</button>` : '';
+            const tagsHtml = (app.tags || '')
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t)
+                .map(t => `<span style="background:#18233a; padding:2px 8px; border-radius:20px; margin-right:6px; font-size:0.6rem;">#${escapeHtml(t)}</span>`)
+                .join('');
+            
+            html += `
+                <div class="card" data-id="${app.id}">
+                    <div class="card-header">
+                        <span class="badge-app">⚛️ APPS CUÁNTICAS</span>
+                        <span style="font-family:monospace; font-size:0.55rem;">🔬 laboratorio</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">${escapeHtml(app.title)}</div>
+                        <div class="card-desc">${escapeHtml(app.desc || 'Programa cuántico listo para ejecutar en el servidor Quantum Open Lab.')}</div>
+                        <div class="card-tags">${tagsHtml || '<span style="opacity:0.6;">sin etiquetas</span>'}</div>
+                        <div class="card-actions">
+                            <button class="btn-exec" onclick="executeQuantumApp('${app.id}')">▶ EJECUTAR PROGRAMA</button>
+                            ${editBtn}
+                            ${delBtn}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ---------- QUANTUM APP STUDIO (crear nueva app) ----------
+    const studioModal = document.getElementById('studioModal');
+    function openStudio() {
+        // Limpiar campos
+        document.getElementById('studioTitle').value = '';
+        document.getElementById('studioId').value = '';
+        document.getElementById('studioDesc').value = '';
+        document.getElementById('studioTags').value = '';
+        studioModal.classList.add('open');
+    }
+    function closeStudio() {
+        studioModal.classList.remove('open');
+    }
+    
+    function createQuantumAppFromStudio() {
+        const title = document.getElementById('studioTitle').value.trim();
+        let rawId = document.getElementById('studioId').value.trim();
+        const desc = document.getElementById('studioDesc').value.trim();
+        let tags = document.getElementById('studioTags').value.trim();
+        
+        if (!title) {
+            showMessage('❌ El título es obligatorio', true);
+            return;
+        }
+        if (!rawId) {
+            showMessage('❌ Debes elegir un ID único para la app (sin espacios)', true);
+            return;
+        }
+        const id = rawId.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_\-]/g, '');
+        if (id.length === 0) {
+            showMessage('ID inválido: solo letras, números, guión bajo', true);
+            return;
+        }
+        
+        const apps = getQuantumApps();
+        if (apps.find(app => app.id === id)) {
+            showMessage(`⚠️ Ya existe una app con ID "${id}". Elige otro.`, true);
+            return;
+        }
+        
+        const newApp = {
+            id: id,
+            title: title,
+            desc: desc || 'Sin descripción',
+            tags: tags || '',
+            created: new Date().toISOString().slice(0,10)
+        };
+        apps.push(newApp);
+        saveQuantumApps(apps);
+        closeStudio();
+        renderCatalog();
+        showMessage(`✅ Programa cuántico "${title}" agregado al catálogo.`);
+        
+        // Opcional: notificar al core
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'QCOL_QUANTUM_APP_CREATED', app: newApp }, '*');
+        }
+    }
+    
+    // ---------- FUNCION EJECUTAR APP (enlace con Quantum Open Lab) ----------
+    function executeQuantumApp(appId) {
+        const apps = getQuantumApps();
+        const app = apps.find(a => a.id === appId);
+        if (!app) {
+            showMessage('App no encontrada', true);
+            return;
+        }
+        
+        // Enviar al padre (Quantum Open Lab) la orden de lanzar el programa cuántico.
+        // El laboratorio se encargará de ejecutar sin instalación, en su propio entorno.
+        const launchEvent = {
+            type: "QCOL_LAUNCH_QUANTUM_APP",
+            appId: app.id,
+            appTitle: app.title,
+            appMetadata: {
+                description: app.desc,
+                tags: app.tags
+            },
+            source: "quantum_puzzle_store"
+        };
+        
+        if (window.parent !== window) {
+            window.parent.postMessage(launchEvent, '*');
+            showMessage(`🌀 Ejecutando "${app.title}" en el laboratorio cuántico...`);
+        } else {
+            // Modo standalone: mensaje demostrativo pero funcional para pruebas locales
+            showMessage(`🌌 Simulación: "${app.title}" se ejecutaría en el servidor Quantum Lab. (modo independiente)`);
+            console.log("[Quantum App Studio] Lanzar app:", app);
+            alert(`⚛️ ${app.title}\n\n${app.desc}\n\nEste programa cuántico se ejecutaría sin instalación en el Laboratorio Quantum Open Lab.`);
+        }
+    }
+    
+    // ---------- EDITAR Y ELIMINAR (solo para founder) ----------
+    let currentEditId = null;
+    const editModal = document.getElementById('editModal');
+    
+    function editApp(id) {
+        if (!isFounder) {
+            showMessage('❌ Solo el fundador puede editar aplicaciones.', true);
+            return;
+        }
+        const apps = getQuantumApps();
+        const app = apps.find(a => a.id === id);
+        if (!app) return;
+        currentEditId = id;
+        document.getElementById('editTitle').value = app.title;
+        document.getElementById('editId').value = app.id;
+        document.getElementById('editDesc').value = app.desc || '';
+        document.getElementById('editTags').value = app.tags || '';
+        editModal.classList.add('open');
+    }
+    
+    function closeEditModal() {
+        editModal.classList.remove('open');
+        currentEditId = null;
+    }
+    
+    function updateApp() {
+        if (!isFounder || !currentEditId) return;
+        const apps = getQuantumApps();
+        const index = apps.findIndex(a => a.id === currentEditId);
+        if (index === -1) {
+            showMessage('Error: app no encontrada', true);
+            closeEditModal();
+            return;
+        }
+        const newTitle = document.getElementById('editTitle').value.trim();
+        if (!newTitle) {
+            showMessage('El título no puede estar vacío', true);
+            return;
+        }
+        const newDesc = document.getElementById('editDesc').value.trim();
+        const newTags = document.getElementById('editTags').value.trim();
+        
+        apps[index] = {
+            ...apps[index],
+            title: newTitle,
+            desc: newDesc,
+            tags: newTags
+        };
+        saveQuantumApps(apps);
+        closeEditModal();
+        renderCatalog();
+        showMessage(`✏️ App "${newTitle}" actualizada correctamente.`);
+    }
+    
+    function deleteApp(id) {
+        if (!isFounder) {
+            showMessage('Acción denegada: solo el fundador puede eliminar.', true);
+            return;
+        }
+        if (!confirm(`⚠️ ¿Eliminar permanentemente el programa cuántico? Todos los registros desaparecerán.`)) return;
+        let apps = getQuantumApps();
+        const newApps = apps.filter(a => a.id !== id);
+        if (newApps.length === apps.length) return;
+        saveQuantumApps(newApps);
+        renderCatalog();
+        showMessage(`🗑️ App eliminada del catálogo.`);
+    }
+    
+    // ------ Integración con QCOL (usuario, rol) ------
+    function postCore(type, data = {}) {
+        if (window.parent !== window) {
+            window.parent.postMessage({ type, ...data }, '*');
+        }
+    }
+    
+    window.addEventListener('message', (e) => {
+        const data = e.data;
+        if (!data || !data.type) return;
+        if (data.type === 'QCOL_CONFIG') {
+            // configuración general, opcional
+        }
+        if (data.type === 'QCOL_USER_UPDATE') {
+            currentUser = data.user;
+            isAdmin = !!(currentUser?.role === 'admin' || currentUser?.role === 'founder');
+            isFounder = (currentUser?.role === 'founder');
+            const adminBar = document.getElementById('adminBar');
+            if (adminBar) {
+                if (isFounder) adminBar.classList.add('show');
+                else adminBar.classList.remove('show');
+            }
+            renderCatalog();   // refrescar para mostrar botones editar/borrar si es fundador
+        }
+    });
+    
+    // Solicitar estado del usuario al cargar
+    postCore('QCOL_GET_CONFIG');
+    setTimeout(() => {
+        postCore('QCOL_GET_CONFIG');
+    }, 200);
+    
+    // ----- Inicialización: garantizar que no existan datos demo -----
+    (function initEmptyRepo() {
+        // Si no hay key o si tiene apps predefinidas de versiones anteriores, se reinicia a vacío.
+        const existing = localStorage.getItem(STORAGE_KEY);
+        if (!existing) {
+            // Crear repositorio vacío explícito
+            saveQuantumApps([]);
+        } else {
+            // Opcional: si se desea forzar vacío por requerimiento, pero solo si el array tiene items por defecto.
+            // El enunciado pide "tiene que venir vacia hasta que suban programas cuánticos".
+            // No obstante, si por algún motivo quedaron datos de pruebas antiguos, se limpia.
+            let apps = getQuantumApps();
+            // Verificar si tiene contenido predefinido (ejemplo antiguo), pero mejor mantener lo que haya agregado el usuario.
+            // Para cumplir "repositorio debe venir blanco" aseguramos que no existan semillas.
+            // Si apps.length > 0 y ninguna de ellas fue agregada por studio? Imposible saber, pero el usuario decide.
+            // NO borramos automáticamente para no eliminar apps ya creadas por el usuario, pero como primer despliegue no hay ninguna.
+            // Solo aseguramos que la primera vez esté vacío.
+            if (!existing) saveQuantumApps([]);
+        }
+        renderCatalog();
+    })();
+    
+    // Event listeners de modales
+    document.getElementById('cancelStudioBtn').onclick = () => closeStudio();
+    document.getElementById('saveAppBtn').onclick = () => createQuantumAppFromStudio();
+    document.getElementById('cancelEditBtn').onclick = () => closeEditModal();
+    document.getElementById('updateAppBtn').onclick = () => updateApp();
+    // Cerrar modales al hacer clic fuera
+    window.onclick = (e) => {
+        if (e.target === studioModal) closeStudio();
+        if (e.target === editModal) closeEditModal();
+    };
+    
+    // Exponer funciones globales para los botones dinámicos
+    window.executeQuantumApp = executeQuantumApp;
+    window.editApp = editApp;
+    window.deleteApp = deleteApp;
+    window.openStudio = openStudio;
+    window.renderCatalog = renderCatalog;
+</script>
+</body>
+</html>
