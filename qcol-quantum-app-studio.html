@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Quantum App Studio · Repositorio + Editor con prueba integrada</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #0a0e1a;
+            --bg2: #0d1220;
+            --bg3: #111827;
+            --bg4: #060912;
+            --bd: #1a2a48;
+            --bd2: #1e3058;
+            --bl: #0088ff;
+            --bl2: #00aaff;
+            --cy: #00ffdd;
+            --gr: #00ff88;
+            --yw: #ffd700;
+            --rd: #ff4466;
+            --pu: #bd93f9;
+            --tx: #dce8ff;
+            --tx2: #8aa0c4;
+            --mu: #3d5a8a;
+        }
+        body {
+            background: var(--bg);
+            color: var(--tx);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .notif {
+            position: fixed;
+            top: 0.6rem;
+            right: 0.6rem;
+            z-index: 9999;
+            padding: 0.45rem 0.85rem;
+            background: rgba(6,9,18,0.97);
+            border: 1px solid var(--cy);
+            border-radius: 7px;
+            font-family: monospace;
+            font-size: 0.55rem;
+            color: var(--cy);
+            transform: translateX(130%);
+            transition: transform 0.28s;
+            backdrop-filter: blur(20px);
+            pointer-events: none;
+        }
+        .notif.show { transform: translateX(0); }
+        .screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .hidden { display: none !important; }
+        /* repositorio */
+        .repo-header {
+            padding: 1rem;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--bd);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .repo-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--bl2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #003a9e, var(--bl));
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            color: white;
+            font-family: monospace;
+            cursor: pointer;
+        }
+        .projects-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .project-card {
+            background: var(--bg3);
+            border: 1px solid var(--bd);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: 0.1s;
+        }
+        .project-card:hover { border-color: var(--bl); background: rgba(0,136,255,0.05); }
+        .project-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .btn-secondary {
+            background: rgba(30,48,88,0.7);
+            border: 1px solid var(--bd2);
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            font-family: monospace;
+            font-size: 0.6rem;
+            color: var(--tx2);
+            cursor: pointer;
+        }
+        .btn-secondary:hover { background: var(--bl); color: white; border-color: var(--bl); }
+        /* editor dual */
+        .editor-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg4);
+            border-right: 1px solid var(--bd);
+        }
+        .pane-header {
+            padding: 0.5rem;
+            background: #060912;
+            border-bottom: 1px solid var(--bd);
+            font-family: monospace;
+            font-size: 0.7rem;
+        }
+        .code-area {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            background: var(--bg4);
+            color: var(--tx);
+            border: none;
+            padding: 0.8rem;
+            resize: none;
+            outline: none;
+            white-space: pre-wrap;
+        }
+        .top-editor-bar {
+            padding: 0.5rem;
+            display: flex;
+            gap: 0.8rem;
+            background: var(--bg2);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .editor-config {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-left: auto;
+        }
+        .server-input {
+            background: var(--bg3);
+            border: 1px solid var(--bd2);
+            border-radius: 6px;
+            padding: 0.3rem 0.6rem;
+            font-family: monospace;
+            font-size: 0.6rem;
+            color: var(--tx);
+            width: 220px;
+        }
+        /* modal preview */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal.open {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            width: 90%;
+            height: 85%;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 0.5rem 1rem;
+            background: #1e1e2f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-iframe {
+            flex: 1;
+            border: none;
+            background: white;
+        }
+        .runner-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .runner-header {
+            padding: 0.5rem 1rem;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--bd);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .app-iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: white;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--mu);
+            display: inline-block;
+        }
+        .status-dot.active { background: var(--gr); box-shadow: 0 0 5px var(--gr); }
+    </style>
+</head>
+<body>
+<div class="notif" id="notif"></div>
+
+<!-- REPOSITORIO -->
+<div id="repo-screen" class="screen">
+    <div class="repo-header">
+        <div class="repo-title">⚛️ Quantum App Studio · Repositorio</div>
+        <button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button>
+    </div>
+    <div class="projects-grid" id="projects-grid"></div>
+</div>
+
+<!-- EDITOR (crear/editar proyecto) -->
+<div id="editor-screen" class="screen hidden">
+    <div class="top-editor-bar">
+        <input type="text" id="project-name-input" placeholder="Nombre del proyecto" style="background:var(--bg3); border:1px solid var(--bd); border-radius:6px; padding:0.4rem; color:white; width:240px;">
+        <div class="editor-config">
+            <input type="text" id="server-url-input" class="server-input" placeholder="URL servidor cuántico (opcional)">
+            <button class="btn-secondary" id="test-server-btn">🔌 Probar</button>
+            <span id="server-status" style="font-size:0.55rem;"></span>
+        </div>
+        <button class="btn-primary" id="save-project-editor">💾 Guardar proyecto</button>
+        <button class="btn-secondary" id="preview-run-btn">▶ Probar ejecución</button>
+        <button class="btn-secondary" id="back-to-repo-editor">← Volver</button>
+    </div>
+    <div class="editor-container">
+        <div class="editor-pane">
+            <div class="pane-header">🐍 LÓGICA PYTHON (backend local/remoto)</div>
+            <textarea id="python-editor" class="code-area" spellcheck="false"></textarea>
+        </div>
+        <div class="editor-pane">
+            <div class="pane-header">🌐 INTERFAZ HTML + JS (frontend)</div>
+            <textarea id="html-editor" class="code-area" spellcheck="false"></textarea>
+        </div>
+    </div>
+    <div style="padding:0.3rem 0.8rem; background:#060912; font-size:0.55rem; color:var(--mu);">
+        💡 Las funciones Python definidas se llaman desde HTML con <span style="color:var(--cy);">window.pyCall("funcion", args...)</span>. Si defines una URL de servidor, el código Python se ejecutará remotamente (conecta a los servidores del founder).
+    </div>
+</div>
+
+<!-- RUNNER (pantalla completa de aplicación) -->
+<div id="runner-screen" class="screen hidden">
+    <div class="runner-header">
+        <button class="btn-secondary" id="back-to-repo-runner">← Repositorio</button>
+        <span id="runner-app-name" style="font-weight:bold;"></span>
+        <span id="runner-mode" style="margin-left:auto; font-size:0.6rem;"><span class="status-dot" id="runner-dot"></span> Modo</span>
+    </div>
+    <iframe id="app-iframe" class="app-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+</div>
+
+<!-- MODAL PARA PRUEBA RÁPIDA (dentro del editor) -->
+<div id="preview-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <strong>🔬 Prueba de aplicación (sin guardar)</strong>
+            <button class="btn-secondary" id="close-modal-btn">Cerrar</button>
+        </div>
+        <iframe id="preview-iframe" class="modal-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // REPOSITORIO + EDITOR + PRUEBA INTEGRADA + BACKEND REMOTO
+    // --------------------------------------------------------------
+    let projects = [];
+    let currentEditId = null;
+    let pyodideLocal = null;          // para preview/runner local
+    let remoteSessionStatus = false;
+    let currentPreviewRunner = null;   // instancia para modal
+
+    // ---------- helpers ----------
+    function notify(msg, dur=2000) {
+        const n = document.getElementById('notif');
+        n.textContent = msg;
+        n.classList.add('show');
+        clearTimeout(n._t);
+        n._t = setTimeout(() => n.classList.remove('show'), dur);
+    }
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substring(2, 10); }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+    function saveProjects() {
+        localStorage.setItem('quantum_apps_repo_v2', JSON.stringify(projects));
+    }
+
+    function loadProjects() {
+        const stored = localStorage.getItem('quantum_apps_repo_v2');
+        if (stored) {
+            try { projects = JSON.parse(stored); } catch(e) { projects = []; }
+        }
+        if (!projects.length) {
+            projects.push({
+                id: generateId(),
+                name: "Demo: Saludo cuántico",
+                pythonCode: `# Funciones exportadas al frontend\ndef saludar(nombre):\n    return f"¡Hola {nombre}! desde Python cuántico 🧪"\n\ndef suma(a,b):\n    return a+b\n\n# También puedes usar Qiskit/Cirq (mocks)\nfrom qiskit import QuantumCircuit\nqc = QuantumCircuit(1)\nqc.h(0)\nprint("Circuito cargado")`,
+                htmlCode: `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0a0e1a; color:white; font-family:monospace; padding:1rem;">\n<h2>Demo Interactiva</h2>\n<input id="nameInput" placeholder="Tu nombre" style="padding:0.3rem;">\n<button onclick="callGreet()">Saludar</button>\n<p id="result"></p>\n<script>\nwindow.callGreet = async () => {\n    const name = document.getElementById('nameInput').value;\n    const res = await window.pyCall("saludar", name);\n    document.getElementById('result').innerText = res;\n};\n<\/script>\n</body>\n</html>`,
+                serverUrl: "",
+                createdAt: Date.now()
+            });
+            saveProjects();
+        }
+    }
+
+    function renderRepository() {
+        const grid = document.getElementById('projects-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        projects.forEach(proj => {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.innerHTML = `
+                <div class="project-name">📦 ${escapeHtml(proj.name)}</div>
+                <div class="card-actions">
+                    <button class="btn-secondary edit-proj" data-id="${proj.id}">✏️ Editar</button>
+                    <button class="btn-secondary run-proj" data-id="${proj.id}">▶ Ejecutar</button>
+                    <button class="btn-secondary delete-proj" data-id="${proj.id}">🗑 Eliminar</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        document.querySelectorAll('.edit-proj').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); editProject(btn.getAttribute('data-id')); });
+        });
+        document.querySelectorAll('.run-proj').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); launchProject(btn.getAttribute('data-id')); });
+        });
+        document.querySelectorAll('.delete-proj').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); deleteProject(btn.getAttribute('data-id')); });
+        });
+    }
+
+    function editProject(id) {
+        const proj = projects.find(p => p.id === id);
+        if (!proj) return;
+        currentEditId = id;
+        document.getElementById('project-name-input').value = proj.name;
+        document.getElementById('python-editor').value = proj.pythonCode || '# Escribe tu lógica Python aquí';
+        document.getElementById('html-editor').value = proj.htmlCode || '<!DOCTYPE html>\n<html>\n<body>\n<h1>Mi App</h1>\n</body>\n</html>';
+        document.getElementById('server-url-input').value = proj.serverUrl || "";
+        updateServerStatusText(proj.serverUrl);
+        showScreen('editor');
+    }
+
+    async function updateServerStatusText(url) {
+        const statusSpan = document.getElementById('server-status');
+        if (!url) { statusSpan.innerHTML = ''; remoteSessionStatus = false; return; }
+        statusSpan.innerHTML = '⏳ probando...';
+        const ok = await testBackendConnection(url);
+        if (ok) {
+            statusSpan.innerHTML = '✅ remoto activo';
+            remoteSessionStatus = true;
+        } else {
+            statusSpan.innerHTML = '⚠️ no responde (se usará local)';
+            remoteSessionStatus = false;
+        }
+    }
+
+    async function testBackendConnection(baseUrl) {
+        try {
+            const cleanUrl = baseUrl.replace(/\/+$/, '');
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            const res = await fetch(cleanUrl + '/health/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: [''] }),
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            return res.ok;
+        } catch(e) { return false; }
+    }
+
+    function saveCurrentEdit() {
+        if (!currentEditId) {
+            const newName = document.getElementById('project-name-input').value.trim();
+            if (!newName) { notify("Ingresa un nombre"); return; }
+            const newId = generateId();
+            const newProj = {
+                id: newId,
+                name: newName,
+                pythonCode: document.getElementById('python-editor').value,
+                htmlCode: document.getElementById('html-editor').value,
+                serverUrl: document.getElementById('server-url-input').value,
+                createdAt: Date.now()
+            };
+            projects.push(newProj);
+            currentEditId = newId;
+            saveProjects();
+            notify(`Proyecto "${newName}" creado`);
+            showScreen('repo');
+            renderRepository();
+            return;
+        }
+        const idx = projects.findIndex(p => p.id === currentEditId);
+        if (idx !== -1) {
+            projects[idx].name = document.getElementById('project-name-input').value.trim() || "Sin nombre";
+            projects[idx].pythonCode = document.getElementById('python-editor').value;
+            projects[idx].htmlCode = document.getElementById('html-editor').value;
+            projects[idx].serverUrl = document.getElementById('server-url-input').value;
+            saveProjects();
+            notify("Proyecto guardado");
+            showScreen('repo');
+            renderRepository();
+        }
+    }
+
+    function deleteProject(id) {
+        if (projects.length === 1) { notify("Debe haber al menos un proyecto. Crea otro antes."); return; }
+        if (confirm("¿Eliminar aplicación permanentemente?")) {
+            projects = projects.filter(p => p.id !== id);
+            if (currentEditId === id) currentEditId = null;
+            saveProjects();
+            renderRepository();
+            notify("Proyecto eliminado");
+        }
+    }
+
+    // ---------- EJECUCIÓN DE CÓDIGO (local o remoto) ----------
+    async function executePythonRemote(code, serverUrl) {
+        const base = serverUrl.replace(/\/+$/, '');
+        const isHF = base.includes('hf.space') || base.includes('huggingface');
+        let url, body;
+        if (isHF) {
+            url = base + '/run/predict';
+            body = JSON.stringify({ data: [code], fn_index: 0 });
+        } else {
+            url = base + '/run';
+            body = JSON.stringify({ code: code, lib: 'python' });
+        }
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = await res.json();
+        const data = isHF ? (raw.data?.[0] || raw) : raw;
+        if (data.success === false) throw new Error(data.output || data.error || "Error backend");
+        return data.output || data.result || "";
+    }
+
+    async function initLocalPyodide() {
+        if (pyodideLocal) return pyodideLocal;
+        try {
+            pyodideLocal = await loadPyodide();
+            await pyodideLocal.runPythonAsync(`
+import sys, types
+class _Stub:
+    __slots__ = ('_name',)
+    def __init__(self,n=None): object.__setattr__(self,'_name',n or 'Stub')
+    def __getattr__(self,a): return _Stub(f"{object.__getattribute__(self,'_name')}.{a}")
+    def __call__(self,*a,**kw): return _Stub(f"{object.__getattribute__(self,'_name')}()")
+    def __repr__(self): return "<Stub>"
+class _DynamicModule(types.ModuleType):
+    def __init__(self,n,ispkg=False):
+        super().__init__(n)
+        if ispkg: self.__path__ = []
+        self.__package__ = n.rpartition('.')[0] if '.' in n else n
+    def __getattr__(self,a): setattr(self,a,_Stub(f"{self.__name__}.{a}")); return getattr(self,a)
+class QuantumCircuit:
+    def __init__(self,*a,**kw): self.num_qubits=int(a[0]) if a and isinstance(a[0],int) else 2; self.data=[]
+    def h(self,q): return self
+    def cx(self,c,t): return self
+    def measure_all(self): return self
+    def draw(self): return "Circuit"
+sys.modules['qiskit'] = _DynamicModule('qiskit',True)
+sys.modules['qiskit'].QuantumCircuit = QuantumCircuit
+sys.modules['cirq'] = _DynamicModule('cirq',True)
+print("[Local] Entorno cuántico listo")
+`);
+            await pyodideLocal.loadPackage('numpy');
+        } catch(e) { console.error(e); throw e; }
+        return pyodideLocal;
+    }
+
+    async function runPythonCode(localPy, code, serverUrl) {
+        if (serverUrl && await testBackendConnection(serverUrl)) {
+            return await executePythonRemote(code, serverUrl);
+        } else {
+            const py = localPy || await initLocalPyodide();
+            await py.runPythonAsync(`
+import sys, io
+_stdout = sys.stdout
+_stderr = sys.stderr
+sys.stdout = io.StringIO()
+sys.stderr = io.StringIO()
+`);
+            try {
+                await py.runPythonAsync(code);
+                const out = py.runPython("sys.stdout.getvalue()");
+                const err = py.runPython("sys.stderr.getvalue()");
+                await py.runPythonAsync("sys.stdout, sys.stderr = _stdout, _stderr");
+                return out + (err ? "\n[stderr]\n"+err : "");
+            } catch(e) {
+                let errMsg = e.toString();
+                try { const stderrVal = py.runPython("sys.stderr.getvalue()"); if(stderrVal) errMsg += "\n"+stderrVal; } catch(_) {}
+                await py.runPythonAsync("sys.stdout, sys.stderr = _stdout, _stderr");
+                throw new Error(errMsg);
+            }
+        }
+    }
+
+    // ---------- CONSTRUIR APLICACIÓN (puente HTML+Python) ----------
+    async function buildAppBlob(pythonCode, htmlCode, serverUrl, onPyCall) {
+        // el puente ahora puede usar el serverUrl para llamar a funciones Python
+        // inyectamos un script más inteligente que, en lugar de usar Pyodide, use el backend remoto si es necesario.
+        // Para la preview y runner, crearemos un entorno de ejecución que escuche desde el iframe.
+        // Devolvemos un objeto { blobUrl, cleanup }
+        const bridge = `
+        <script>
+        window.__serverUrl = ${JSON.stringify(serverUrl)};
+        window.__pyCode = ${JSON.stringify(pythonCode)};
+        window.pyCall = async (funcName, ...args) => {
+            return new Promise((resolve, reject) => {
+                const msgId = Date.now() + '-' + Math.random();
+                const handler = (event) => {
+                    if (event.data.type === 'pyResult' && event.data.id === msgId) {
+                        window.removeEventListener('message', handler);
+                        if (event.data.error) reject(new Error(event.data.error));
+                        else resolve(event.data.result);
+                    }
+                };
+                window.addEventListener('message', handler);
+                window.parent.postMessage({ type: 'pyCall', id: msgId, func: funcName, args: args, serverUrl: window.__serverUrl, pythonCode: window.__pyCode }, '*');
+            });
+        };
+        console.log("Bridge listo, serverUrl:", window.__serverUrl);
+        <\/script>
+        `;
+        let finalHtml = htmlCode;
+        if (finalHtml.includes('<head>')) {
+            finalHtml = finalHtml.replace('<head>', '<head>' + bridge);
+        } else if (finalHtml.includes('<html>')) {
+            finalHtml = finalHtml.replace('<html>', '<html><head>' + bridge + '</head>');
+        } else {
+            finalHtml = bridge + finalHtml;
+        }
+        const blob = new Blob([finalHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        return { blobUrl: url, revoke: () => URL.revokeObjectURL(url) };
+    }
+
+    // Manejador de mensajes para pyCall (desde iframes)
+    let globalPyRunner = null;
+    let globalPyServerUrl = null;
+    let globalPyCode = null;
+
+    async function handlePyCall(event) {
+        if (event.data.type === 'pyCall') {
+            const { id, func, args, serverUrl, pythonCode } = event.data;
+            try {
+                let result;
+                if (serverUrl && await testBackendConnection(serverUrl)) {
+                    // ejecutar la función remotamente: necesitamos ejecutar todo el código Python y luego llamar la función
+                    const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result))`;
+                    const output = await executePythonRemote(fullCode, serverUrl);
+                    let parsed = output.trim();
+                    try { parsed = JSON.parse(parsed); } catch(e) { parsed = output; }
+                    result = parsed;
+                } else {
+                    // modo local: usar Pyodide
+                    const localPy = await initLocalPyodide();
+                    await localPy.runPythonAsync(pythonCode);
+                    const code = `
+import json
+_result = ${func}(*${JSON.stringify(args)})
+json.dumps(_result)
+                    `;
+                    const raw = await localPy.runPythonAsync(code);
+                    result = JSON.parse(raw);
+                }
+                event.source.postMessage({ type: 'pyResult', id: id, result: result }, '*');
+            } catch(err) {
+                event.source.postMessage({ type: 'pyResult', id: id, error: err.message }, '*');
+            }
+        }
+    }
+    window.addEventListener('message', handlePyCall);
+
+    // ---------- LANZAR APLICACIÓN (pantalla runner) ----------
+    async function launchProject(id) {
+        const proj = projects.find(p => p.id === id);
+        if (!proj) return;
+        showScreen('runner');
+        document.getElementById('runner-app-name').innerText = `⚛️ ${escapeHtml(proj.name)}`;
+        const modeSpan = document.getElementById('runner-mode');
+        const dot = document.getElementById('runner-dot');
+        const serverActive = proj.serverUrl && await testBackendConnection(proj.serverUrl);
+        if (serverActive) {
+            modeSpan.innerHTML = '<span class="status-dot active"></span> Remoto (servidor founder)';
+            dot.className = 'status-dot active';
+        } else {
+            modeSpan.innerHTML = '<span class="status-dot"></span> Local (Pyodide)';
+        }
+        const { blobUrl, revoke } = await buildAppBlob(proj.pythonCode, proj.htmlCode, proj.serverUrl, null);
+        const iframe = document.getElementById('app-iframe');
+        iframe.src = blobUrl;
+        iframe.onload = () => revoke();
+    }
+
+    // ---------- PRUEBA RÁPIDA EN EDITOR (modal) ----------
+    async function runPreview() {
+        const pythonCode = document.getElementById('python-editor').value;
+        const htmlCode = document.getElementById('html-editor').value;
+        const serverUrl = document.getElementById('server-url-input').value;
+        const { blobUrl, revoke } = await buildAppBlob(pythonCode, htmlCode, serverUrl, null);
+        const iframe = document.getElementById('preview-iframe');
+        iframe.src = blobUrl;
+        iframe.onload = () => revoke();
+        document.getElementById('preview-modal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('preview-modal').classList.remove('open');
+        const iframe = document.getElementById('preview-iframe');
+        if (iframe.src) iframe.src = 'about:blank';
+    }
+
+    // ---------- NAVEGACIÓN ----------
+    function showScreen(screenId) {
+        document.getElementById('repo-screen').classList.add('hidden');
+        document.getElementById('editor-screen').classList.add('hidden');
+        document.getElementById('runner-screen').classList.add('hidden');
+        if (screenId === 'repo') document.getElementById('repo-screen').classList.remove('hidden');
+        else if (screenId === 'editor') document.getElementById('editor-screen').classList.remove('hidden');
+        else if (screenId === 'runner') document.getElementById('runner-screen').classList.remove('hidden');
+    }
+
+    function startNewProject() {
+        currentEditId = null;
+        document.getElementById('project-name-input').value = "Nuevo proyecto";
+        document.getElementById('python-editor').value = `# Define funciones que serán llamadas desde la interfaz\ndef mi_funcion(param):\n    return f"Recibí: {param}"\n\n# Puedes usar numpy, qiskit (mocks)\nimport numpy as np\nprint("Python listo")`;
+        document.getElementById('html-editor').value = `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0f172a; color:white; font-family:sans-serif; padding:1rem;">\n<h2>Mi App Cuántica</h2>\n<button onclick="testCall()">Llamar función</button>\n<p id="output"></p>\n<script>\nasync function testCall() {\n    const res = await window.pyCall("mi_funcion", "Hola mundo");\n    document.getElementById('output').innerText = res;\n}\n<\/script>\n</body>\n</html>`;
+        document.getElementById('server-url-input').value = "";
+        document.getElementById('server-status').innerHTML = '';
+        showScreen('editor');
+    }
+
+    // ---------- EVENTOS ----------
+    function bindEvents() {
+        document.getElementById('new-project-btn').onclick = startNewProject;
+        document.getElementById('save-project-editor').onclick = saveCurrentEdit;
+        document.getElementById('back-to-repo-editor').onclick = () => showScreen('repo');
+        document.getElementById('back-to-repo-runner').onclick = () => showScreen('repo');
+        document.getElementById('preview-run-btn').onclick = runPreview;
+        document.getElementById('close-modal-btn').onclick = closeModal;
+        document.getElementById('test-server-btn').onclick = async () => {
+            const url = document.getElementById('server-url-input').value;
+            if (!url) { notify("Ingresa una URL"); return; }
+            const ok = await testBackendConnection(url);
+            if (ok) notify("✅ Servidor remoto conectado", 2000);
+            else notify("❌ No se pudo conectar al servidor", 2000);
+            updateServerStatusText(url);
+        };
+        // precargar pyodide
+        initLocalPyodide().catch(console.warn);
+    }
+
+    loadProjects();
+    renderRepository();
+    bindEvents();
+    notify("Quantum App Studio · Crea, prueba y ejecuta apps con backend remoto o local", 4000);
+</script>
+</body>
+</html>
