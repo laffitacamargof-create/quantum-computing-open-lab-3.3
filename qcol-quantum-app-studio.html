@@ -316,12 +316,18 @@
 <script>
     // --------------------------------------------------------------
     // REPOSITORIO + EDITOR + PRUEBA INTEGRADA + BACKEND REMOTO
+    // + COMUNICACIÓN CON QUANTUM PUZZLE (QCOL)
     // --------------------------------------------------------------
     let projects = [];
     let currentEditId = null;
     let pyodideLocal = null;          // para preview/runner local
     let remoteSessionStatus = false;
     let currentPreviewRunner = null;   // instancia para modal
+    
+    // Variables para comunicación con el padre (Quantum Puzzle)
+    let isEmbedded = false;
+    let parentOrigin = '*';
+    let puzzleReady = false;
 
     // ---------- helpers ----------
     function notify(msg, dur=2000) {
@@ -330,12 +336,104 @@
         n.classList.add('show');
         clearTimeout(n._t);
         n._t = setTimeout(() => n.classList.remove('show'), dur);
+        // También notificar al padre si estamos embebidos
+        if (isEmbedded && parentOrigin) {
+            sendToParent({ type: 'QCOL_STUDIO_NOTIFICATION', message: msg });
+        }
     }
     function generateId() { return Date.now() + '-' + Math.random().toString(36).substring(2, 10); }
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
 
+    function sendToParent(msg) {
+        if (window.parent && window.parent !== window) {
+            try {
+                window.parent.postMessage(msg, parentOrigin);
+            } catch(e) { console.warn('Parent postMessage error', e); }
+        }
+    }
+
+    // Responder a mensajes del puzzle
+    window.addEventListener('message', async (event) => {
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+        
+        // Establecer origen de confianza (puede ser * o el dominio específico)
+        if (data.type === 'QCOL_REQUEST_STUDIO_CONNECTION') {
+            isEmbedded = true;
+            parentOrigin = event.origin;
+            sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
+            notify('Conectado con Quantum Puzzle', 1500);
+            return;
+        }
+        
+        // Abrir una app específica desde el puzzle
+        if (data.type === 'QCOL_OPEN_APP_FROM_PUZZLE') {
+            const { appId, appName, pythonCode, htmlCode, serverUrl } = data;
+            if (appId && appName) {
+                // Buscar si ya existe en el repositorio local
+                let existing = projects.find(p => p.id === appId);
+                if (existing) {
+                    currentEditId = appId;
+                    document.getElementById('project-name-input').value = existing.name;
+                    document.getElementById('python-editor').value = existing.pythonCode;
+                    document.getElementById('html-editor').value = existing.htmlCode;
+                    document.getElementById('server-url-input').value = existing.serverUrl || '';
+                } else {
+                    // Crear nuevo proyecto con los datos proporcionados
+                    const newId = appId;
+                    const newProj = {
+                        id: newId,
+                        name: appName || 'App desde Puzzle',
+                        pythonCode: pythonCode || '# Código Python\n',
+                        htmlCode: htmlCode || '<!DOCTYPE html>\n<html>\n<body>\n<h1>App desde Puzzle</h1>\n</body>\n</html>',
+                        serverUrl: serverUrl || '',
+                        createdAt: Date.now()
+                    };
+                    projects.push(newProj);
+                    currentEditId = newId;
+                    document.getElementById('project-name-input').value = newProj.name;
+                    document.getElementById('python-editor').value = newProj.pythonCode;
+                    document.getElementById('html-editor').value = newProj.htmlCode;
+                    document.getElementById('server-url-input').value = newProj.serverUrl;
+                    saveProjects();
+                }
+                updateServerStatusText(document.getElementById('server-url-input').value);
+                showScreen('editor');
+                sendToParent({ type: 'QCOL_STUDIO_APP_LOADED', appId: currentEditId });
+            }
+            return;
+        }
+        
+        // Opcional: solicitar lista de apps
+        if (data.type === 'QCOL_GET_APPS') {
+            const apps = projects.map(p => ({
+                id: p.id,
+                name: p.name,
+                serverUrl: p.serverUrl,
+                createdAt: p.createdAt
+            }));
+            sendToParent({ type: 'QCOL_APPS_LIST', apps });
+            return;
+        }
+    });
+    
+    // Notificar al padre cuando se guarda o elimina una app
+    function notifyParentAboutChange(action, appId, appData = null) {
+        if (!isEmbedded) return;
+        sendToParent({
+            type: action === 'save' ? 'QCOL_APP_SAVED' : 'QCOL_APP_DELETED',
+            appId: appId,
+            appData: appData ? { name: appData.name, serverUrl: appData.serverUrl } : null
+        });
+    }
+
     function saveProjects() {
         localStorage.setItem('quantum_apps_repo_v2', JSON.stringify(projects));
+        // Notificar cambio al puzzle si estamos en modo embebido y se guardó un proyecto actual
+        if (isEmbedded && currentEditId) {
+            const proj = projects.find(p => p.id === currentEditId);
+            if (proj) notifyParentAboutChange('save', currentEditId, { name: proj.name, serverUrl: proj.serverUrl });
+        }
     }
 
     function loadProjects() {
@@ -463,11 +561,15 @@
     function deleteProject(id) {
         if (projects.length === 1) { notify("Debe haber al menos un proyecto. Crea otro antes."); return; }
         if (confirm("¿Eliminar aplicación permanentemente?")) {
+            const deleted = projects.find(p => p.id === id);
             projects = projects.filter(p => p.id !== id);
             if (currentEditId === id) currentEditId = null;
             saveProjects();
             renderRepository();
             notify("Proyecto eliminado");
+            if (isEmbedded && deleted) {
+                sendToParent({ type: 'QCOL_APP_DELETED', appId: id });
+            }
         }
     }
 
@@ -554,10 +656,6 @@ sys.stderr = io.StringIO()
 
     // ---------- CONSTRUIR APLICACIÓN (puente HTML+Python) ----------
     async function buildAppBlob(pythonCode, htmlCode, serverUrl, onPyCall) {
-        // el puente ahora puede usar el serverUrl para llamar a funciones Python
-        // inyectamos un script más inteligente que, en lugar de usar Pyodide, use el backend remoto si es necesario.
-        // Para la preview y runner, crearemos un entorno de ejecución que escuche desde el iframe.
-        // Devolvemos un objeto { blobUrl, cleanup }
         const bridge = `
         <script>
         window.__serverUrl = ${JSON.stringify(serverUrl)};
@@ -603,14 +701,12 @@ sys.stderr = io.StringIO()
             try {
                 let result;
                 if (serverUrl && await testBackendConnection(serverUrl)) {
-                    // ejecutar la función remotamente: necesitamos ejecutar todo el código Python y luego llamar la función
                     const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result))`;
                     const output = await executePythonRemote(fullCode, serverUrl);
                     let parsed = output.trim();
                     try { parsed = JSON.parse(parsed); } catch(e) { parsed = output; }
                     result = parsed;
                 } else {
-                    // modo local: usar Pyodide
                     const localPy = await initLocalPyodide();
                     await localPy.runPythonAsync(pythonCode);
                     const code = `
@@ -712,6 +808,11 @@ json.dumps(_result)
     renderRepository();
     bindEvents();
     notify("Quantum App Studio · Crea, prueba y ejecuta apps con backend remoto o local", 4000);
+    
+    // Intento de comunicación con el puzzle (si ya está cargado)
+    setTimeout(() => {
+        sendToParent({ type: 'QCOL_STUDIO_READY', standalone: true });
+    }, 500);
 </script>
 </body>
 </html>
