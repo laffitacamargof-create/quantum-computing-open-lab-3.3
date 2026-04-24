@@ -143,7 +143,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
     <div class="sec-title">🧩 Estado de los Módulos del Ecosistema</div>
     <div class="alert alert-info">Cada módulo es un archivo HTML independiente. Para actualizar un módulo: descárgalo, modifícalo y sube el nuevo archivo a GitHub. El ecosistema lo carga automáticamente.</div>
     <table class="tbl">
-      <thead><tr><th>MÓDULO</th><th>ARCHIVO</th><th>FUNCIÓN</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+      <thead><tr><th>MÓDULO</th><th>ARCHIVO</th><th>FUNCIÓN</th><th>ESTADO</th><th>ACCIONES</th>｜DSML｜</thead>
       <tbody>
         <tr>
           <td><strong>Core</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">index.html</td>
@@ -872,7 +872,6 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
 
 </div>
 
-
 <script>
 // ══ COMUNICACIÓN CON EL CORE ══
 function postToCore(type, data = {}) {
@@ -1477,7 +1476,7 @@ function loadUserStats(){
         <th style="padding:.3rem .5rem;text-align:left;color:var(--bl2);">Libs usadas</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Qubits</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Último uso</th>
-        </tr></thead>
+       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -1957,6 +1956,109 @@ postToCore('QCOL_GET_CONFIG');
 const toggle = document.getElementById('mistral-toggle');
 if (toggle) toggle.addEventListener('change', saveMistralSettings);
 updateMistralUI();
+</script>
+
+<!-- ════════════ PUENTE PARA QUANTUM PUZZLE ════════════ -->
+<script>
+(function() {
+    // --- Registrar el módulo Quantum Puzzle automáticamente ---
+    const MODULE_ID = 'quantum-puzzle';
+    const MODULE_NAME = '⚛️ Quantum Puzzle';
+    const MODULE_FILE = 'qcol-projects.html';
+    const MODULE_ICON = '🧩';
+    const MODULE_DESC = 'Tienda de apps cuánticas - ejecuta programas reales en el compilador';
+
+    function registerModule() {
+        let modules = JSON.parse(localStorage.getItem('qcol_custom_modules') || '[]');
+        const exists = modules.find(m => m.id === MODULE_ID);
+        if (!exists) {
+            modules.push({
+                id: MODULE_ID,
+                name: MODULE_NAME,
+                file: MODULE_FILE,
+                icon: MODULE_ICON,
+                desc: MODULE_DESC,
+                role: 'admin',  // solo fundador/admin puede verlo (opcional)
+                created: new Date().toLocaleDateString()
+            });
+            localStorage.setItem('qcol_custom_modules', JSON.stringify(modules));
+            console.log('[Puente] Módulo Quantum Puzzle registrado en el panel fundador');
+            // Refrescar la lista de módulos personalizados si la función existe
+            if (typeof renderCustomModules === 'function') renderCustomModules();
+        }
+    }
+
+    // --- Redirigir la ejecución de apps al compilador HuggingFace ---
+    function forwardToCompiler(appId, appTitle, metadata) {
+        const compilerUrl = localStorage.getItem('qcol_colab_url');
+        if (!compilerUrl) {
+            notify(`❌ No hay compilador configurado. Ve a la pestaña 🤗 Compilador HuggingFace y guarda la URL.`);
+            return;
+        }
+
+        // Construir el payload para el compilador
+        const payload = {
+            code: `# App: ${appTitle}\n# ID: ${appId}\n# Etiquetas: ${metadata.tags}\nprint("Ejecutando app cuántica:", "${appTitle}")\n# Aquí iría el código real subido por el fundador`,
+            lib: 'qiskit',
+            qubits: 5,
+            shots: 1024
+        };
+
+        fetch(`${compilerUrl}/run/predict`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: [JSON.stringify(payload)] })
+        })
+        .then(res => res.json())
+        .then(raw => {
+            const output = raw.data?.[0] || raw;
+            notify(`✅ App "${appTitle}" ejecutada en el compilador.\n${output.substring(0, 200)}`);
+        })
+        .catch(err => notify(`❌ Error en compilador: ${err.message}`));
+    }
+
+    // --- Escuchar mensajes desde el módulo projects (iframe) ---
+    window.addEventListener('message', function(e) {
+        const data = e.data;
+        if (!data || data.type !== 'QCOL_LAUNCH_QUANTUM_APP') return;
+
+        console.log('[Puente] Recibida solicitud de ejecutar app:', data);
+        const { appId, appTitle, appMetadata } = data;
+        forwardToCompiler(appId, appTitle, appMetadata || {});
+    });
+
+    // --- Enviar la URL del compilador al módulo cuando se cargue ---
+    function broadcastCompilerUrl() {
+        const compilerUrl = localStorage.getItem('qcol_colab_url');
+        if (compilerUrl && window.parent !== window) {
+            window.parent.postMessage({
+                type: 'QCOL_CONFIG_UPDATE',
+                compilerUrl: compilerUrl
+            }, '*');
+        }
+        // También a iframes del mismo nivel (si el módulo ya está cargado)
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            iframe.contentWindow?.postMessage({
+                type: 'QCOL_COMPILER_URL',
+                url: compilerUrl
+            }, '*');
+        });
+    }
+
+    // Escuchar cambios en la URL del compilador (cuando el fundador guarda)
+    const originalSaveColab = window.saveColab;
+    if (originalSaveColab) {
+        window.saveColab = function() {
+            originalSaveColab();
+            setTimeout(broadcastCompilerUrl, 500);
+        };
+    }
+
+    // Inicializar
+    registerModule();
+    setTimeout(broadcastCompilerUrl, 1000);
+})();
 </script>
 </body>
 </html>
