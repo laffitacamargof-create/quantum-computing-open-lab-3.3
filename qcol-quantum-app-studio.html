@@ -310,6 +310,15 @@
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
     function sendToParent(msg) { if (window.parent && window.parent !== window) try { window.parent.postMessage(msg, parentOrigin); } catch(e) {} }
 
+    // Función para decodificar correctamente caracteres Unicode escapados
+    function decodeUnicode(str) {
+        if (!str || typeof str !== 'string') return str;
+        // Reemplazar secuencias Unicode como \u00e1 por su carácter real
+        return str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => {
+            return String.fromCharCode(parseInt(hex, 16));
+        });
+    }
+
     // Función principal: establecer URL automáticamente
     function setServerUrl(url) {
         if (!url) return;
@@ -344,7 +353,6 @@
             parentOrigin = event.origin;
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
             notify('Conectado con Panel Fundador', 1500);
-            // Solicitar la URL activamente
             sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
             return;
         }
@@ -513,19 +521,32 @@ window.callGreet = async () => {
         const raw = await res.json();
         const data = isHF ? (raw.data?.[0] || raw) : raw;
         if (data.success === false) throw new Error(data.output || data.error);
-        return data.output || data.result || "";
+        let output = data.output || data.result || "";
+        // Decodificar caracteres Unicode escapados
+        output = decodeUnicode(output);
+        return output;
     }
 
+    // Handler para llamadas desde los iframes (pyCall) - CORREGIDO
     window.addEventListener('message', async (event) => {
         if (event.data.type === 'pyCall') {
             const { id, func, args, serverUrl, pythonCode } = event.data;
             try {
                 if (!serverUrl) throw new Error("Falta URL del servidor");
-                const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result))`;
+                const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result, ensure_ascii=False))`;
                 const output = await executePythonRemote(fullCode, serverUrl);
-                let parsed = output.trim();
-                try { parsed = JSON.parse(parsed); } catch(e) { parsed = output; }
-                event.source.postMessage({ type: 'pyResult', id: id, result: parsed }, '*');
+                let result = output.trim();
+                // Intentar parsear como JSON solo si parece JSON
+                if ((result.startsWith('"') && result.endsWith('"')) || 
+                    (result.startsWith('{') && result.endsWith('}')) ||
+                    (result.startsWith('[') && result.endsWith(']'))) {
+                    try { 
+                        result = JSON.parse(result); 
+                    } catch(e) { 
+                        // Si falla, mantener el texto original (ya decodificado)
+                    }
+                }
+                event.source.postMessage({ type: 'pyResult', id: id, result: result }, '*');
             } catch(err) {
                 event.source.postMessage({ type: 'pyResult', id: id, error: err.message }, '*');
             }
@@ -571,7 +592,6 @@ window.callGreet = async () => {
         const modeSpan = document.getElementById('runner-mode');
         const dot = document.getElementById('runner-dot');
         
-        // Usar URL del campo si existe, sino la que ya tenemos
         let serverToUse = proj.serverUrl || document.getElementById('server-url-input').value;
         
         const serverActive = serverToUse && await testBackendConnection(serverToUse);
@@ -706,30 +726,26 @@ async function testCall() {
     renderRepository();
     bindEvents();
     
-    // Conectar con el Founder automáticamente
     if (window.parent !== window) {
         setTimeout(() => {
             sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
-            // También intentar desde localStorage
             const savedUrl = localStorage.getItem('qcol_colab_url');
             if (savedUrl && !receivedUrl) {
                 setServerUrl(savedUrl);
             }
         }, 500);
     } else {
-        // Standalone: intentar desde localStorage
         const savedUrl = localStorage.getItem('qcol_colab_url');
         if (savedUrl) setServerUrl(savedUrl);
     }
     
-    // Escuchar también mensajes desde el Founder (broadcast)
     setInterval(() => {
         if (window.parent !== window && !receivedUrl) {
             sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
         }
     }, 3000);
     
-    notify("Quantum App Studio · Esperando URL del servidor desde el Founder...", 3000);
+    notify("Quantum App Studio · Conectado al Founder · Caracteres Unicode corregidos", 3000);
 </script>
 </body>
 </html>
