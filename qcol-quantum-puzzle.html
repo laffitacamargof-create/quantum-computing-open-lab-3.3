@@ -60,7 +60,18 @@ body::before{
 .notif.show{transform:translateX(0);}
 .admin-bar{
     display:none;
+    background:rgba(0,20,50,.75);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--gd);
+    padding:.6rem 1.5rem;
+    font-family:var(--orb);
+    font-size:.58rem;
+    color:var(--gd);
+    align-items:center;
+    gap:.8rem;
+    z-index:20;
 }
+.admin-bar.show{display:flex;}
 .toolbar{
     display:flex;
     align-items:center;
@@ -85,7 +96,6 @@ body::before{
     padding:.38rem 1rem;
     flex:1;
     max-width:300px;
-    margin:0 auto;
 }
 .search-box input{
     background:transparent;
@@ -96,29 +106,43 @@ body::before{
     width:100%;
 }
 .filter-tag{
-    display:none;
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+}
+.tag-chip{
+    background:transparent;
+    border:1px solid var(--b2);
+    padding:.28rem .85rem;
+    border-radius:40px;
+    color:var(--mu);
+    font-family:var(--orb);
+    font-size:.55rem;
+    cursor:pointer;
+    transition:all .2s;
+}
+.tag-chip.active{
+    background:linear-gradient(135deg, rgba(0,136,255,0.2), rgba(0,200,255,0.1));
+    border-color:var(--bl);
+    color:var(--bl2);
 }
 .btn{
-    display:none;
+    padding:.4rem .9rem;
+    border:none;
+    border-radius:40px;
+    font-family:var(--orb);
+    font-size:.55rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s;
 }
-.btn-pri,
-.btn-execute,
-.btn-icon,
-#new-project-btn,
-.btn-primary,
-.btn-secondary,
-.btn-cancel,
-#test-server-btn,
-#save-project-editor,
-#preview-run-btn,
-#back-to-repo-editor,
-#back-to-repo-runner,
-#close-modal-btn,
-.tag-chip,
-.btn-pending,
-.btn-ok,
-.btn-sec {
-    display: none !important;
+.btn-pri{
+    background:linear-gradient(125deg, #0055aa, var(--bl));
+    color:white;
+}
+.btn-pri:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 14px rgba(0,136,255,0.5);
 }
 .grid{
     display:grid;
@@ -199,7 +223,39 @@ body::before{
     color:var(--bl2);
 }
 .card-actions{
-    display:none;
+    display:flex;
+    gap:.6rem;
+    margin-top:.5rem;
+}
+.btn-execute{
+    flex:1;
+    background:linear-gradient(95deg, rgba(0,136,255,0.2), rgba(0,200,255,0.05));
+    border:1px solid rgba(0,136,255,0.5);
+    border-radius:40px;
+    padding:.55rem 0;
+    font-family:var(--orb);
+    font-size:.6rem;
+    font-weight:bold;
+    color:var(--bl2);
+    cursor:pointer;
+    text-align:center;
+}
+.btn-execute:hover{
+    background:rgba(0,136,255,0.4);
+}
+.btn-icon{
+    background:rgba(255,68,102,0.1);
+    border:1px solid rgba(255,68,102,0.3);
+    border-radius:40px;
+    padding:.5rem .9rem;
+    font-size:.6rem;
+    cursor:pointer;
+    color:#ff99aa;
+}
+.btn-icon.edit{
+    background:rgba(0,255,136,0.08);
+    border-color:rgba(0,255,136,0.3);
+    color:#aaffcc;
 }
 .empty-state{
     display:flex;
@@ -239,6 +295,37 @@ body::before{
     border-left:3px solid var(--bl);
     padding-left:.8rem;
 }
+.fg{margin-bottom:1rem;}
+.fl{
+    font-family:var(--orb);
+    font-size:.52rem;
+    letter-spacing:1px;
+    color:var(--mu);
+    display:block;
+    margin-bottom:.3rem;
+}
+.fi{
+    width:100%;
+    background:rgba(0,0,0,0.6);
+    border:1px solid var(--b2);
+    border-radius:14px;
+    padding:.6rem .9rem;
+    color:var(--tx);
+    font-family:var(--exo);
+    font-size:.8rem;
+    outline:none;
+}
+.fi:focus{border-color:var(--bl);}
+.btn-row{display:flex;gap:.7rem;margin-top:1.2rem;}
+.btn-cancel{
+    background:transparent;
+    border:1px solid var(--b2);
+    border-radius:40px;
+    padding:.5rem 1rem;
+    color:var(--mu);
+    font-family:var(--orb);
+    cursor:pointer;
+}
 .pending-grid {
     background: rgba(0,0,0,0.3);
     border-radius: 20px;
@@ -251,6 +338,7 @@ body::before{
     color: var(--gd);
     margin-bottom: 0.5rem;
 }
+/* Estilos para el modal del estudio (iframe) */
 .studio-modal .modal {
     width: min(1200px, 95vw);
     height: 90vh;
@@ -259,12 +347,19 @@ body::before{
     flex-direction: column;
     overflow: hidden;
 }
+.studio-modal .modal-title {
+    padding: 0.8rem 1rem;
+    margin: 0;
+    border-left: none;
+    border-bottom: 1px solid var(--b);
+}
 .studio-iframe {
     flex: 1;
     width: 100%;
     border: none;
     background: #0a0e1a;
 }
+/* Modal de preview para apps pendientes */
 .preview-modal .modal {
     width: min(1000px, 95vw);
     height: 80vh;
@@ -272,50 +367,55 @@ body::before{
     display: flex;
     flex-direction: column;
 }
+.preview-modal .modal-title {
+    padding: 0.8rem 1rem;
+    margin: 0;
+    border-left: none;
+    border-bottom: 1px solid var(--b);
+}
 .preview-iframe {
     flex: 1;
     width: 100%;
     border: none;
     background: white;
 }
-.btn-cancel {
-    display: inline-block;
-    background: transparent;
-    border: 1px solid var(--b2);
-    border-radius: 40px;
-    padding: 0.5rem 1rem;
-    color: var(--mu);
-    font-family: var(--orb);
-    cursor: pointer;
-}
-.btn-row { display: flex; gap: 0.7rem; margin-top: 1.2rem; }
 </style>
 </head>
 <body>
 
 <div class="notif" id="notifMsg"></div>
+<div class="admin-bar" id="adminBar">
+    ⚛️ MODO FUNDADOR/ADMIN · GESTIÓN DE APPS
+    <button class="btn btn-pri" style="margin-left:auto;" onclick="openPendingManager()">📋 PENDIENTES</button>
+    <button class="btn btn-pri" onclick="openQuantumAppStudio()">🎛️ QUANTUM APP STUDIO</button>
+</div>
 
 <div class="toolbar">
     <div class="search-box">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#4a7a9b" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="#4a7a9b" stroke-width="2"/></svg>
         <input id="searchInput" placeholder="Buscar app cuántica..." oninput="renderPublishedApps()">
     </div>
+    <div class="filter-tag" id="filterTagsContainer"></div>
+    <div>
+        <button class="btn btn-pri" onclick="openQuantumAppStudio()" style="background: #6d28d9;">🎛️ QUANTUM APP STUDIO</button>
+    </div>
 </div>
 
 <div id="puzzleGrid"></div>
 
-<!-- MODAL PARA EL STUDIO REAL (iframe) - oculto, sin botones visibles -->
+<!-- MODAL PARA EL STUDIO REAL (iframe) -->
 <div class="modal-ov" id="studioModalReal">
     <div class="modal" style="width: min(1200px, 95vw); height: 90vh; padding: 0; display: flex; flex-direction: column;">
         <div class="modal-title" style="padding: 0.8rem 1rem; margin: 0; border-left: none; border-bottom: 1px solid var(--b); display: flex; justify-content: space-between; align-items: center;">
             <span>🌀 QUANTUM APP STUDIO · Editor de aplicaciones cuánticas</span>
             <button class="btn-cancel" onclick="closeStudioModal()" style="margin:0;">CERRAR</button>
         </div>
+        <!-- CORREGIDO: ahora apunta al archivo correcto -->
         <iframe id="studioIframe" class="studio-iframe" src="qcol-quantum-app-studio.html" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-same-origin"></iframe>
     </div>
 </div>
 
-<!-- MODAL: PENDIENTES (solo admin/founder) - necesario para funcionalidad pero botones internos se ocultan con CSS -->
+<!-- MODAL: PENDIENTES (solo admin/founder) -->
 <div class="modal-ov" id="pendingModal">
     <div class="modal" style="max-width:780px;">
         <div class="modal-title">📋 APPS PENDIENTES DE APROBACIÓN</div>
@@ -340,9 +440,9 @@ body::before{
 let currentUser = null;
 let isAdmin = false;
 let isFounder = false;
-let activeTagFilter = "all";  // ya no se usa realmente porque se ocultaron los filtros, pero se mantiene
+let activeTagFilter = "all";
 let studioIframeReady = false;
-let pendingPreviewApp = null;
+let pendingPreviewApp = null; // almacena la app que se está previsualizando
 
 // ---------- DATA STORES (repositorio vacío por defecto) ----------
 function getPublishedApps() {
@@ -373,12 +473,35 @@ function extractUniqueTags(apps) {
     return Array.from(tagsSet);
 }
 
+function renderTagFilters() {
+    const apps = getPublishedApps();
+    const allTags = extractUniqueTags(apps);
+    const container = document.getElementById('filterTagsContainer');
+    if(!container) return;
+    let html = `<span class="tag-chip ${activeTagFilter === 'all' ? 'active' : ''}" data-tag="all" onclick="setTagFilter('all')">🎲 TODAS</span>`;
+    allTags.forEach(tag => {
+        html += `<span class="tag-chip ${activeTagFilter === tag ? 'active' : ''}" data-tag="${tag}" onclick="setTagFilter('${tag}')">#${tag}</span>`;
+    });
+    container.innerHTML = html;
+}
+
+function setTagFilter(tag) {
+    activeTagFilter = tag;
+    renderTagFilters();
+    renderPublishedApps();
+}
+
 function renderPublishedApps() {
     const apps = getPublishedApps();
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || "";
     let filtered = apps.filter(app => {
         const matchSearch = app.title.toLowerCase().includes(searchTerm) || (app.desc || "").toLowerCase().includes(searchTerm) || (app.tags || "").toLowerCase().includes(searchTerm);
-        return matchSearch;
+        let matchTag = true;
+        if(activeTagFilter !== 'all') {
+            const appTags = (app.tags || "").toLowerCase().split(',').map(t => t.trim());
+            matchTag = appTags.includes(activeTagFilter);
+        }
+        return matchSearch && matchTag;
     });
     
     const container = document.getElementById('puzzleGrid');
@@ -393,6 +516,8 @@ function renderPublishedApps() {
     filtered.forEach(app => {
         const tagsArray = (app.tags || "").split(',').map(t => t.trim()).filter(t => t);
         const tagsHtml = tagsArray.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join('');
+        const canDelete = isFounder;
+        const delBtn = canDelete ? `<button class="btn-icon" onclick="deletePublishedApp('${app.id}')">🗑️</button>` : '';
         gridHtml += `
             <div class="card">
                 <div class="card-header"><span class="badge-app">⚛️ APP CUÁNTICA</span></div>
@@ -401,6 +526,10 @@ function renderPublishedApps() {
                     <div class="card-desc">${escapeHtml(app.desc || 'Sin descripción')}</div>
                     <div class="card-meta"><span>⏱️ ${app.duration || 8} min</span></div>
                     <div class="tags">${tagsHtml}</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="executeQuantumApp('${app.id}')">▶ EJECUTAR PROGRAMA</button>
+                        ${delBtn}
+                    </div>
                 </div>
             </div>
         `;
@@ -419,7 +548,6 @@ function escapeHtml(str) {
     });
 }
 
-// Mantenemos las funciones de ejecución/edición aunque los botones no estén visibles, para no romper lógica
 function executeQuantumApp(appId) {
     const apps = getPublishedApps();
     const app = apps.find(a => a.id === appId);
@@ -438,12 +566,17 @@ let studioIframe = document.getElementById('studioIframe');
 
 function openQuantumAppStudio() {
     studioModal.classList.add('open');
+    // Aseguramos que el iframe tenga el src correcto (ya lo tiene)
+    if (!studioIframeReady) {
+        // El iframe enviará un mensaje "QCOL_STUDIO_READY" cuando esté listo
+    }
 }
 
 function closeStudioModal() {
     studioModal.classList.remove('open');
 }
 
+// Escuchar mensajes del iframe del estudio
 window.addEventListener('message', (e) => {
     const data = e.data;
     if (!data || typeof data !== 'object') return;
@@ -454,10 +587,12 @@ window.addEventListener('message', (e) => {
     }
     
     if (data.type === 'QCOL_APP_SAVED' && data.appId) {
+        renderTagFilters();
         renderPublishedApps();
     }
     
     if (data.type === 'QCOL_APP_DELETED' && data.appId) {
+        renderTagFilters();
         renderPublishedApps();
     }
     
@@ -465,19 +600,23 @@ window.addEventListener('message', (e) => {
         currentUser = data.user;
         isAdmin = (currentUser?.role === 'admin' || currentUser?.role === 'founder');
         isFounder = (currentUser?.role === 'founder');
-        // No mostramos barra de admin
+        const adminBar = document.getElementById('adminBar');
+        if(adminBar) adminBar.classList.toggle('show', isFounder);
+        renderTagFilters();
+        renderPublishedApps();
     }
     if(data.type === 'QCOL_CONFIG') {
         // opcional
     }
 });
 
+// Inicializar pidiendo la configuración al padre (si existe)
 function postCore(type, data={}) {
     if(window.parent !== window) window.parent.postMessage({type, ...data}, '*');
 }
 postCore('QCOL_GET_CONFIG');
 
-// Funciones de administración (se mantienen aunque los botones estén ocultos, para no romper flujos desde mensajes)
+// ---------- FUNCIONES DE ADMINISTRACIÓN (pendientes, eliminación) ----------
 function openPendingManager() {
     if(!isFounder && !isAdmin) { showNotification("Acceso solo para fundadores/admins"); return; }
     renderPendingList();
@@ -517,15 +656,23 @@ function renderPendingList() {
     container.innerHTML = html;
 }
 
+// --- Nuevas funciones: EJECUTAR y EDITAR para pendientes ---
 function previewPendingApp(appId) {
     const pending = getPendingApps();
     const app = pending.find(p => p.id === appId);
     if(!app) { showNotification("App no encontrada"); return; }
     pendingPreviewApp = app;
+    // Construir un HTML temporal que muestre la app.
+    // Usamos el mismo método que el Quantum App Studio para generar un blob URL.
+    // Como necesitamos ejecutar el código Python+HTML, aprovechamos la lógica del estudio,
+    // pero como no tenemos Pyodide aquí, usamos un iframe que se comunique con el padre.
+    // Simplemente creamos un iframe que cargue un pequeño script puente.
+    // Para no duplicar código, usamos una función auxiliar que construye la app.
     buildAppBlobAndPreview(app);
 }
 
 async function buildAppBlobAndPreview(app) {
+    // Construimos un blob HTML que incluya el puente pyCall similar al del studio
     const { pythonCode, htmlCode, serverUrl } = app;
     const bridge = `
     <script>
@@ -560,6 +707,7 @@ async function buildAppBlobAndPreview(app) {
     const blobUrl = URL.createObjectURL(blob);
     const previewIframe = document.getElementById('previewIframe');
     previewIframe.src = blobUrl;
+    // Liberar URL cuando se cierre el modal (en closePreviewModal)
     if(window._currentPreviewBlobUrl) URL.revokeObjectURL(window._currentPreviewBlobUrl);
     window._currentPreviewBlobUrl = blobUrl;
     document.getElementById('previewAppModal').classList.add('open');
@@ -582,7 +730,9 @@ function editPendingApp(appId) {
     const pending = getPendingApps();
     const app = pending.find(p => p.id === appId);
     if(!app) { showNotification("App no encontrada"); return; }
+    // Abrimos el Quantum App Studio y le enviamos los datos para que cargue la app
     openQuantumAppStudio();
+    // Esperamos un poco a que el iframe del studio esté listo y luego enviamos mensaje
     const waitForStudio = setInterval(() => {
         if (studioIframeReady && studioIframe && studioIframe.contentWindow) {
             clearInterval(waitForStudio);
@@ -597,6 +747,7 @@ function editPendingApp(appId) {
             showNotification(`Editando "${app.title}" en el Studio.`);
         }
     }, 500);
+    // timeout por si acaso
     setTimeout(() => clearInterval(waitForStudio), 10000);
 }
 
@@ -618,6 +769,7 @@ function publishPendingApp(appId) {
     savePendingApps(pending);
     showNotification(`✅ App "${appToPublish.title}" publicada en el repositorio.`);
     renderPendingList();
+    renderTagFilters();
     renderPublishedApps();
 }
 function rejectPendingApp(appId) {
@@ -635,6 +787,7 @@ function deletePublishedApp(appId) {
     published = published.filter(p => p.id !== appId);
     savePublishedApps(published);
     showNotification("App eliminada del catálogo público.");
+    renderTagFilters();
     renderPublishedApps();
 }
 function showNotification(msg) {
@@ -646,6 +799,7 @@ function showNotification(msg) {
 }
 
 // Inicialización
+renderTagFilters();
 renderPublishedApps();
 document.getElementById('studioModalReal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModalReal')) closeStudioModal(); });
 document.getElementById('pendingModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('pendingModal')) closePendingModal(); });
