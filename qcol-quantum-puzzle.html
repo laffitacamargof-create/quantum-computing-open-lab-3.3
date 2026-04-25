@@ -547,15 +547,25 @@ function escapeHtml(str) {
     });
 }
 
+// ========== MODIFICACIÓN CLAVE: ejecutar app completa (backend remoto + frontend local) ==========
 function executeQuantumApp(appId) {
     const apps = getPublishedApps();
     const app = apps.find(a => a.id === appId);
     if(!app) { showNotification('⚠️ App no encontrada'); return; }
+    
+    // Enviar todos los datos necesarios para que el Panel Fundador (padre) ejecute la app real
     window.parent.postMessage({
         type: "QCOL_LAUNCH_QUANTUM_APP",
         appId: app.id,
         appTitle: app.title,
-        appMetadata: { tags: app.tags, description: app.desc, duration: app.duration }
+        appMetadata: {
+            tags: app.tags,
+            description: app.desc,
+            duration: app.duration,
+            pythonCode: app.pythonCode || '',
+            htmlCode: app.htmlCode || '',
+            serverUrl: app.serverUrl || ''
+        }
     }, '*');
 }
 
