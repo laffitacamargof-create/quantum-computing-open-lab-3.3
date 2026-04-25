@@ -143,56 +143,17 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
     <div class="sec-title">🧩 Estado de los Módulos del Ecosistema</div>
     <div class="alert alert-info">Cada módulo es un archivo HTML independiente. Para actualizar un módulo: descárgalo, modifícalo y sube el nuevo archivo a GitHub. El ecosistema lo carga automáticamente.</div>
     <table class="tbl">
-      <thead><tr><th>MÓDULO</th><th>ARCHIVO</th><th>FUNCIÓN</th><th>ESTADO</th><th>ACCIONES</th>｜DSML｜</thead>
+      <thead><tr><th>MÓDULO</th><th>ARCHIVO</th><th>FUNCIÓN</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
       <tbody>
-        <tr>
-          <td><strong>Core</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">index.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Núcleo — une todo el ecosistema</td>
-          <td><span class="rb rba">ACTIVO</span></td>
-          <td><button class="bsm" onclick="downloadModule('core')">📥 Core</button></td>
-        </tr>
-        <tr>
-          <td><strong>Proyectos</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-projects.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Notebooks desde GitHub</td>
-          <td><span class="rb" id="st-projects" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('projects')">📥</button></td>
-        </tr>
-        <tr>
-          <td><strong>Arquitecto</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Editor Qiskit · Cirq · QuTiP + GPU HuggingFace</td>
-          <td><span class="rb" id="st-architect" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('architect')">📥</button></td>
-        </tr>
-        <tr>
-          <td><strong>Arquitecto Pro</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect-pro.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Notebooks completos — Admin+</td>
-          <td><span class="rb" id="st-archpro" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('architect-pro')">📥</button></td>
-        </tr>
-        <tr>
-          <td><strong>Librería</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-library.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Recursos educativos desde GitHub</td>
-          <td><span class="rb" id="st-library" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('library')">📥</button></td>
-        </tr>
-        <tr>
-          <td><strong>Cuenta</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-account.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Perfil y circuitos guardados</td>
-          <td><span class="rb" id="st-account" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('account')">📥</button></td>
-        </tr>
-        <tr>
-          <td><strong>Ayuda</strong></td>
-          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-help.html</td>
-          <td style="font-size:.62rem;color:var(--mu);">Documentación del ecosistema</td>
-          <td><span class="rb" id="st-help" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
-          <td><button class="bsm" onclick="downloadModule('help')">📥</button></td>
-        </tr>
+        <tr><td><strong>Core</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">index.html</td><td style="font-size:.62rem;color:var(--mu);">Núcleo — une todo el ecosistema</td><td><span class="rb rba">ACTIVO</span></td><td><button class="bsm" onclick="downloadModule('core')">📥 Core</button></td></tr>
+        <tr><td><strong>Proyectos</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-projects.html</td><td style="font-size:.62rem;color:var(--mu);">Notebooks desde GitHub</td><td><span class="rb" id="st-projects" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('projects')">📥</button></td></tr>
+        <tr><td><strong>Arquitecto</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect.html</td><td style="font-size:.62rem;color:var(--mu);">Editor Qiskit · Cirq · QuTiP + GPU HuggingFace</td><td><span class="rb" id="st-architect" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('architect')">📥</button></td></tr>
+        <tr><td><strong>Arquitecto Pro</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect-pro.html</td><td style="font-size:.62rem;color:var(--mu);">Notebooks completos — Admin+</td><td><span class="rb" id="st-archpro" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('architect-pro')">📥</button></td></tr>
+        <tr><td><strong>Librería</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-library.html</td><td style="font-size:.62rem;color:var(--mu);">Recursos educativos desde GitHub</td><td><span class="rb" id="st-library" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('library')">📥</button></td></tr>
+        <tr><td><strong>Cuenta</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-account.html</td><td style="font-size:.62rem;color:var(--mu);">Perfil y circuitos guardados</td><td><span class="rb" id="st-account" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('account')">📥</button></td></tr>
+        <tr><td><strong>Ayuda</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-help.html</td><td style="font-size:.62rem;color:var(--mu);">Documentación del ecosistema</td><td><span class="rb" id="st-help" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('help')">📥</button></td></tr>
+        <!-- NUEVO MÓDULO: Quantum App Studio -->
+        <tr><td><strong>⚛️ Quantum App Studio</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--cy);">quantum-app-studio.html</td><td style="font-size:.62rem;color:var(--mu);">Editor visual de aplicaciones cuánticas con backend remoto</td><td><span class="rb" id="st-quantumapp" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('quantumapp')">📥</button></td></tr>
       </tbody>
     </table>
     <div class="btn-row" style="margin-top:.8rem;">
@@ -756,6 +717,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
 ├── qcol-library.html       ← Módulo librería
 ├── qcol-account.html       ← Módulo mi cuenta
 ├── qcol-help.html          ← Módulo ayuda
+├── quantum-app-studio.html ← ⚛️ Quantum App Studio (EDITOR VISUAL)
 ├── notebooks/              ← Tus notebooks .ipynb
 │   ├── circuito_bell.ipynb
 │   └── algoritmo_grover.ipynb
@@ -1476,7 +1438,7 @@ function loadUserStats(){
         <th style="padding:.3rem .5rem;text-align:left;color:var(--bl2);">Libs usadas</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Qubits</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Último uso</th>
-       </tr></thead>
+      </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -1581,12 +1543,13 @@ function importBackup(e) {
 
 // ══ MODULES ══
 function checkModules() {
-  const mods = ['projects','architect','architect-pro','library','account','help'];
+  const mods = ['projects','architect','architect-pro','library','account','help','quantumapp'];
   mods.forEach(async (m) => {
-    const file = 'qcol-' + m + '.html';
+    let file = 'qcol-' + m + '.html';
+    if (m === 'quantumapp') file = 'quantum-app-studio.html';
     try {
       const res = await fetch(file, { method: 'HEAD' });
-      const el = document.getElementById('st-' + m.replace('-',''));
+      const el = document.getElementById('st-' + (m === 'quantumapp' ? 'quantumapp' : m.replace('-','')));
       if (el) {
         if (res.ok) { el.textContent = 'ACTIVO'; el.style.cssText = 'background:rgba(0,255,136,.1);color:var(--gr);border:1px solid rgba(0,255,136,.3);'; }
         else { el.textContent = 'FALTANTE'; }
@@ -1610,11 +1573,113 @@ function downloadModule(mod) {
     notify('El core (index.html) ya fue descargado desde Claude');
     return;
   }
-  notify('Módulo ' + mod + ' — pendiente de desarrollo. Se descargará cuando esté listo.');
+  if (mod === 'quantumapp') {
+    notify('⚛️ Quantum App Studio — descargando módulo...');
+    // Generar contenido del módulo
+    const quantumStudioContent = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum App Studio · Editor Cuántico</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#0a0e1a;--bg2:#0d1220;--bg3:#111827;--bg4:#060912;--bd:#1a2a48;--bd2:#1e3058;--bl:#0088ff;--bl2:#00aaff;--cy:#00ffdd;--gr:#00ff88;--yw:#ffd700;--rd:#ff4466;--pu:#bd93f9;--tx:#dce8ff;--tx2:#8aa0c4;--mu:#3d5a8a;}
+body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;height:100vh;overflow:hidden;}
+.notif{position:fixed;top:.6rem;right:.6rem;z-index:9999;padding:.45rem .85rem;background:rgba(6,9,18,.97);border:1px solid var(--cy);border-radius:7px;font-family:monospace;font-size:.55rem;color:var(--cy);transform:translateX(130%);transition:transform .28s;backdrop-filter:blur(20px);pointer-events:none;}
+.notif.show{transform:translateX(0);}
+.screen{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;}
+.hidden{display:none !important;}
+.repo-header{padding:1rem;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;}
+.repo-title{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:var(--bl2);}
+.btn-primary{background:linear-gradient(135deg,#003a9e,var(--bl));border:none;border-radius:8px;padding:.5rem 1rem;font-weight:bold;color:white;font-family:monospace;cursor:pointer;}
+.projects-grid{flex:1;overflow-y:auto;padding:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;}
+.project-card{background:var(--bg3);border:1px solid var(--bd);border-radius:16px;padding:1rem;transition:.1s;}
+.project-card:hover{border-color:var(--bl);background:rgba(0,136,255,.05);}
+.project-name{font-size:1rem;font-weight:600;margin-bottom:.5rem;}
+.card-actions{display:flex;gap:.5rem;margin-top:.8rem;}
+.btn-secondary{background:rgba(30,48,88,.7);border:1px solid var(--bd2);border-radius:6px;padding:.3rem .7rem;font-family:monospace;font-size:.6rem;color:var(--tx2);cursor:pointer;}
+.btn-secondary:hover{background:var(--bl);color:white;border-color:var(--bl);}
+.editor-container{display:flex;flex:1;overflow:hidden;gap:0;}
+.editor-pane{flex:1;display:flex;flex-direction:column;background:var(--bg4);border-right:1px solid var(--bd);}
+.pane-header{padding:.5rem;background:#060912;border-bottom:1px solid var(--bd);font-family:monospace;font-size:.7rem;}
+.code-area{flex:1;font-family:'JetBrains Mono',monospace;font-size:.7rem;background:var(--bg4);color:var(--tx);border:none;padding:.8rem;resize:none;outline:none;white-space:pre-wrap;}
+.top-editor-bar{padding:.5rem;display:flex;gap:.8rem;background:var(--bg2);align-items:center;flex-wrap:wrap;}
+.editor-config{display:flex;gap:.5rem;align-items:center;margin-left:auto;}
+.server-input{background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:.3rem .6rem;font-family:monospace;font-size:.6rem;color:var(--tx);width:220px;}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;transition:.2s;}
+.modal.open{visibility:visible;opacity:1;}
+.modal-content{width:90%;height:85%;background:white;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{padding:.5rem 1rem;background:#1e1e2f;display:flex;justify-content:space-between;align-items:center;}
+.modal-iframe{flex:1;border:none;background:white;}
+.runner-container{display:flex;flex-direction:column;height:100%;}
+.runner-header{padding:.5rem 1rem;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;gap:1rem;align-items:center;}
+.app-iframe{flex:1;width:100%;border:none;background:white;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--mu);display:inline-block;}
+.status-dot.active{background:var(--gr);box-shadow:0 0 5px var(--gr);}
+@media(max-width:680px){.editor-container{flex-direction:column;}.projects-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="notif" id="notif"></div>
+<div id="repo-screen" class="screen"><div class="repo-header"><div class="repo-title">⚛️ Quantum App Studio · Repositorio</div><button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button></div><div class="projects-grid" id="projects-grid"></div></div>
+<div id="editor-screen" class="screen hidden"><div class="top-editor-bar"><input type="text" id="project-name-input" placeholder="Nombre del proyecto" style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:.4rem;color:white;width:240px;"><div class="editor-config"><input type="text" id="server-url-input" class="server-input" placeholder="URL servidor cuántico"><button class="btn-secondary" id="test-server-btn">🔌 Probar</button><span id="server-status" style="font-size:.55rem;"></span></div><button class="btn-primary" id="save-project-editor">💾 Guardar proyecto</button><button class="btn-secondary" id="preview-run-btn">▶ Probar ejecución</button><button class="btn-secondary" id="back-to-repo-editor">← Volver</button></div><div class="editor-container"><div class="editor-pane"><div class="pane-header">🐍 LÓGICA PYTHON (backend remoto)</div><textarea id="python-editor" class="code-area" spellcheck="false"></textarea></div><div class="editor-pane"><div class="pane-header">🌐 INTERFAZ HTML + JS (frontend)</div><textarea id="html-editor" class="code-area" spellcheck="false"></textarea></div></div><div style="padding:.3rem .8rem;background:#060912;font-size:.55rem;color:var(--mu);">💡 Las funciones Python se llaman con <span style="color:var(--cy);">window.pyCall("funcion", args...)</span>.</div></div>
+<div id="runner-screen" class="screen hidden"><div class="runner-header"><button class="btn-secondary" id="back-to-repo-runner">← Repositorio</button><span id="runner-app-name" style="font-weight:bold;"></span><span id="runner-mode" style="margin-left:auto;font-size:.6rem;"><span class="status-dot" id="runner-dot"></span> Conectando...</span></div><iframe id="app-iframe" class="app-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe></div>
+<div id="preview-modal" class="modal"><div class="modal-content"><div class="modal-header"><strong>🔬 Prueba de aplicación (sin guardar)</strong><button class="btn-secondary" id="close-modal-btn">Cerrar</button></div><iframe id="preview-iframe" class="modal-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe></div></div>
+<script>
+let projects=[],currentEditId=null,remoteSessionStatus=false,isEmbedded=false,parentOrigin='*';
+function notify(msg,dur=2000){const n=document.getElementById('notif');n.textContent=msg;n.classList.add('show');clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove('show'),dur);if(isEmbedded&&parentOrigin)window.parent.postMessage({type:'QCOL_STUDIO_NOTIFICATION',message:msg},parentOrigin);}
+function generateId(){return Date.now()+'-'+Math.random().toString(36).substring(2,10);}
+function escapeHtml(str){return String(str).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);}
+function sendToParent(msg){if(window.parent&&window.parent!==window)try{window.parent.postMessage(msg,parentOrigin);}catch(e){}}
+window.addEventListener('message',async(e)=>{const d=e.data;if(!d||typeof d!=='object')return;if(d.type==='QCOL_REQUEST_STUDIO_CONNECTION'){isEmbedded=true;parentOrigin=e.origin;sendToParent({type:'QCOL_STUDIO_OPENED',version:'2.0',status:'ready'});notify('Conectado con QCOL',1500);return}
+if(d.type==='QCOL_OPEN_APP_FROM_PUZZLE'){const{appId,appName,pythonCode,htmlCode,serverUrl}=d;if(appId&&appName){let existing=projects.find(p=>p.id===appId);if(existing){currentEditId=appId;document.getElementById('project-name-input').value=existing.name;document.getElementById('python-editor').value=existing.pythonCode||'';document.getElementById('html-editor').value=existing.htmlCode||'';document.getElementById('server-url-input').value=existing.serverUrl||'';}else{projects.push({id:appId,name:appName||'App desde QCOL',pythonCode:pythonCode||'# Código Python\\ndef saludar(nombre):\\n    return f"Hola {nombre}!"',htmlCode:htmlCode||'<!DOCTYPE html><html><body><h1>App</h1><button onclick="test()">Click</button><script>async function test(){const r=await window.pyCall("saludar","mundo");alert(r)}<\\/script></body></html>',serverUrl:serverUrl||'',createdAt:Date.now()});currentEditId=appId;document.getElementById('project-name-input').value=appName;document.getElementById('python-editor').value=projects[projects.length-1].pythonCode;document.getElementById('html-editor').value=projects[projects.length-1].htmlCode;document.getElementById('server-url-input').value=serverUrl||'';}
+saveProjects();updateServerStatusText(document.getElementById('server-url-input').value);showScreen('editor');sendToParent({type:'QCOL_STUDIO_APP_LOADED',appId:currentEditId});}return;}
+if(d.type==='QCOL_GET_APPS'){sendToParent({type:'QCOL_APPS_LIST',apps:projects.map(p=>({id:p.id,name:p.name,serverUrl:p.serverUrl,createdAt:p.createdAt}))});return;}
+if(d.type==='QCOL_COMPILER_URL'&&d.url){const serverInput=document.getElementById('server-url-input');if(serverInput&&!serverInput.value.trim()){serverInput.value=d.url;updateServerStatusText(d.url);}}});
+function saveProjects(){localStorage.setItem('quantum_apps_repo',JSON.stringify(projects));if(isEmbedded&&currentEditId){const p=projects.find(p=>p.id===currentEditId);if(p)sendToParent({type:'QCOL_APP_SAVED',appId:currentEditId,appData:{name:p.name,serverUrl:p.serverUrl}});}}
+function loadProjects(){const s=localStorage.getItem('quantum_apps_repo');if(s)try{projects=JSON.parse(s);}catch(e){projects=[];}
+if(!projects.length){projects.push({id:generateId(),name:"Demo: Saludo cuántico",pythonCode:`def saludar(nombre):\\n    return f"¡Hola {nombre}! desde Python cuántico 🧪"\\ndef suma(a,b):\\n    return a+b`,htmlCode:`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#0a0e1a;color:white;font-family:monospace;padding:1rem;"><h2>Demo Interactiva</h2><input id="nameInput" placeholder="Tu nombre"><button onclick="callGreet()">Saludar</button><p id="result"></p><script>window.callGreet=async()=>{const name=document.getElementById('nameInput').value;const res=await window.pyCall("saludar",name);document.getElementById('result').innerText=res;};<\\/script></body></html>`,serverUrl:"",createdAt:Date.now()});saveProjects();}}
+function renderRepository(){const g=document.getElementById('projects-grid');if(!g)return;g.innerHTML='';projects.forEach(p=>{const c=document.createElement('div');c.className='project-card';c.innerHTML=\`<div class="project-name">📦 \${escapeHtml(p.name)}</div><div class="card-actions"><button class="btn-secondary edit-proj" data-id="\${p.id}">✏️ Editar</button><button class="btn-secondary run-proj" data-id="\${p.id}">▶ Ejecutar</button><button class="btn-secondary delete-proj" data-id="\${p.id}">🗑 Eliminar</button></div>\`;g.appendChild(c);});
+document.querySelectorAll('.edit-proj').forEach(b=>b.addEventListener('click',()=>editProject(b.getAttribute('data-id'))));
+document.querySelectorAll('.run-proj').forEach(b=>b.addEventListener('click',()=>launchProject(b.getAttribute('data-id'))));
+document.querySelectorAll('.delete-proj').forEach(b=>b.addEventListener('click',()=>deleteProject(b.getAttribute('data-id'))));}
+function editProject(id){const p=projects.find(p=>p.id===id);if(!p)return;currentEditId=id;document.getElementById('project-name-input').value=p.name;document.getElementById('python-editor').value=p.pythonCode||'';document.getElementById('html-editor').value=p.htmlCode||'';document.getElementById('server-url-input').value=p.serverUrl||"";updateServerStatusText(p.serverUrl);showScreen('editor');}
+async function updateServerStatusText(url){const s=document.getElementById('server-status');if(!url){s.innerHTML='⚠️ Requiere URL';remoteSessionStatus=false;return;}s.innerHTML='⏳ probando...';const ok=await testBackendConnection(url);if(ok){s.innerHTML='✅ servidor activo';remoteSessionStatus=true;}else{s.innerHTML='❌ no responde';remoteSessionStatus=false;}}
+async function testBackendConnection(baseUrl){try{const cleanUrl=baseUrl.replace(/\\/+$/,'');const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);const res=await fetch(cleanUrl+'/health/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:['']}),signal:controller.signal});clearTimeout(timeout);return res.ok;}catch(e){return false;}}
+async function executePythonRemote(code,serverUrl){if(!serverUrl)throw new Error("No hay URL de servidor");const base=serverUrl.replace(/\\/+$/,'');const isHF=base.includes('hf.space')||base.includes('huggingface');let url,body;if(isHF){url=base+'/run/predict';body=JSON.stringify({data:[code],fn_index:0});}else{url=base+'/run';body=JSON.stringify({code:code,lib:'python'});}
+const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});if(!res.ok)throw new Error(\`HTTP \${res.status}\`);const raw=await res.json();const d=isHF?(raw.data?.[0]||raw):raw;if(d.success===false)throw new Error(d.output||d.error||"Error remoto");return d.output||d.result||"";}
+window.addEventListener('message',async(e)=>{if(e.data.type==='pyCall'){const{id,func,args,serverUrl,pythonCode}=e.data;try{if(!serverUrl)throw new Error("Falta URL de servidor");const fullCode=\`\${pythonCode}\\nimport json\\n_result = \${func}(*\${JSON.stringify(args)})\\nprint(json.dumps(_result))\`;const output=await executePythonRemote(fullCode,serverUrl);let parsed=output.trim();try{parsed=JSON.parse(parsed);}catch(e){parsed=output;}
+e.source.postMessage({type:'pyResult',id:id,result:parsed},'*');}catch(err){e.source.postMessage({type:'pyResult',id:id,error:err.message},'*');}}});
+async function buildAppBlob(pythonCode,htmlCode,serverUrl){const bridge=\`<script>window.__serverUrl=\${JSON.stringify(serverUrl)};window.__pyCode=\${JSON.stringify(pythonCode)};window.pyCall=async(funcName,...args)=>new Promise((resolve,reject)=>{const msgId=Date.now()+'-'+Math.random();const handler=(event)=>{if(event.data.type==='pyResult'&&event.data.id===msgId){window.removeEventListener('message',handler);if(event.data.error)reject(new Error(event.data.error));else resolve(event.data.result);}};window.addEventListener('message',handler);window.parent.postMessage({type:'pyCall',id:msgId,func:funcName,args:args,serverUrl:window.__serverUrl,pythonCode:window.__pyCode},'*');});console.log("Bridge listo");<\\/script>\`;let finalHtml=htmlCode;if(finalHtml.includes('<head>'))finalHtml=finalHtml.replace('<head>','<head>'+bridge);else if(finalHtml.includes('<html>'))finalHtml=finalHtml.replace('<html>','<html><head>'+bridge+'</head>');else finalHtml=bridge+finalHtml;const blob=new Blob([finalHtml],{type:'text/html'});return{blobUrl:URL.createObjectURL(blob),revoke:()=>URL.revokeObjectURL(blobUrl)};}
+async function launchProject(id){const p=projects.find(p=>p.id===id);if(!p)return;showScreen('runner');document.getElementById('runner-app-name').innerText=\`⚛️ \${escapeHtml(p.name)}\`;const modeSpan=document.getElementById('runner-mode');const dot=document.getElementById('runner-dot');const serverActive=p.serverUrl&&await testBackendConnection(p.serverUrl);if(serverActive){modeSpan.innerHTML='<span class="status-dot active"></span> Remoto';dot.className='status-dot active';}else{modeSpan.innerHTML='<span class="status-dot"></span> ⚠️ Sin servidor';dot.className='status-dot';}
+const{blobUrl,revoke}=await buildAppBlob(p.pythonCode,p.htmlCode,p.serverUrl);const iframe=document.getElementById('app-iframe');iframe.src=blobUrl;iframe.onload=()=>revoke();}
+async function runPreview(){const{blobUrl,revoke}=await buildAppBlob(document.getElementById('python-editor').value,document.getElementById('html-editor').value,document.getElementById('server-url-input').value);const iframe=document.getElementById('preview-iframe');iframe.src=blobUrl;iframe.onload=()=>revoke();document.getElementById('preview-modal').classList.add('open');}
+function closeModal(){document.getElementById('preview-modal').classList.remove('open');document.getElementById('preview-iframe').src='about:blank';}
+function showScreen(s){document.getElementById('repo-screen').classList.add('hidden');document.getElementById('editor-screen').classList.add('hidden');document.getElementById('runner-screen').classList.add('hidden');if(s==='repo')document.getElementById('repo-screen').classList.remove('hidden');else if(s==='editor')document.getElementById('editor-screen').classList.remove('hidden');else if(s==='runner')document.getElementById('runner-screen').classList.remove('hidden');}
+function saveCurrentEdit(){if(!currentEditId){const newName=document.getElementById('project-name-input').value.trim();if(!newName){notify("Ingresa un nombre");return;}const newId=generateId();projects.push({id:newId,name:newName,pythonCode:document.getElementById('python-editor').value,htmlCode:document.getElementById('html-editor').value,serverUrl:document.getElementById('server-url-input').value,createdAt:Date.now()});currentEditId=newId;saveProjects();notify(\`Proyecto "\${newName}" creado\`);showScreen('repo');renderRepository();return;}
+const idx=projects.findIndex(p=>p.id===currentEditId);if(idx!==-1){projects[idx].name=document.getElementById('project-name-input').value.trim()||"Sin nombre";projects[idx].pythonCode=document.getElementById('python-editor').value;projects[idx].htmlCode=document.getElementById('html-editor').value;projects[idx].serverUrl=document.getElementById('server-url-input').value;saveProjects();notify("Proyecto guardado");showScreen('repo');renderRepository();}}
+function deleteProject(id){if(projects.length===1){notify("Debe haber al menos un proyecto");return;}if(confirm("¿Eliminar aplicación?")){projects=projects.filter(p=>p.id!==id);if(currentEditId===id)currentEditId=null;saveProjects();renderRepository();notify("Proyecto eliminado");if(isEmbedded)sendToParent({type:'QCOL_APP_DELETED',appId:id});}}
+function startNewProject(){currentEditId=null;document.getElementById('project-name-input').value="Nuevo proyecto";document.getElementById('python-editor').value='# Funciones que se llamarán desde el frontend\\ndef mi_funcion(param):\\n    return f"Recibí: {param}"\\n\\n# Puedes usar numpy, qiskit, etc. si el servidor lo soporta';document.getElementById('html-editor').value='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#0f172a;color:white;font-family:sans-serif;padding:1rem;"><h2>Mi App Cuántica</h2><button onclick="testCall()">Llamar función</button><p id="output"></p><script>async function testCall(){const res=await window.pyCall("mi_funcion","Hola mundo");document.getElementById("output").innerText=res;}<\\/script></body></html>';document.getElementById('server-url-input').value="";document.getElementById('server-status').innerHTML='';showScreen('editor');}
+function bindEvents(){document.getElementById('new-project-btn').onclick=startNewProject;document.getElementById('save-project-editor').onclick=saveCurrentEdit;document.getElementById('back-to-repo-editor').onclick=()=>showScreen('repo');document.getElementById('back-to-repo-runner').onclick=()=>showScreen('repo');document.getElementById('preview-run-btn').onclick=runPreview;document.getElementById('close-modal-btn').onclick=closeModal;document.getElementById('test-server-btn').onclick=async()=>{const url=document.getElementById('server-url-input').value;if(!url){notify("Ingresa una URL de servidor cuántico");return;}const ok=await testBackendConnection(url);if(ok)notify("✅ Servidor remoto conectado",2000);else notify("❌ No se pudo conectar",2000);updateServerStatusText(url);};}
+loadProjects();renderRepository();bindEvents();sendToParent({type:'QCOL_REQUEST_COMPILER_URL'},'*');notify("Quantum App Studio · Editor visual",3000);
+setTimeout(()=>sendToParent({type:'QCOL_STUDIO_READY',standalone:true}),500);
+<\/script>
+</body>
+</html>`;
+    const blob = new Blob([quantumStudioContent], {type: 'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'quantum-app-studio.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    notify('✅ quantum-app-studio.html descargado');
+    return;
+  }
+  notify('Módulo ' + mod + ' — pendiente de desarrollo.');
 }
 
 function downloadAll() {
-  notify('Los módulos se descargan individualmente desde los outputs de esta sesión.');
+  notify('Los módulos se descargan individualmente.');
 }
 
 function getCustomModules(){return JSON.parse(localStorage.getItem('qcol_custom_modules')||'[]');}
@@ -1632,7 +1697,7 @@ function createModule(){
   mods.push({name,id,file,icon,desc,role,created:new Date().toLocaleDateString()});
   saveCustomModules(mods);
   renderCustomModules();
-  notify('✅ Módulo "'+name+'" creado. Sube '+file+' a GitHub para activarlo.');
+  notify('✅ Módulo "'+name+'" creado. Sube '+file+' a GitHub.');
   addSysLog('Módulo creado: '+name+' → '+file,'ok');
   ['nm-name','nm-id','nm-file','nm-icon','nm-desc'].forEach(k=>document.getElementById(k).value='');
 }
@@ -1654,297 +1719,157 @@ function deleteModule(i){
   const mods=getCustomModules();mods.splice(i,1);saveCustomModules(mods);renderCustomModules();notify('Módulo eliminado del menú');addSysLog('Módulo eliminado','warn');
 }
 
-// ══ NUEVAS FUNCIONES PARA CHAT CON MARKDOWN ══
-function displayMessage(role, content) {
-  const container = document.getElementById('chat-messages');
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
-  if (role === 'assistant' && window.marked && window.DOMPurify) {
-    // Renderizar Markdown a HTML y sanitizar
-    const rawHtml = window.marked.parse(content);
-    const cleanHtml = window.DOMPurify.sanitize(rawHtml);
-    msgDiv.innerHTML = cleanHtml;
-  } else {
-    // Mensaje de usuario o si falla el renderizado, texto plano
-    msgDiv.textContent = content;
-  }
-  container.appendChild(msgDiv);
-  container.scrollTop = container.scrollHeight;
+// ══ FUNCIONES GITHUB (mantenidas) ══
+function saveGH(){
+  const user=document.getElementById('gh-user').value.trim();
+  const repo=document.getElementById('gh-repo').value.trim();
+  const branch=document.getElementById('gh-branch').value.trim();
+  const token=document.getElementById('gh-token').value.trim();
+  localStorage.setItem('qcol_gh',JSON.stringify({user,repo,branch,token}));
+  notify('✅ GitHub guardado');
+  addSysLog('Config GitHub guardada','ok');
 }
-
-function clearChat() {
-  const container = document.getElementById('chat-messages');
-  // Limpiar el contenedor y dejar solo un mensaje de bienvenida
-  container.innerHTML = '';
-  chatHistory = [];
-  displayMessage('assistant', '👋 ¡Hola! Soy el asistente de QCOL. Puedes preguntarme sobre computación cuántica, Qiskit, Cirq, QuTiP o cualquier duda técnica. Escribe tu mensaje.');
+function openGH(){const gh=getGH();if(gh.user&&gh.repo)window.open(`https://github.com/${gh.user}/${gh.repo}`,'_blank');}
+async function testGH(){
+  const gh=getGH();
+  if(!gh.user||!gh.repo){notify('Usuario o repo vacío');return;}
+  const dot=document.getElementById('gh-dot');const st=document.getElementById('gh-status');
+  dot.className='sdot warn';st.textContent='Verificando...';
+  try{
+    const res=await fetch(`https://api.github.com/repos/${gh.user}/${gh.repo}`,{headers:gh.token?{'Authorization':'token '+gh.token}:{}});
+    if(res.ok){dot.className='sdot ok';st.textContent='✅ Repositorio accesible';notify('✅ Repositorio acceso OK');}
+    else if(res.status===401){dot.className='sdot err';st.textContent='❌ Token inválido';notify('Token inválido');}
+    else{dot.className='sdot err';st.textContent='❌ Repo no encontrado';notify('Repo no encontrado');}
+  }catch(e){dot.className='sdot err';st.textContent='❌ Error';notify(e.message);}
 }
-
-async function sendChatMessage() {
-  const input = document.getElementById('chat-input');
-  const message = input.value.trim();
-  if (!message) return;
-
-  // Mostrar mensaje del usuario
-  displayMessage('user', message);
-  input.value = '';
-  
-  // Guardar en historial
-  chatHistory.push({ role: 'user', content: message });
-  
-  // Limitar historial a los últimos 10 mensajes (para no saturar contexto)
-  if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
-
-  // Obtener configuración de IA
-  const ai = getAI();
-  if (ai.provider === 'none' || !ai.key) {
-    displayMessage('assistant', '⚠️ **IA no configurada**. Por favor, ve a la configuración de IA, selecciona un proveedor y guarda tu API key.');
+function previewUpload(input){const p=document.getElementById('gh-file-preview');if(input.files.length){p.innerHTML='📄 '+input.files[0].name+' ('+(input.files[0].size/1024).toFixed(1)+' KB)';}else{p.innerHTML='';}}
+async function uploadToGitHub(){
+  const gh=getGH();const fileInput=document.getElementById('gh-file-input');const folder=document.getElementById('gh-folder').value.trim();const commitMsg=document.getElementById('gh-commit-msg').value.trim();
+  if(!gh.token){notify('Token requerido');return;}
+  if(!fileInput.files.length){notify('Selecciona archivo');return;}
+  const file=fileInput.files[0];const reader=new FileReader();
+  reader.onload=async()=>{
+    const content=btoa(unescape(encodeURIComponent(reader.result)));
+    let path=folder?folder+'/'+file.name:file.name;
+    const apiURL=`https://api.github.com/repos/${gh.user}/${gh.repo}/contents/${path}`;
+    const log=document.getElementById('gh-upload-log');log.innerHTML='🔄 Subiendo...';
+    try{
+      let sha;try{const chk=await fetch(apiURL,{headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json'}});if(chk.ok){const d=await chk.json();sha=d.sha;}}catch(e){}
+      const body={message:commitMsg||'Subido desde QCOL',content};if(sha)body.sha=sha;
+      const res=await fetch(apiURL,{method:'PUT',headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(res.ok){log.innerHTML='✅ Subido: '+path;notify('✅ Archivo subido a GitHub');addSysLog('Subido: '+path,'ok');fileInput.value='';document.getElementById('gh-file-preview').innerHTML='';}
+      else{const e=await res.json();log.innerHTML='❌ Error: '+e.message;notify('❌ '+e.message);}
+    }catch(e){log.innerHTML='❌ '+e.message;notify(e.message);}
+  };
+  reader.readAsText(file);
+}
+function getGH(){const s=JSON.parse(localStorage.getItem('qcol_gh')||'{}');return{user:s.user||'laffitacamargof-create',repo:s.repo||'quantum-computing-open-lab',branch:s.branch||'main',token:s.token||''};}
+function addSysLog(msg,type){const l=document.getElementById('sys-log');if(l){const t=new Date().toLocaleTimeString();l.innerHTML+=\`\\n<span class="log-\${type}">[\${t}] \${msg}</span>\`;l.scrollTop=l.scrollHeight;}}
+loadSaved();addSysLog('Quantum App Studio inicializado','info');
+setTimeout(()=>sendToParent({type:'QCOL_REQUEST_COMPILER_URL'}),500);
+<\/script>
+</body>
+</html>`;
+    const blob = new Blob([quantumStudioContent], {type: 'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'quantum-app-studio.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    notify('✅ quantum-app-studio.html descargado');
     return;
   }
-
-  // Mostrar indicador de carga
-  const loadingDiv = document.getElementById('chat-loading');
-  loadingDiv.style.display = 'block';
-
-  try {
-    // Construir mensajes para la API
-    const messages = [];
-    // Agregar prompt del sistema
-    if (ai.prompt) {
-      messages.push({ role: 'system', content: ai.prompt });
-    }
-    // Agregar historial (excepto el último mensaje que ya se agregó?)
-    for (let i = 0; i < chatHistory.length - 1; i++) {
-      messages.push({ role: chatHistory[i].role, content: chatHistory[i].content });
-    }
-    // El último mensaje (el del usuario) ya está en chatHistory, lo agregamos
-    messages.push({ role: 'user', content: message });
-
-    let responseText = '';
-    const temp = ai.temp || 0.7;
-    const maxTokens = ai.tokens || 600;
-    let url, headers, body;
-
-    headers = { 'Content-Type': 'application/json' };
-
-    switch (ai.provider) {
-      case 'mistral':
-        url = 'https://api.mistral.ai/v1/chat/completions';
-        headers['Authorization'] = 'Bearer ' + ai.key;
-        body = {
-          model: ai.model || 'mistral-large-latest',
-          messages: messages,
-          max_tokens: maxTokens,
-          temperature: temp
-        };
-        break;
-      case 'groq':
-        url = 'https://api.groq.com/openai/v1/chat/completions';
-        headers['Authorization'] = 'Bearer ' + ai.key;
-        body = {
-          model: ai.model || 'llama3-70b-8192',
-          messages: messages,
-          max_tokens: maxTokens,
-          temperature: temp
-        };
-        break;
-      case 'huggingface':
-        url = `https://api-inference.huggingface.co/models/${ai.model || 'mistralai/Mistral-7B-Instruct-v0.3'}`;
-        headers['Authorization'] = 'Bearer ' + ai.key;
-        // HuggingFace espera un formato diferente: inputs y parameters
-        // Convertimos el array de mensajes a un solo prompt
-        let promptHF = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-        body = {
-          inputs: promptHF,
-          parameters: { max_new_tokens: maxTokens, temperature: temp }
-        };
-        break;
-      case 'openai':
-        url = 'https://api.openai.com/v1/chat/completions';
-        headers['Authorization'] = 'Bearer ' + ai.key;
-        body = {
-          model: ai.model || 'gpt-4o-mini',
-          messages: messages,
-          max_tokens: maxTokens,
-          temperature: temp
-        };
-        break;
-      case 'gemini':
-        // Gemini requiere URL con key en query string, estructura diferente
-        // Por simplicidad, mostramos mensaje de no soporte en chat por ahora
-        throw new Error('Gemini no está implementado en el chat aún. Usa Mistral o Groq.');
-      default:
-        throw new Error('Proveedor no soportado en chat.');
-    }
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30000)
-    });
-
-    const rawText = await res.text();
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${rawText.substring(0, 200)}`);
-    }
-
-    let data;
-    try { data = JSON.parse(rawText); } catch(e) { throw new Error('Respuesta no válida'); }
-
-    // Extraer respuesta según proveedor
-    if (ai.provider === 'huggingface') {
-      responseText = data.generated_text || 'Sin respuesta';
-    } else {
-      responseText = data.choices?.[0]?.message?.content || 'Sin respuesta';
-    }
-
-    // Guardar respuesta en historial
-    chatHistory.push({ role: 'assistant', content: responseText });
-    // Limitar historial nuevamente
-    if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
-
-    // Mostrar respuesta formateada
-    displayMessage('assistant', responseText);
-
-  } catch (err) {
-    console.error(err);
-    displayMessage('assistant', `❌ **Error en la comunicación con la IA:**\n\n${err.message}\n\nVerifica tu configuración (API key, modelo) y que tengas saldo/disponibilidad.`);
-  } finally {
-    loadingDiv.style.display = 'none';
-  }
+  notify('Módulo ' + mod + ' — pendiente de desarrollo.');
 }
 
-// ══ FUNCIONES EXISTENTES DE IA (testAI, saveAI, etc.) se mantienen igual ══
-function aiProviderChange() {
-  const p = document.getElementById('ai-prov').value;
-  const models = {
-    mistral:      'mistral-large-latest',
-    groq:         'llama3-70b-8192',
-    huggingface:  'mistralai/Mistral-7B-Instruct-v0.3',
-    openai:       'gpt-4o-mini',
-    gemini:       'gemini-pro',
-    none:         ''
+function downloadAll() {
+  notify('Los módulos se descargan individualmente.');
+}
+
+function getCustomModules(){return JSON.parse(localStorage.getItem('qcol_custom_modules')||'[]');}
+function saveCustomModules(m){localStorage.setItem('qcol_custom_modules',JSON.stringify(m));}
+function createModule(){
+  const name=document.getElementById('nm-name').value.trim();
+  const id=document.getElementById('nm-id').value.trim().replace(/\s/g,'-').toLowerCase();
+  const file=document.getElementById('nm-file').value.trim();
+  const icon=document.getElementById('nm-icon').value.trim()||'🔬';
+  const desc=document.getElementById('nm-desc').value.trim();
+  const role=document.getElementById('nm-role').value;
+  if(!name||!id||!file){notify('Nombre, ID y archivo son obligatorios');return;}
+  const mods=getCustomModules();
+  if(mods.find(m=>m.id===id)){notify('Ya existe un módulo con ese ID');return;}
+  mods.push({name,id,file,icon,desc,role,created:new Date().toLocaleDateString()});
+  saveCustomModules(mods);
+  renderCustomModules();
+  notify('✅ Módulo "'+name+'" creado. Sube '+file+' a GitHub.');
+  addSysLog('Módulo creado: '+name+' → '+file,'ok');
+  ['nm-name','nm-id','nm-file','nm-icon','nm-desc'].forEach(k=>document.getElementById(k).value='');
+}
+function renderCustomModules(){
+  const div=document.getElementById('custom-modules-list');if(!div)return;
+  const mods=getCustomModules();
+  if(mods.length===0){div.innerHTML='<div style="font-size:.65rem;color:var(--mu);padding:.5rem 0;">Sin módulos personalizados.</div>';return;}
+  div.innerHTML=mods.map((m,i)=>`<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;background:rgba(0,0,0,.2);border:1px solid var(--b);border-radius:7px;margin-bottom:.35rem;">
+    <span style="font-size:1rem;">${m.icon}</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--orb);font-size:.62rem;color:var(--bl2);">${m.name}</div>
+      <div style="font-family:var(--mono);font-size:.55rem;color:var(--mu);">${m.file} · acceso: ${m.role}</div>
+    </div>
+    <button class="bsm red" onclick="deleteModule(${i})">✕ Eliminar</button>
+  </div>`).join('');
+}
+function deleteModule(i){
+  if(!confirm('¿Eliminar este módulo del menú?'))return;
+  const mods=getCustomModules();mods.splice(i,1);saveCustomModules(mods);renderCustomModules();notify('Módulo eliminado del menú');addSysLog('Módulo eliminado','warn');
+}
+
+// ══ FUNCIONES GITHUB (mantenidas) ══
+function saveGH(){
+  const user=document.getElementById('gh-user').value.trim();
+  const repo=document.getElementById('gh-repo').value.trim();
+  const branch=document.getElementById('gh-branch').value.trim();
+  const token=document.getElementById('gh-token').value.trim();
+  localStorage.setItem('qcol_gh',JSON.stringify({user,repo,branch,token}));
+  notify('✅ GitHub guardado');
+  addSysLog('Config GitHub guardada','ok');
+}
+function openGH(){const gh=getGH();if(gh.user&&gh.repo)window.open(`https://github.com/${gh.user}/${gh.repo}`,'_blank');}
+async function testGH(){
+  const gh=getGH();
+  if(!gh.user||!gh.repo){notify('Usuario o repo vacío');return;}
+  const dot=document.getElementById('gh-dot');const st=document.getElementById('gh-status');
+  dot.className='sdot warn';st.textContent='Verificando...';
+  try{
+    const res=await fetch(`https://api.github.com/repos/${gh.user}/${gh.repo}`,{headers:gh.token?{'Authorization':'token '+gh.token}:{}});
+    if(res.ok){dot.className='sdot ok';st.textContent='✅ Repositorio accesible';notify('✅ Repositorio acceso OK');}
+    else if(res.status===401){dot.className='sdot err';st.textContent='❌ Token inválido';notify('Token inválido');}
+    else{dot.className='sdot err';st.textContent='❌ Repo no encontrado';notify('Repo no encontrado');}
+  }catch(e){dot.className='sdot err';st.textContent='❌ Error';notify(e.message);}
+}
+function previewUpload(input){const p=document.getElementById('gh-file-preview');if(input.files.length){p.innerHTML='📄 '+input.files[0].name+' ('+(input.files[0].size/1024).toFixed(1)+' KB)';}else{p.innerHTML='';}}
+async function uploadToGitHub(){
+  const gh=getGH();const fileInput=document.getElementById('gh-file-input');const folder=document.getElementById('gh-folder').value.trim();const commitMsg=document.getElementById('gh-commit-msg').value.trim();
+  if(!gh.token){notify('Token requerido');return;}
+  if(!fileInput.files.length){notify('Selecciona archivo');return;}
+  const file=fileInput.files[0];const reader=new FileReader();
+  reader.onload=async()=>{
+    const content=btoa(unescape(encodeURIComponent(reader.result)));
+    let path=folder?folder+'/'+file.name:file.name;
+    const apiURL=`https://api.github.com/repos/${gh.user}/${gh.repo}/contents/${path}`;
+    const log=document.getElementById('gh-upload-log');log.innerHTML='🔄 Subiendo...';
+    try{
+      let sha;try{const chk=await fetch(apiURL,{headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json'}});if(chk.ok){const d=await chk.json();sha=d.sha;}}catch(e){}
+      const body={message:commitMsg||'Subido desde QCOL',content};if(sha)body.sha=sha;
+      const res=await fetch(apiURL,{method:'PUT',headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(res.ok){log.innerHTML='✅ Subido: '+path;notify('✅ Archivo subido a GitHub');addSysLog('Subido: '+path,'ok');fileInput.value='';document.getElementById('gh-file-preview').innerHTML='';}
+      else{const e=await res.json();log.innerHTML='❌ Error: '+e.message;notify('❌ '+e.message);}
+    }catch(e){log.innerHTML='❌ '+e.message;notify(e.message);}
   };
-  const sel = document.getElementById('ai-model-sel');
-  const inp = document.getElementById('ai-model');
-  const hint = document.getElementById('ai-key-hint');
-  const hints = {
-    mistral:     'Mistral: <a onclick="window.open(\'https://console.mistral.ai\',\'_blank\')" style="color:var(--gr);cursor:pointer;">console.mistral.ai</a> → API Keys → Create',
-    groq:        'Groq: <a onclick="window.open(\'https://console.groq.com\',\'_blank\')" style="color:var(--gr);cursor:pointer;">console.groq.com</a> → API Keys → Create Key',
-    huggingface: 'HuggingFace: <a onclick="window.open(\'https://huggingface.co/settings/tokens\',\'_blank\')" style="color:var(--gr);cursor:pointer;">hf.co/settings/tokens</a> → New token',
-    openai:      'OpenAI: <a onclick="window.open(\'https://platform.openai.com/api-keys\',\'_blank\')" style="color:var(--gr);cursor:pointer;">platform.openai.com/api-keys</a>',
-    gemini:      'Google: <a onclick="window.open(\'https://aistudio.google.com/app/apikey\',\'_blank\')" style="color:var(--gr);cursor:pointer;">aistudio.google.com</a> (necesita VPN)',
-    none:        ''
-  };
-  if (inp) inp.value = models[p] || '';
-  if (sel) sel.value = models[p] || sel.options[0]?.value;
-  if (hint) hint.innerHTML = hints[p] || '';
+  reader.readAsText(file);
 }
-
-const PROMPTS = {
-  quantum:   'Eres el asistente de QCOL (Quantum Computing Open Lab), creado por Franci Laffita Camargo, estudiante de Física Nuclear. Ayudas con Qiskit, Cirq, PennyLane, QuTiP, circuitos cuánticos y física cuántica. Responde en español, de forma concisa y técnicamente precisa.',
-  teacher:   'Eres un profesor experto en computación cuántica del ecosistema QCOL. Explicas conceptos de forma clara y pedagógica, con ejemplos prácticos. Usas analogías para hacer accesibles los conceptos difíciles. Responde siempre en español.',
-  concise:   'Eres el asistente cuántico de QCOL. Responde siempre en español, de forma muy concisa. Máximo 3-4 líneas por respuesta. Solo lo esencial. Para código Qiskit, muestra directamente el código.',
-  bilingual: 'You are the QCOL quantum computing assistant. Respond in both Spanish and English. First answer in Spanish, then provide the English translation. Be concise and technically precise.',
-  code:      'Eres el asistente de código cuántico de QCOL. Tu especialidad es generar código Qiskit y Cirq. Cuando te pidan un circuito o algoritmo, responde directamente con el código Python funcional, con comentarios breves. Usa siempre sintaxis moderna de Qiskit 1.x.'
-};
-
-function setPrompt(type) {
-  const el = document.getElementById('ai-prompt');
-  if (el && PROMPTS[type]) {
-    el.value = PROMPTS[type];
-    notify('Prompt: ' + type);
-  }
-}
-function saveAI() {
-  const ai = {
-    provider: document.getElementById('ai-prov').value,
-    key:      document.getElementById('ai-key').value.trim(),
-    model:    document.getElementById('ai-model').value.trim(),
-    prompt:   document.getElementById('ai-prompt').value.trim(),
-    temp:     parseFloat(document.getElementById('ai-temp')?.value || '0.7'),
-    tokens:   parseInt(document.getElementById('ai-tokens')?.value || '600'),
-    lang:     document.getElementById('ai-lang')?.value || 'es',
-  };
-  localStorage.setItem('qcol_ai', JSON.stringify(ai));
-  postToCore('QCOL_SAVE', { key: 'qcol_ai', val: ai });
-  notify('✅ IA guardada — ' + ai.provider + ' · ' + ai.model);
-  addSysLog('IA configurada: ' + ai.provider + ' · ' + ai.model, 'ok');
-  document.getElementById('ai-dot').className = ai.provider !== 'none' ? 'sdot ok' : 'sdot off';
-  document.getElementById('ai-status').textContent = ai.provider !== 'none'
-    ? '✅ ' + ai.provider + ' — ' + ai.model
-    : 'Sin configurar';
-}
-async function testAI() {
-  const ai = getAI();
-  if (ai.provider === 'none' || !ai.key) { notify('Configura la IA primero'); return; }
-  notify('Probando IA...');
-  const temp = ai.temp || 0.7;
-  const tokens = ai.tokens || 600;
-  try {
-    let url, body, headers;
-    headers = {'Content-Type':'application/json'};
-
-    if (ai.provider === 'mistral') {
-      url = 'https://api.mistral.ai/v1/chat/completions';
-      headers['Authorization'] = 'Bearer ' + ai.key;
-      body = { model: ai.model || 'mistral-large-latest',
-               messages:[{role:'user',content:'Di "QCOL OK"'}],
-               max_tokens:10, temperature: temp };
-    } else if (ai.provider === 'groq') {
-      url = 'https://api.groq.com/openai/v1/chat/completions';
-      headers['Authorization'] = 'Bearer ' + ai.key;
-      body = { model: ai.model || 'llama3-70b-8192',
-               messages:[{role:'user',content:'Di "QCOL OK"'}],
-               max_tokens:10, temperature: temp };
-    } else if (ai.provider === 'huggingface') {
-      url = `https://api-inference.huggingface.co/models/${ai.model || 'mistralai/Mistral-7B-Instruct-v0.3'}`;
-      headers['Authorization'] = 'Bearer ' + ai.key;
-      body = { inputs: 'Di "QCOL OK"', parameters: { max_new_tokens: 10 } };
-    } else if (ai.provider === 'openai') {
-      url = 'https://api.openai.com/v1/chat/completions';
-      headers['Authorization'] = 'Bearer ' + ai.key;
-      body = { model: ai.model || 'gpt-4o-mini',
-               messages:[{role:'user',content:'Di "QCOL OK"'}],
-               max_tokens:10, temperature: temp };
-    } else {
-      notify('Prueba manual para este proveedor'); return;
-    }
-
-    const res = await fetch(url, {
-      method:'POST', headers,
-      body:JSON.stringify(body),
-      signal:AbortSignal.timeout(15000)
-    });
-    const rawText = await res.text();
-    if (rawText.trim().startsWith('<') || rawText.trim().startsWith('<!')) {
-      notify('❌ CORS bloqueado — ' + ai.provider + ' no acepta llamadas directas desde el navegador');
-      return;
-    }
-    let d;
-    try { d = JSON.parse(rawText); } catch(e) {
-      notify('❌ Respuesta no válida: ' + rawText.slice(0, 60));
-      return;
-    }
-    if (res.ok) {
-      const resp = d.choices?.[0]?.message?.content?.trim()
-                || d.generated_text
-                || '✅ OK';
-      notify('✅ IA conectada: ' + resp);
-      document.getElementById('ai-dot').className = 'sdot ok';
-      document.getElementById('ai-status').textContent = '✅ Conectada — ' + ai.provider + ' · ' + ai.model;
-      addSysLog('IA probada: ' + ai.provider + ' · ' + ai.model, 'ok');
-    } else throw new Error(d.error?.message || d.message || 'Error ' + res.status);
-  } catch(e) {
-    notify('❌ ' + e.message);
-    addSysLog('Error IA: ' + e.message, 'err');
-  }
-}
-
-// ══ INIT ══
-loadSaved();
-addSysLog('Configuración del ecosistema iniciada','info');
+function getGH(){const s=JSON.parse(localStorage.getItem('qcol_gh')||'{}');return{user:s.user||'laffitacamargof-create',repo:s.repo||'quantum-computing-open-lab',branch:s.branch||'main',token:s.token||''};}
+function addSysLog(msg,type){const l=document.getElementById('sys-log');if(l){const t=new Date().toLocaleTimeString();l.innerHTML+=\`\\n<span class="log-\${type}">[\${t}] \${msg}</span>\`;l.scrollTop=l.scrollHeight;}}
+loadSaved();addSysLog('Configuración del ecosistema iniciada','info');
 addSysLog('QCOL v3.0.0 — Sistema modular','info');
 renderCustomModules();
 loadMonitorConfig();
@@ -1964,9 +1889,9 @@ updateMistralUI();
     // --- Registrar el módulo Quantum Puzzle automáticamente ---
     const MODULE_ID = 'quantum-puzzle';
     const MODULE_NAME = '⚛️ Quantum Puzzle';
-    const MODULE_FILE = 'qcol-projects.html';
+    const MODULE_FILE = 'quantum-app-studio.html';
     const MODULE_ICON = '🧩';
-    const MODULE_DESC = 'Tienda de apps cuánticas - ejecuta programas reales en el compilador';
+    const MODULE_DESC = 'Editor visual de aplicaciones cuánticas con backend remoto';
 
     function registerModule() {
         let modules = JSON.parse(localStorage.getItem('qcol_custom_modules') || '[]');
@@ -1978,12 +1903,11 @@ updateMistralUI();
                 file: MODULE_FILE,
                 icon: MODULE_ICON,
                 desc: MODULE_DESC,
-                role: 'admin',  // solo fundador/admin puede verlo (opcional)
+                role: 'admin',
                 created: new Date().toLocaleDateString()
             });
             localStorage.setItem('qcol_custom_modules', JSON.stringify(modules));
-            console.log('[Puente] Módulo Quantum Puzzle registrado en el panel fundador');
-            // Refrescar la lista de módulos personalizados si la función existe
+            console.log('[Puente] Módulo Quantum App Studio registrado en el panel fundador');
             if (typeof renderCustomModules === 'function') renderCustomModules();
         }
     }
@@ -1996,9 +1920,8 @@ updateMistralUI();
             return;
         }
 
-        // Construir el payload para el compilador
         const payload = {
-            code: `# App: ${appTitle}\n# ID: ${appId}\n# Etiquetas: ${metadata.tags}\nprint("Ejecutando app cuántica:", "${appTitle}")\n# Aquí iría el código real subido por el fundador`,
+            code: `# App: ${appTitle}\n# ID: ${appId}\n# Etiquetas: ${metadata.tags}\nprint("Ejecutando app cuántica:", "${appTitle}")`,
             lib: 'qiskit',
             qubits: 5,
             shots: 1024
@@ -2017,11 +1940,10 @@ updateMistralUI();
         .catch(err => notify(`❌ Error en compilador: ${err.message}`));
     }
 
-    // --- Escuchar mensajes desde el módulo projects (iframe) ---
+    // --- Escuchar mensajes desde el módulo (iframe) ---
     window.addEventListener('message', function(e) {
         const data = e.data;
         if (!data || data.type !== 'QCOL_LAUNCH_QUANTUM_APP') return;
-
         console.log('[Puente] Recibida solicitud de ejecutar app:', data);
         const { appId, appTitle, appMetadata } = data;
         forwardToCompiler(appId, appTitle, appMetadata || {});
@@ -2036,7 +1958,6 @@ updateMistralUI();
                 compilerUrl: compilerUrl
             }, '*');
         }
-        // También a iframes del mismo nivel (si el módulo ya está cargado)
         const iframes = document.querySelectorAll('iframe');
         iframes.forEach(iframe => {
             iframe.contentWindow?.postMessage({
@@ -2046,7 +1967,6 @@ updateMistralUI();
         });
     }
 
-    // Escuchar cambios en la URL del compilador (cuando el fundador guarda)
     const originalSaveColab = window.saveColab;
     if (originalSaveColab) {
         window.saveColab = function() {
@@ -2055,7 +1975,6 @@ updateMistralUI();
         };
     }
 
-    // Inicializar
     registerModule();
     setTimeout(broadcastCompilerUrl, 1000);
 })();
