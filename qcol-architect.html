@@ -841,7 +841,9 @@ function getGateCode(gate) {
 function generateQiskitCode(gates) {
   let c = `from qiskit import QuantumCircuit\nimport numpy as np\nfrom qiskit_aer import AerSimulator\n\nqc = QuantumCircuit(${circuit.qubits}, ${circuit.qubits})\n\n`;
   gates.forEach(g => { c += getGateCode(g) + '\n'; });
-  c += `\nqc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\nprint(qc.draw(output='text'))\n\nsimulator = AerSimulator()\nresult = simulator.run(qc, shots=1024).result()\ncounts = result.get_counts()\nprint("Resultados:", counts)`;
+  const hasMeasure = gates.some(g => g.id === 'M');
+  if (!hasMeasure) c += `\nqc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\n`;
+  c += `\nprint(qc.draw(output='text'))\n\nsimulator = AerSimulator()\nresult = simulator.run(qc, shots=1024).result()\ncounts = result.get_counts()\nprint("Resultados:", counts)`;
   return c;
 }
 
@@ -992,24 +994,15 @@ function updateBlochSelector() {
 // ═══════════════════════════════════════════════════════════
 function updateCodeFromCircuit() {
   if (isUpdatingFromCode) return;
+  const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
+  const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
   let code;
-  if (selectedWire >= 0) {
-    // Vista del cable seleccionado
-    const wLib = getWireLib(selectedWire);
-    const wireGates = circuit.gates.filter(g =>
-      g.q === selectedWire || g.q2 === selectedWire || g.q3 === selectedWire);
-    const baseCode = wLib === 'cirq' ? generateCirqCode(wireGates) : generateQiskitCode(wireGates);
-    code = `# Cable q[${selectedWire}] — ${wLib.toUpperCase()}\n` + baseCode;
+  if (qGates.length > 0 && cGates.length > 0) {
+    code = generateHybridCode();
+  } else if (cGates.length > 0) {
+    code = generateCirqCode(circuit.gates);
   } else {
-    const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
-    const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
-    if (qGates.length > 0 && cGates.length > 0) {
-      code = generateHybridCode();
-    } else if (cGates.length > 0) {
-      code = generateCirqCode(circuit.gates);
-    } else {
-      code = generateQiskitCode(circuit.gates);
-    }
+    code = generateQiskitCode(circuit.gates);
   }
   const ta = document.getElementById('code-ta');
   if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
@@ -1445,6 +1438,205 @@ print("[QCOL Mock v3] Sistema universal cargado — cualquier código Qiskit ser
 `;
 
 // ═══════════════════════════════════════════════════════════
+// MOCK DE CIRQ — espejo exacto del mock Qiskit para Pyodide
+// ═══════════════════════════════════════════════════════════
+const CIRQ_MOCK_CODE = `
+import sys, types, importlib
+
+# ── Qubit ─────────────────────────────────────────────────
+class _GridQubit:
+    _is_cirq_qubit = True
+    def __init__(self, row, col):
+        self.row = int(row)
+        self.col = int(col)   # col = índice lógico del qubit
+    def __repr__(self): return f"GridQubit({self.row},{self.col})"
+    def __hash__(self): return hash((self.row, self.col))
+    def __eq__(self, o): return isinstance(o, _GridQubit) and self.row == o.row and self.col == o.col
+
+class _LineQubit:
+    _is_cirq_qubit = True
+    def __init__(self, x):
+        self.col = int(x)
+        self.row = 0
+    def __repr__(self): return f"LineQubit({self.col})"
+    def __hash__(self): return hash(self.col)
+    def __eq__(self, o): return isinstance(o, _LineQubit) and self.col == o.col
+
+class _NamedQubit:
+    _is_cirq_qubit = True
+    def __init__(self, name):
+        self.name = str(name)
+        try: self.col = int(''.join(filter(str.isdigit, self.name)) or '0')
+        except: self.col = 0
+        self.row = 0
+    def __repr__(self): return f"NamedQubit({self.name!r})"
+    def __hash__(self): return hash(self.name)
+    def __eq__(self, o): return isinstance(o, _NamedQubit) and self.name == o.name
+
+# ── Operación (puerta aplicada a qubits) ─────────────────
+class _CirqOp:
+    def __init__(self, name, qubits, params=None):
+        self.name  = str(name)
+        self.qubits = list(qubits)
+        self.params = params or []
+
+# ── Clase de puerta: se puede llamar con qubits ──────────
+class _CirqGate:
+    def __init__(self, name, params=None):
+        self.name   = str(name)
+        self.params = list(params or [])
+
+    def __call__(self, *qubits):
+        return _CirqOp(self.name, qubits, self.params)
+
+    def on(self, *qubits):
+        return _CirqOp(self.name, qubits, self.params)
+
+    def on_each(self, *qubits):
+        return [_CirqOp(self.name, [q], self.params) for q in qubits]
+
+    def __pow__(self, exp):
+        try:
+            if self.name == 'x' and abs(float(exp) - 0.5) < 0.01:
+                return _CirqGate('sx')
+        except: pass
+        return _CirqGate(self.name, self.params)
+
+    def controlled(self, *a, **kw): return _CirqGate('cx')
+    def __repr__(self): return f"CirqGate({self.name})"
+
+# ── Fábricas de puertas parametrizadas ───────────────────
+def _rx(rads=0.0, **kw):  return _CirqGate('rx',  [float(rads)])
+def _ry(rads=0.0, **kw):  return _CirqGate('ry',  [float(rads)])
+def _rz(rads=0.0, **kw):  return _CirqGate('rz',  [float(rads)])
+def _Rx(rads=0.0, **kw):  return _CirqGate('rx',  [float(rads)])
+def _Ry(rads=0.0, **kw):  return _CirqGate('ry',  [float(rads)])
+def _Rz(rads=0.0, **kw):  return _CirqGate('rz',  [float(rads)])
+
+# ── Medición ─────────────────────────────────────────────
+def _measure(*qubits, key='result', **kw):
+    return _CirqOp('measure', list(qubits))
+
+# ── Circuito — intercepta append() y registra ops ───────
+class _CirqCircuit:
+    _is_cirq_circuit = True
+    def __init__(self, *args, **kw):
+        self.data = []
+        # aceptar puertas pasadas directamente al constructor
+        for a in args:
+            self._ingest(a)
+
+    def _ingest(self, item):
+        if isinstance(item, _CirqOp):
+            self.data.append(item)
+        elif hasattr(item, '__iter__') and not isinstance(item, (str, bytes)):
+            try:
+                for sub in item: self._ingest(sub)
+            except: pass
+
+    def append(self, op_or_iter, strategy=None, **kw):
+        self._ingest(op_or_iter)
+        return self
+
+    def __iadd__(self, other):
+        self._ingest(other)
+        return self
+
+    def __add__(self, other):
+        new = _CirqCircuit()
+        new.data = self.data[:]
+        new._ingest(other)
+        return new
+
+    def __str__(self):  return "cirq.Circuit()"
+    def __repr__(self): return "cirq.Circuit()"
+    def __len__(self):  return len(self.data)
+
+# ── Construir módulo cirq falso ───────────────────────────
+_cirq_mod = types.ModuleType('cirq')
+try:
+    _cirq_mod.__spec__ = importlib.util.spec_from_loader('cirq', loader=None)
+except: pass
+_cirq_mod.__package__ = 'cirq'
+_cirq_mod.__path__ = []
+
+# Qubits
+_cirq_mod.GridQubit  = _GridQubit
+_cirq_mod.LineQubit  = _LineQubit
+_cirq_mod.NamedQubit = _NamedQubit
+
+# Circuito
+_cirq_mod.Circuit = _CirqCircuit
+
+# Puertas 1 qubit
+_cirq_mod.H  = _CirqGate('h')
+_cirq_mod.X  = _CirqGate('x')
+_cirq_mod.Y  = _CirqGate('y')
+_cirq_mod.Z  = _CirqGate('z')
+_cirq_mod.S  = _CirqGate('s')
+_cirq_mod.T  = _CirqGate('t')
+_cirq_mod.I  = _CirqGate('h')
+
+# Puertas parametrizadas
+_cirq_mod.rx = _rx
+_cirq_mod.ry = _ry
+_cirq_mod.rz = _rz
+_cirq_mod.Rx = _Rx
+_cirq_mod.Ry = _Ry
+_cirq_mod.Rz = _Rz
+
+# Puertas 2 qubits
+_cirq_mod.CNOT = _CirqGate('cx')
+_cirq_mod.CX   = _CirqGate('cx')
+_cirq_mod.CZ   = _CirqGate('cz')
+_cirq_mod.SWAP = _CirqGate('swap')
+_cirq_mod.XX   = _CirqGate('cx')
+_cirq_mod.YY   = _CirqGate('cz')
+_cirq_mod.ZZ   = _CirqGate('cz')
+
+# Puertas 3 qubits
+_cirq_mod.CCX    = _CirqGate('ccx')
+_cirq_mod.CCNOT  = _CirqGate('ccx')
+_cirq_mod.TOFFOLI= _CirqGate('ccx')
+_cirq_mod.CSWAP  = _CirqGate('cswap')
+_cirq_mod.FREDKIN= _CirqGate('cswap')
+
+# Medición
+_cirq_mod.measure        = _measure
+_cirq_mod.measure_each   = _measure
+_cirq_mod.measure_qubits = _measure
+_cirq_mod.MeasurementGate = _CirqGate('measure')
+
+# Stub para todo lo demás (simulators, etc.)
+class _CirqStub:
+    def __init__(self, *a, **kw): pass
+    def simulate(self, *a, **kw): return self
+    def run(self, *a, **kw): return self
+    def measurements(self): return {}
+    def __getattr__(self, n): return _CirqStub()
+    def __call__(self, *a, **kw): return _CirqStub()
+    def __iter__(self): return iter([])
+
+_cirq_mod.Simulator           = _CirqStub
+_cirq_mod.DensityMatrixSimulator = _CirqStub
+_cirq_mod.Result              = _CirqStub
+_cirq_mod.InsertionStrategy   = _CirqStub
+_cirq_mod.ops                 = _CirqStub()
+_cirq_mod.protocols           = _CirqStub()
+_cirq_mod.linalg              = _CirqStub()
+
+sys.modules['cirq'] = _cirq_mod
+for _sub in ['cirq.ops','cirq.circuits','cirq.sim','cirq.protocols','cirq.linalg',
+             'cirq.transformers','cirq.devices','cirq.ion','cirq.google']:
+    if _sub not in sys.modules:
+        _sm = types.ModuleType(_sub)
+        _sm.__package__ = 'cirq'
+        sys.modules[_sub] = _sm
+
+print("[QCOL Cirq Mock v1] Mock Cirq cargado — circuit_cirq.append() interceptado.")
+`;
+
+// ═══════════════════════════════════════════════════════════
 // PYODIDE: INICIALIZACIÓN, SINCRONIZACIÓN Y EJECUCIÓN LOCAL
 // ═══════════════════════════════════════════════════════════
 let pyodide = null;
@@ -1462,6 +1654,7 @@ async function initPyodide() {
     try {
         pyodide = await loadPyodide();
         await pyodide.runPythonAsync(QISKIT_MOCK_CODE);
+        await pyodide.runPythonAsync(CIRQ_MOCK_CODE);
         await pyodide.loadPackage('numpy');
         await pyodide.loadPackage('scipy');
         await pyodide.loadPackage('matplotlib');
@@ -1526,6 +1719,7 @@ function robustPreprocess(code) {
 
     // ═══ CAPA 3: Sustituir líneas problemáticas por pass (preservando indentación) ═══
     const NON_ESSENTIAL = [
+        // ── Qiskit no esencial ────────────────────────────────────
         /\bAerSimulator\s*\(/, /simulator\.run\b/, /\.result\(\)/, /get_counts\(/,
         /plot_histogram\(/, /StatevectorSimulator/, /BasicAer\b/, /Aer\.get_backend/,
         /\.draw\s*\(/, /matplotlib/, /plt\./, /pyplot/,
@@ -1533,7 +1727,13 @@ function robustPreprocess(code) {
         /^\s*print\s*\(/, /^\s*display\s*\(/, /^\s*show\s*\(/,
         /^\s*import\s+(?!numpy|qiskit|cirq|pennylane|qutip|scipy|sympy)/,
         /^\s*from\s+(?!qiskit|numpy|cirq|pennylane|qutip).*import/,
-        /\bqc\.(depth|size|num_parameters|copy|control|inverse|repeat|power|definition|qasm|properties)\s*[(\s]/
+        /\bqc\.(depth|size|num_parameters|copy|control|inverse|repeat|power|definition|qasm|properties)\s*[(\s]/,
+        // ── Cirq no esencial (simuladores / visualización) ────────
+        /cirq\.Simulator\s*\(/, /cirq\.DensityMatrixSimulator\s*\(/,
+        /\.simulate\s*\(/, /\.run\s*\(circuits?/, /simulate_moment/,
+        /cirq\.plot_state_histogram/, /cirq\.vis\b/, /cirq\.to_json/,
+        /circuit_cirq\.(moments|unitary|final_state|_json_dict|all_qubits|_num_qubits_)\b/,
+        /cirq\.(to_qasm|from_json|read_json|qasm|diagrams)\b/
     ];
 
     const lines = code.split('\n');
@@ -1811,6 +2011,7 @@ except Exception as _e:
         _error = 'Errores parciales: ' + '; '.join(_errors_linea[:3])
 
 if _error is None:
+    # ── Buscar circuito Qiskit ────────────────────────────
     for _cname in ['circuit','qc','circ','qcirc','c','circ1','qcircuit','qc1','main_circuit']:
         _obj = _ns.get(_cname)
         if _obj is not None and hasattr(_obj, 'data') and isinstance(_obj.data, list):
@@ -1826,9 +2027,6 @@ if _error is None:
         _m = _re.search(r'QuantumCircuit\\s*\\((\\d+)', _clean_code)
         if _m:
             _num_qubits = int(_m.group(1))
-            _error = None
-        else:
-            _error = "No se encontró QuantumCircuit en el código.\\nUsa: qc = QuantumCircuit(n)"
     else:
         try:
             _nq = getattr(_circuit, 'num_qubits', 2)
@@ -1840,75 +2038,120 @@ if _error is None:
         except:
             _data = []
 
+    # ── Buscar circuito Cirq ─────────────────────────────
+    _cirq_circuit = None
+    for _cname in ['circuit_cirq','cirq_circuit','qc_cirq','c_cirq','circ_cirq']:
+        _obj = _ns.get(_cname)
+        if _obj is not None and hasattr(_obj, '_is_cirq_circuit'):
+            _cirq_circuit = _obj
+            break
+    if _cirq_circuit is None:
+        for _v in list(_ns.values()):
+            if getattr(_v, '_is_cirq_circuit', False) and isinstance(getattr(_v,'data',[]), list):
+                _cirq_circuit = _v
+                break
+    _cirq_data = []
+    if _cirq_circuit is not None:
+        try:
+            _cirq_data = [op for op in _cirq_circuit.data if hasattr(op,'name') and hasattr(op,'qubits')]
+        except: pass
+
+    # Sin circuito de ningún tipo
+    if _circuit is None and _cirq_circuit is None:
+        _error = "No se encontró QuantumCircuit ni cirq.Circuit en el código."
+
+def _qubit_index(q):
+    """Extrae índice entero de un qubit Qiskit o Cirq."""
+    if hasattr(q, 'col'): return int(q.col)
+    if isinstance(q, int): return q
+    try: return int(q)
+    except: return 0
+
 def _safe_gate(op):
     try:
-        name = str(op.name)
-        qubits = list(op.qubits) if hasattr(op.qubits,'__iter__') else [0]
-        # Auto-expandir num_qubits si hay qubit fuera de rango
+        name   = str(op.name)
+        qubits = [_qubit_index(q) for q in (op.qubits if hasattr(op.qubits,'__iter__') else [0])]
         global _num_qubits
         for _q in qubits:
-            if isinstance(_q, int) and _q >= _num_qubits:
-                _num_qubits = _q + 1
+            if isinstance(_q, int) and _q >= _num_qubits: _num_qubits = _q + 1
         params = []
-        try:
-            params = [float(p) for p in (op.params or [])]
-        except:
-            pass
+        try: params = [float(p) for p in (op.params or [])]
+        except: pass
         return [name, qubits, params]
-    except:
-        return None
+    except: return None
 
 _all = [g for g in (_safe_gate(op) for op in _data) if g is not None]
 _gates = [g for g in _all if g[0] != 'measure'] + [g for g in _all if g[0] == 'measure']
 
+_cirq_all = [g for g in (_safe_gate(op) for op in _cirq_data) if g is not None]
+_cirq_gates = [g for g in _cirq_all if g[0] != 'measure'] + [g for g in _cirq_all if g[0] == 'measure']
+
+_any_circuit = _circuit is not None or _cirq_circuit is not None or (_error is None and _num_qubits > 0)
+
 json.dumps({
-    "success": _error is None,
-    "error": _error,
-    "num_qubits": max(1, int(_num_qubits)),
-    "gates": _gates,
-    "circuit_exists": _circuit is not None or (_error is None and _num_qubits > 0)
+    "success":        _error is None,
+    "error":          _error,
+    "num_qubits":     max(1, int(_num_qubits)),
+    "gates":          _gates,
+    "cirq_gates":     _cirq_gates,
+    "circuit_exists": _any_circuit
 })
         `);
         const data = JSON.parse(result);
         if (data.success && data.circuit_exists) {
             _errorLine = -1;
-            
+
             circuit.qubits = Math.min(data.num_qubits, MAX_QUBITS);
             const newGates = [];
-            for (const gate of data.gates) {
-                if (newGates.length >= MAX_GATES) break;
-                const gateId = mapOpNameToGateId(gate[0]);
-                const def = findGateDef(gateId);
-                if (!def) continue;
-                const qubits = gate[1];
-                
-                // Auto-expandir cables si la puerta lo necesita
-                const maxQ = Math.max(...qubits.filter(q => typeof q === 'number'));
-                if (!isNaN(maxQ) && maxQ >= circuit.qubits && maxQ < MAX_QUBITS) {
-                    circuit.qubits = maxQ + 1;
-                }
-                
-                const uid = nextId++;
-                if (qubits.length === 1) {
-                    newGates.push({ id: gateId, q: qubits[0], def: def, uid: uid });
-                } else if (qubits.length === 2) {
-                    newGates.push({ id: gateId, q: Math.min(qubits[0], qubits[1]), q2: Math.max(qubits[0], qubits[1]), def: def, uid: uid });
-                } else if (qubits.length >= 3) {
-                    const sorted = [...qubits].sort((a,b)=>a-b);
-                    newGates.push({ id: gateId, q: sorted[0], q2: sorted[1], q3: sorted[2], def: def, uid: uid });
+
+            // ── Función helper para construir objetos gate ──────────
+            function _buildGates(rawList, lib) {
+                for (const gate of rawList) {
+                    if (newGates.length >= MAX_GATES) break;
+                    const gateId = mapOpNameToGateId(gate[0]);
+                    const def = findGateDef(gateId);
+                    if (!def) continue;
+                    const qubits = gate[1];
+                    const maxQ = Math.max(...qubits.filter(q => typeof q === 'number'));
+                    if (!isNaN(maxQ) && maxQ >= circuit.qubits && maxQ < MAX_QUBITS)
+                        circuit.qubits = maxQ + 1;
+                    const uid = nextId++;
+                    if (qubits.length === 1) {
+                        newGates.push({ id: gateId, q: qubits[0], def, uid, lib });
+                    } else if (qubits.length === 2) {
+                        newGates.push({ id: gateId, q: Math.min(qubits[0],qubits[1]), q2: Math.max(qubits[0],qubits[1]), def, uid, lib });
+                    } else if (qubits.length >= 3) {
+                        const s = [...qubits].sort((a,b)=>a-b);
+                        newGates.push({ id: gateId, q: s[0], q2: s[1], q3: s[2], def, uid, lib });
+                    }
                 }
             }
-            // Mediciones siempre al final
+
+            _buildGates(data.gates      || [], 'qiskit');
+            _buildGates(data.cirq_gates || [], 'cirq');
+
+            // Mediciones al final
             const _nonM = newGates.filter(g => g.id !== 'M');
             const _meas  = newGates.filter(g => g.id === 'M');
             circuit.gates = [..._nonM, ..._meas];
-            
+
+            // Actualizar wireLibs según qué librería usa cada qubit
+            initWireLibs();
+            for (let i = 0; i < circuit.qubits; i++) {
+                const wg = circuit.gates.filter(g => g.q === i || g.q2 === i || g.q3 === i);
+                if (wg.length > 0) circuit.wireLibs[i] = wg[0].lib;
+            }
+
             const _gCount = _nonM.length;
             const _mCount = _meas.length;
-            
+            const _cCount = (data.cirq_gates || []).filter(g => g[0] !== 'measure').length;
+            const _qCount = _gCount - _cCount;
+
             renderCircuit();
             updateCircuitInfo();
-            out.innerHTML += `<span class="ok">✅ Sincronizado — ${data.num_qubits} qubits · ${_gCount} puertas${_mCount > 0 ? ' · ' + _mCount + ' medic.' : ''}</span>\n`;
+            updateCodeFromCircuit();
+            const _hybrid = _cCount > 0 && _qCount > 0 ? ' (híbrido)' : _cCount > 0 ? ' (Cirq)' : '';
+            out.innerHTML += `<span class="ok">✅ Sincronizado — ${data.num_qubits} qubits · ${_gCount} puertas${_mCount > 0 ? ' · '+_mCount+' medic.' : ''}${_hybrid}</span>\n`;
             notify(`Circuito actualizado: ${_gCount} puertas`);
             updateSyntaxHighlight();
         } else {
