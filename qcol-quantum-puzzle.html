@@ -410,7 +410,6 @@ body::before{
             <span>🌀 QUANTUM APP STUDIO · Editor de aplicaciones cuánticas</span>
             <button class="btn-cancel" onclick="closeStudioModal()" style="margin:0;">CERRAR</button>
         </div>
-        <!-- CORREGIDO: ahora apunta al archivo correcto -->
         <iframe id="studioIframe" class="studio-iframe" src="qcol-quantum-app-studio.html" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-same-origin"></iframe>
     </div>
 </div>
@@ -595,6 +594,36 @@ window.addEventListener('message', (e) => {
         renderTagFilters();
         renderPublishedApps();
     }
+    
+    // ============ NUEVO: Recibir apps lanzadas desde el Quantum App Studio ============
+    if (data.type === 'QCOL_LAUNCH_QUANTUM_APP') {
+        const { appId, appTitle, appMetadata } = data;
+        let pending = getPendingApps();
+        // Evitar duplicados por ID
+        if (!pending.find(p => p.id === appId)) {
+            const newApp = {
+                id: appId,
+                title: appTitle,
+                desc: appMetadata.description || '',
+                tags: appMetadata.tags || '',
+                duration: appMetadata.duration || 8,
+                pythonCode: appMetadata.pythonCode || '',
+                htmlCode: appMetadata.htmlCode || '',
+                serverUrl: appMetadata.serverUrl || '',
+                createdBy: currentUser?.username || 'desconocido',
+                createdAt: Date.now()
+            };
+            pending.push(newApp);
+            savePendingApps(pending);
+            showNotification(`📥 App "${appTitle}" recibida. Revisa pendientes.`);
+            // Si el modal de pendientes está visible, refrescar la lista
+            if (document.getElementById('pendingModal').classList.contains('open')) {
+                renderPendingList();
+            }
+        }
+        return;
+    }
+    // ===============================================================================
     
     if(data.type === 'QCOL_USER_UPDATE') {
         currentUser = data.user;
