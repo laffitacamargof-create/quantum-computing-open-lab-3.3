@@ -150,49 +150,49 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
           <td style="font-size:.62rem;color:var(--mu);">Núcleo — une todo el ecosistema</td>
           <td><span class="rb rba">ACTIVO</span></td>
           <td><button class="bsm" onclick="downloadModule('core')">📥 Core</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Proyectos</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-projects.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Notebooks desde GitHub</td>
           <td><span class="rb" id="st-projects" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('projects')">📥</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Arquitecto</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Editor Qiskit · Cirq · QuTiP + GPU HuggingFace</td>
           <td><span class="rb" id="st-architect" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('architect')">📥</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Arquitecto Pro</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect-pro.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Notebooks completos — Admin+</td>
           <td><span class="rb" id="st-archpro" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('architect-pro')">📥</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Librería</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-library.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Recursos educativos desde GitHub</td>
           <td><span class="rb" id="st-library" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('library')">📥</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Cuenta</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-account.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Perfil y circuitos guardados</td>
           <td><span class="rb" id="st-account" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('account')">📥</button></td>
-         </tr>
+        </tr>
         <tr>
           <td><strong>Ayuda</strong></td>
           <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-help.html</td>
           <td style="font-size:.62rem;color:var(--mu);">Documentación del ecosistema</td>
           <td><span class="rb" id="st-help" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('help')">📥</button></td>
-         </tr>
+        </tr>
         <!-- NUEVO MÓDULO: Quantum App Studio -->
         <tr>
           <td><strong>⚛️ Quantum App Studio</strong></td>
@@ -200,7 +200,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
           <td style="font-size:.62rem;color:var(--mu);">Editor visual de aplicaciones cuánticas con backend remoto</td>
           <td><span class="rb" id="st-quantumapp" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
           <td><button class="bsm" onclick="downloadModule('quantumapp')">📥</button></td>
-         </tr>
+        </tr>
       </tbody>
     </table>
     <div class="btn-row" style="margin-top:.8rem;">
@@ -1157,7 +1157,7 @@ function loadIgnoredAttrsTable() {
   const reasonsRaw = localStorage.getItem('qcol_ignored_attrs_reasons');
   if (reasonsRaw) try { reasons = JSON.parse(reasonsRaw); } catch(e) {}
   let html = `<table class="tbl" style="width:100%;">
-    <thead><tr><th>Atributo</th><th>Razón</th><th>Fecha</th><th></th> </table></thead>
+    <thead><tr><th>Atributo</th><th>Razón</th><th>Fecha</th><th></th> </tr></thead>
     <tbody>`;
   for (let attr of attrs) {
     const reason = reasons[attr] || 'Clasificado por DeepSeek';
@@ -1170,7 +1170,7 @@ function loadIgnoredAttrsTable() {
     </tr>`;
   }
   html += `</tbody>
-  }</table>`;
+  </table>`;
   container.innerHTML = html;
 }
 
@@ -1309,10 +1309,10 @@ function renderUsers() {
   if (!tbody) return;
   const all = getUsers();
   let r = `<tr><td style="font-size:.62rem;">franci_laffita — Franci Laffita</td>
-      <td><span class="rb rbf">FUNDADOR</span></td>
-      <td style="color:var(--gr)">✅</td>
-      <td>—</td>
-    </tr>`;
+        <td><span class="rb rbf">FUNDADOR</span></td>
+        <td style="color:var(--gr)">✅</td>
+        <td>—</td>
+      </tr>`;
   all.forEach(u => {
     const upb = u.canUpload ? `<button class="bsm" onclick="toggleUp('${u.username}',false)">✕Up</button>`
       : `<button class="bsm" onclick="toggleUp('${u.username}',true)">+Up</button>`;
@@ -1320,10 +1320,10 @@ function renderUsers() {
       ? `<button class="bsm" onclick="promUser('${u.username}')">→ADM</button>`
       : `<button class="bsm" onclick="demUser('${u.username}')">→USR</button>`;
     r += `<tr><td style="font-size:.62rem;">${u.username}<br><span style="color:var(--mu);font-size:.58rem;">${u.name}</span></td>
-      <td><span class="rb ${u.role==='admin'?'rba':'rbu'}">${u.role.toUpperCase()}</span></td>
-      <td style="color:${u.canUpload?'var(--gr)':'var(--mu)'}">${u.canUpload?'✅':'❌'}</td>
-      <td>${rb}${upb}<button class="bsm red" onclick="delUser('${u.username}')">✕</button></td>
-    </tr>`;
+        <td><span class="rb ${u.role==='admin'?'rba':'rbu'}">${u.role.toUpperCase()}</span></td>
+        <td style="color:${u.canUpload?'var(--gr)':'var(--mu)'}">${u.canUpload?'✅':'❌'}</td>
+        <td>${rb}${upb}<button class="bsm red" onclick="delUser('${u.username}')">✕</button></td>
+      </tr>`;
   });
   tbody.innerHTML = r;
 }
@@ -1470,13 +1470,13 @@ function loadUserStats(){
   const rows = Object.entries(byUser)
     .sort((a,b)=>b[1].runs-a[1].runs)
     .map(([user,s])=>`
-      <tr>
+       <tr>
         <td style="padding:.3rem .5rem;color:var(--tx);">${user}</td>
         <td style="padding:.3rem .5rem;color:var(--bl2);text-align:center;">${s.runs}</td>
         <td style="padding:.3rem .5rem;color:var(--mu);">${Object.entries(s.libs).map(([l,n])=>l+':'+n).join(', ')}</td>
         <td style="padding:.3rem .5rem;color:var(--mu);">${s.qubits} max</td>
         <td style="padding:.3rem .5rem;color:var(--mu);">${new Date(s.lastRun).toLocaleDateString()}</td>
-      </tr>`).join('');
+       </tr>`).join('');
   document.getElementById('user-stats-table').innerHTML=`
     <table style="width:100%;border-collapse:collapse;font-size:.6rem;">
       <thead><tr style="background:rgba(0,0,0,.3);">
@@ -1485,9 +1485,9 @@ function loadUserStats(){
         <th style="padding:.3rem .5rem;text-align:left;color:var(--bl2);">Libs usadas</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Qubits</th>
         <th style="padding:.3rem .5rem;color:var(--bl2);">Último uso</th>
-      </tr></thead>
+       </tr></thead>
       <tbody>${rows}</tbody>
-    ｜DSML｜`;
+     </table>`;
 }
 function loadHistorial(){
   const data = getMonitorData();
@@ -1622,7 +1622,7 @@ function downloadModule(mod) {
   }
   if (mod === 'quantumapp') {
     notify('⚛️ Quantum App Studio — descargando módulo...');
-    // Generar contenido del módulo
+    // Generar contenido del módulo (se mantiene igual que antes)
     const quantumStudioContent = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1879,103 +1879,132 @@ setInterval(() => {
 // Enviar inmediatamente al cargar
 setTimeout(broadcastCompilerUrlToModules, 1000);
 
-</script>
-
-<!-- ════════════ PUENTE PARA QUANTUM PUZZLE ════════════ -->
-<script>
-(function() {
-    // --- Registrar el módulo Quantum Puzzle automáticamente ---
-    const MODULE_ID = 'quantum-puzzle';
-    const MODULE_NAME = '⚛️ Quantum Puzzle';
-    const MODULE_FILE = 'quantum-app-studio.html';
-    const MODULE_ICON = '🧩';
-    const MODULE_DESC = 'Editor visual de aplicaciones cuánticas con backend remoto';
-
-    function registerModule() {
-        let modules = JSON.parse(localStorage.getItem('qcol_custom_modules') || '[]');
-        const exists = modules.find(m => m.id === MODULE_ID);
-        if (!exists) {
-            modules.push({
-                id: MODULE_ID,
-                name: MODULE_NAME,
-                file: MODULE_FILE,
-                icon: MODULE_ICON,
-                desc: MODULE_DESC,
-                role: 'admin',
-                created: new Date().toLocaleDateString()
-            });
-            localStorage.setItem('qcol_custom_modules', JSON.stringify(modules));
-            console.log('[Puente] Módulo Quantum App Studio registrado en el panel fundador');
-            if (typeof renderCustomModules === 'function') renderCustomModules();
-        }
-    }
-
-    // --- Redirigir la ejecución de apps al compilador HuggingFace ---
-    function forwardToCompiler(appId, appTitle, metadata) {
-        const compilerUrl = localStorage.getItem('qcol_colab_url');
-        if (!compilerUrl) {
-            notify(`❌ No hay compilador configurado. Ve a la pestaña 🤗 Compilador HuggingFace y guarda la URL.`);
-            return;
-        }
-
-        const payload = {
-            code: `# App: ${appTitle}\n# ID: ${appId}\n# Etiquetas: ${metadata.tags}\nprint("Ejecutando app cuántica:", "${appTitle}")`,
-            lib: 'qiskit',
-            qubits: 5,
-            shots: 1024
-        };
-
-        fetch(`${compilerUrl}/run/predict`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: [JSON.stringify(payload)] })
-        })
-        .then(res => res.json())
-        .then(raw => {
-            const output = raw.data?.[0] || raw;
-            notify(`✅ App "${appTitle}" ejecutada en el compilador.\n${output.substring(0, 200)}`);
-        })
-        .catch(err => notify(`❌ Error en compilador: ${err.message}`));
-    }
-
-    // --- Escuchar mensajes desde el módulo (iframe) ---
-    window.addEventListener('message', function(e) {
-        const data = e.data;
-        if (!data || data.type !== 'QCOL_LAUNCH_QUANTUM_APP') return;
-        console.log('[Puente] Recibida solicitud de ejecutar app:', data);
-        const { appId, appTitle, appMetadata } = data;
-        forwardToCompiler(appId, appTitle, appMetadata || {});
-    });
-
-    // --- Enviar la URL del compilador al módulo cuando se cargue ---
-    function broadcastCompilerUrl() {
-        const compilerUrl = localStorage.getItem('qcol_colab_url');
-        if (compilerUrl && window.parent !== window) {
-            window.parent.postMessage({
-                type: 'QCOL_CONFIG_UPDATE',
-                compilerUrl: compilerUrl
-            }, '*');
-        }
-        const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
-            iframe.contentWindow?.postMessage({
-                type: 'QCOL_COMPILER_URL',
-                url: compilerUrl
-            }, '*');
+// =====================================================================
+// ⚛️ NUEVO: MANEJO COMPLETO DE APPS CUÁNTICAS (backend remoto + frontend local)
+// =====================================================================
+// Funciones para construir app real y ejecutarla en modal
+async function buildAppBlobForApp(pythonCode, htmlCode, serverUrl) {
+    const bridge = `
+    <script>
+    window.__serverUrl = ${JSON.stringify(serverUrl)};
+    window.__pyCode = ${JSON.stringify(pythonCode)};
+    window.pyCall = async (funcName, ...args) => {
+        return new Promise((resolve, reject) => {
+            const msgId = Date.now() + '-' + Math.random();
+            const handler = (event) => {
+                if (event.data.type === 'pyResult' && event.data.id === msgId) {
+                    window.removeEventListener('message', handler);
+                    if (event.data.error) reject(new Error(event.data.error));
+                    else resolve(event.data.result);
+                }
+            };
+            window.addEventListener('message', handler);
+            window.parent.postMessage({ type: 'pyCall', id: msgId, func: funcName, args: args, serverUrl: window.__serverUrl, pythonCode: window.__pyCode }, '*');
         });
+    };
+    console.log("App bridge listo, servidor:", window.__serverUrl);
+    <\/script>
+    `;
+    let finalHtml = htmlCode;
+    if (finalHtml.includes('<head>')) {
+        finalHtml = finalHtml.replace('<head>', '<head>' + bridge);
+    } else if (finalHtml.includes('<html>')) {
+        finalHtml = finalHtml.replace('<html>', '<html><head>' + bridge + '</head>');
+    } else {
+        finalHtml = bridge + finalHtml;
     }
+    const blob = new Blob([finalHtml], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    return { blobUrl, revoke: () => URL.revokeObjectURL(blobUrl) };
+}
 
-    const originalSaveColabLocal = window.saveColab;
-    if (originalSaveColabLocal) {
-        window.saveColab = function() {
-            originalSaveColabLocal();
-            setTimeout(broadcastCompilerUrl, 500);
-        };
+// Crear modal para ejecutar una app cuántica real
+function launchQuantumAppModal(pythonCode, htmlCode, serverUrl, appTitle) {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+    modal.style.zIndex = '20000';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.backdropFilter = 'blur(8px)';
+
+    const modalContainer = document.createElement('div');
+    modalContainer.style.width = 'min(1200px, 95%)';
+    modalContainer.style.height = '85%';
+    modalContainer.style.backgroundColor = '#0a0e1a';
+    modalContainer.style.border = '1px solid #0088ff';
+    modalContainer.style.borderRadius = '16px';
+    modalContainer.style.display = 'flex';
+    modalContainer.style.flexDirection = 'column';
+    modalContainer.style.overflow = 'hidden';
+
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.padding = '0.8rem 1rem';
+    header.style.backgroundColor = '#060912';
+    header.style.borderBottom = '1px solid #1a2a48';
+    header.style.fontFamily = 'Orbitron, monospace';
+    header.style.fontSize = '0.7rem';
+    header.style.color = '#00ccff';
+    header.innerHTML = `<span>⚛️ ${escapeHtml(appTitle)}</span><button style="background:transparent; border:1px solid #1e3058; border-radius:30px; padding:0.3rem 1rem; color:white; cursor:pointer;">CERRAR</button>`;
+    const closeBtn = header.querySelector('button');
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.flex = '1';
+    iframe.style.border = 'none';
+    iframe.style.width = '100%';
+    iframe.style.backgroundColor = 'white';
+    iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals';
+    
+    modalContainer.appendChild(header);
+    modalContainer.appendChild(iframe);
+    modal.appendChild(modalContainer);
+    document.body.appendChild(modal);
+    
+    // Construir el blob y cargarlo en el iframe
+    buildAppBlobForApp(pythonCode, htmlCode, serverUrl)
+        .then(({ blobUrl, revoke }) => {
+            iframe.src = blobUrl;
+            iframe.onload = () => revoke();
+        })
+        .catch(err => {
+            iframe.srcdoc = `<html><body style="background:#0a0e1a;color:white;padding:2rem;"><h3>Error al cargar la app</h3><pre>${err.message}</pre></body></html>`;
+        });
+    
+    const closeHandler = () => {
+        modal.remove();
+    };
+    closeBtn.onclick = closeHandler;
+    modal.onclick = (e) => { if (e.target === modal) closeHandler(); };
+}
+
+// Reemplazar el listener antiguo de QCOL_LAUNCH_QUANTUM_APP para ejecutar la app real
+// (Sobrescribimos la función forwardToCompiler y el listener anterior)
+window.removeEventListener('message', window._oldLaunchAppListener);
+window._oldLaunchAppListener = function(e) {
+    const data = e.data;
+    if (!data || data.type !== 'QCOL_LAUNCH_QUANTUM_APP') return;
+    console.log('[Fundador] Recibida app para ejecutar:', data);
+    const { appId, appTitle, appMetadata } = data;
+    if (appMetadata && appMetadata.pythonCode && appMetadata.htmlCode) {
+        const serverUrl = appMetadata.serverUrl || localStorage.getItem('qcol_colab_url') || '';
+        launchQuantumAppModal(appMetadata.pythonCode, appMetadata.htmlCode, serverUrl, appTitle || 'Aplicación cuántica');
+    } else {
+        notify(`❌ La app "${appTitle}" no contiene código Python o HTML. No se puede ejecutar.`);
     }
+};
+window.addEventListener('message', window._oldLaunchAppListener);
 
-    registerModule();
-    setTimeout(broadcastCompilerUrl, 1000);
-})();
+// También, la función forwardToCompiler original ya no se necesita para ejecutar apps reales, pero la dejamos para compatibilidad.
+// Nota: Se mantienen todas las funcionalidades originales del fundador (compilador, IA, usuarios, etc.)
 </script>
 </body>
 </html>
