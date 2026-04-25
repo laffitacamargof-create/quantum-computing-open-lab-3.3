@@ -93,7 +93,7 @@
         }
         .project-card:hover { border-color: var(--bl); background: rgba(0,136,255,0.05); }
         .project-name { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .card-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+        .card-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
         .btn-secondary {
             background: rgba(30,48,88,0.7);
             border: 1px solid var(--bd2);
@@ -105,6 +105,12 @@
             cursor: pointer;
         }
         .btn-secondary:hover { background: var(--bl); color: white; border-color: var(--bl); }
+        .btn-pending {
+            background: rgba(255,215,0,0.15);
+            border: 1px solid var(--yw);
+            color: var(--yw);
+        }
+        .btn-pending:hover { background: var(--yw); color: #0a0e1a; border-color: var(--yw); }
         .editor-container {
             display: flex;
             flex: 1;
@@ -313,10 +319,7 @@
     // Función para decodificar correctamente caracteres Unicode escapados
     function decodeUnicode(str) {
         if (!str || typeof str !== 'string') return str;
-        // Reemplazar secuencias Unicode como \u00e1 por su carácter real
-        return str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => {
-            return String.fromCharCode(parseInt(hex, 16));
-        });
+        return str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
     }
 
     // Función principal: establecer URL automáticamente
@@ -338,7 +341,6 @@
         const data = event.data;
         if (!data || typeof data !== 'object') return;
         
-        // Recibir URL del compilador
         if (data.type === 'QCOL_COMPILER_URL' && data.url) {
             setServerUrl(data.url);
             return;
@@ -417,28 +419,8 @@
             projects.push({
                 id: generateId(),
                 name: "Demo: Saludo cuántico",
-                pythonCode: `def saludar(nombre):
-    return f"¡Hola {nombre}! desde Python en servidor cuántico 🧪"
-
-def suma(a,b):
-    return a+b`,
-                htmlCode: `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="background:#0a0e1a; color:white; font-family:monospace; padding:1rem;">
-<h2>Demo Interactiva</h2>
-<input id="nameInput" placeholder="Tu nombre" style="padding:0.3rem;">
-<button onclick="callGreet()">Saludar</button>
-<p id="result"></p>
-<script>
-window.callGreet = async () => {
-    const name = document.getElementById('nameInput').value;
-    const res = await window.pyCall("saludar", name);
-    document.getElementById('result').innerText = res;
-};
-<\/script>
-</body>
-</html>`,
+                pythonCode: `def saludar(nombre):\n    return f"¡Hola {nombre}! desde Python en servidor cuántico 🧪"\n\ndef suma(a,b):\n    return a+b`,
+                htmlCode: `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0a0e1a; color:white; font-family:monospace; padding:1rem;">\n<h2>Demo Interactiva</h2>\n<input id="nameInput" placeholder="Tu nombre" style="padding:0.3rem;">\n<button onclick="callGreet()">Saludar</button>\n<p id="result"></p>\n<script>\nwindow.callGreet = async () => {\n    const name = document.getElementById('nameInput').value;\n    const res = await window.pyCall("saludar", name);\n    document.getElementById('result').innerText = res;\n};\n<\/script>\n</body>\n</html>`,
                 serverUrl: "",
                 createdAt: Date.now()
             });
@@ -458,6 +440,7 @@ window.callGreet = async () => {
                 <div class="card-actions">
                     <button class="btn-secondary edit-proj" data-id="${proj.id}">✏️ Editar</button>
                     <button class="btn-secondary run-proj" data-id="${proj.id}">▶ Ejecutar</button>
+                    <button class="btn-secondary btn-pending launch-proj" data-id="${proj.id}">📤 Lanzar</button>
                     <button class="btn-secondary delete-proj" data-id="${proj.id}">🗑 Eliminar</button>
                 </div>
             `;
@@ -465,7 +448,50 @@ window.callGreet = async () => {
         });
         document.querySelectorAll('.edit-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); editProject(btn.getAttribute('data-id')); }));
         document.querySelectorAll('.run-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); launchProject(btn.getAttribute('data-id')); }));
+        document.querySelectorAll('.launch-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); sendToPending(btn.getAttribute('data-id')); }));
         document.querySelectorAll('.delete-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteProject(btn.getAttribute('data-id')); }));
+    }
+
+    // NUEVA FUNCIÓN: Enviar app a la lista de pendientes del Quantum Puzzle
+    function sendToPending(id) {
+        const proj = projects.find(p => p.id === id);
+        if (!proj) {
+            notify("❌ Proyecto no encontrado");
+            return;
+        }
+        
+        // Construir mensaje para el padre (Founder / Quantum Puzzle)
+        const message = {
+            type: 'QCOL_LAUNCH_QUANTUM_APP',
+            appId: proj.id,
+            appTitle: proj.name,
+            appMetadata: {
+                name: proj.name,
+                pythonCode: proj.pythonCode,
+                htmlCode: proj.htmlCode,
+                serverUrl: proj.serverUrl || document.getElementById('server-url-input').value,
+                createdAt: proj.createdAt
+            }
+        };
+        
+        // Enviar al padre si estamos embebidos, si no, notificar que no hay conexión
+        if (window.parent !== window) {
+            sendToParent(message);
+            notify(`🚀 App "${proj.name}" enviada a la lista de pendientes del Fundador`, 2500);
+        } else {
+            // Si está standalone, intentar guardar en localStorage para que el Founder lo recoja después
+            let pendingApps = JSON.parse(localStorage.getItem('qcol_pending_apps') || '[]');
+            pendingApps.push({
+                id: proj.id,
+                name: proj.name,
+                pythonCode: proj.pythonCode,
+                htmlCode: proj.htmlCode,
+                serverUrl: proj.serverUrl,
+                timestamp: Date.now()
+            });
+            localStorage.setItem('qcol_pending_apps', JSON.stringify(pendingApps));
+            notify(`📦 App "${proj.name}" guardada en pendientes local. Conecta con el Panel Fundador para sincronizar.`, 3000);
+        }
     }
 
     function editProject(id) {
@@ -522,12 +548,11 @@ window.callGreet = async () => {
         const data = isHF ? (raw.data?.[0] || raw) : raw;
         if (data.success === false) throw new Error(data.output || data.error);
         let output = data.output || data.result || "";
-        // Decodificar caracteres Unicode escapados
         output = decodeUnicode(output);
         return output;
     }
 
-    // Handler para llamadas desde los iframes (pyCall) - CORREGIDO
+    // Handler para llamadas desde los iframes (pyCall)
     window.addEventListener('message', async (event) => {
         if (event.data.type === 'pyCall') {
             const { id, func, args, serverUrl, pythonCode } = event.data;
@@ -536,15 +561,10 @@ window.callGreet = async () => {
                 const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result, ensure_ascii=False))`;
                 const output = await executePythonRemote(fullCode, serverUrl);
                 let result = output.trim();
-                // Intentar parsear como JSON solo si parece JSON
                 if ((result.startsWith('"') && result.endsWith('"')) || 
                     (result.startsWith('{') && result.endsWith('}')) ||
                     (result.startsWith('[') && result.endsWith(']'))) {
-                    try { 
-                        result = JSON.parse(result); 
-                    } catch(e) { 
-                        // Si falla, mantener el texto original (ya decodificado)
-                    }
+                    try { result = JSON.parse(result); } catch(e) {}
                 }
                 event.source.postMessage({ type: 'pyResult', id: id, result: result }, '*');
             } catch(err) {
@@ -686,21 +706,7 @@ window.callGreet = async () => {
         currentEditId = null;
         document.getElementById('project-name-input').value = "Nuevo proyecto";
         document.getElementById('python-editor').value = `def mi_funcion(param):\n    return f"Recibí: {param}"\n\nimport numpy as np\nprint("Python remoto listo")`;
-        document.getElementById('html-editor').value = `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="background:#0f172a; color:white; font-family:sans-serif; padding:1rem;">
-<h2>Mi App Cuántica</h2>
-<button onclick="testCall()">Llamar función</button>
-<p id="output"></p>
-<script>
-async function testCall() {
-    const res = await window.pyCall("mi_funcion", "Hola mundo");
-    document.getElementById('output').innerText = res;
-}
-<\/script>
-</body>
-</html>`;
+        document.getElementById('html-editor').value = `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0f172a; color:white; font-family:sans-serif; padding:1rem;">\n<h2>Mi App Cuántica</h2>\n<button onclick="testCall()">Llamar función</button>\n<p id="output"></p>\n<script>\nasync function testCall() {\n    const res = await window.pyCall("mi_funcion", "Hola mundo");\n    document.getElementById('output').innerText = res;\n}\n<\/script>\n</body>\n</html>`;
         showScreen('editor');
     }
 
@@ -730,9 +736,7 @@ async function testCall() {
         setTimeout(() => {
             sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
             const savedUrl = localStorage.getItem('qcol_colab_url');
-            if (savedUrl && !receivedUrl) {
-                setServerUrl(savedUrl);
-            }
+            if (savedUrl && !receivedUrl) setServerUrl(savedUrl);
         }, 500);
     } else {
         const savedUrl = localStorage.getItem('qcol_colab_url');
@@ -740,12 +744,10 @@ async function testCall() {
     }
     
     setInterval(() => {
-        if (window.parent !== window && !receivedUrl) {
-            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
-        }
+        if (window.parent !== window && !receivedUrl) sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
     }, 3000);
     
-    notify("Quantum App Studio · Conectado al Founder · Caracteres Unicode corregidos", 3000);
+    notify("Quantum App Studio · Botón 'Lanzar' activo · Envía apps a la lista de pendientes del Fundador", 4000);
 </script>
 </body>
 </html>
