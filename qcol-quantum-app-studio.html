@@ -288,6 +288,9 @@
     // Comunicación con Quantum Puzzle (opcional)
     let isEmbedded = false;
     let parentOrigin = '*';
+    
+    // URL del compilador obtenida del Founder
+    let compilerUrlFromFounder = null;
 
     function notify(msg, dur=2000) {
         const n = document.getElementById('notif');
@@ -302,15 +305,60 @@
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
     function sendToParent(msg) { if (window.parent && window.parent !== window) try { window.parent.postMessage(msg, parentOrigin); } catch(e) {} }
 
-    // Mensajes desde el puzzle
+    // Solicitar al Founder la URL del compilador
+    function requestCompilerUrlFromFounder() {
+        if (isEmbedded && window.parent !== window) {
+            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
+            setTimeout(() => {
+                if (!compilerUrlFromFounder) {
+                    // Si no recibió respuesta, intentar leer desde localStorage (fallback)
+                    const savedUrl = localStorage.getItem('qcol_colab_url');
+                    if (savedUrl && !document.getElementById('server-url-input').value) {
+                        document.getElementById('server-url-input').value = savedUrl;
+                        updateServerStatusText(savedUrl);
+                        notify('📡 URL del compilador cargada desde localStorage', 2000);
+                    }
+                }
+            }, 1000);
+        }
+    }
+
+    // Mensajes desde el puzzle/founder
     window.addEventListener('message', async (event) => {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
+        
+        // Recibir URL del compilador desde el Founder
+        if (data.type === 'QCOL_CONFIG_UPDATE' && data.compilerUrl) {
+            compilerUrlFromFounder = data.compilerUrl;
+            const serverInput = document.getElementById('server-url-input');
+            if (serverInput && !serverInput.value) {
+                serverInput.value = compilerUrlFromFounder;
+                updateServerStatusText(compilerUrlFromFounder);
+                notify('✅ URL del compilador recibida del Panel Fundador', 2000);
+            }
+            return;
+        }
+        
+        // También aceptar QCOL_COMPILER_URL directo
+        if (data.type === 'QCOL_COMPILER_URL' && data.url) {
+            compilerUrlFromFounder = data.url;
+            const serverInput = document.getElementById('server-url-input');
+            if (serverInput && !serverInput.value) {
+                serverInput.value = compilerUrlFromFounder;
+                updateServerStatusText(compilerUrlFromFounder);
+                notify('✅ URL del compilador recibida', 2000);
+            }
+            return;
+        }
+        
         if (data.type === 'QCOL_REQUEST_STUDIO_CONNECTION') {
             isEmbedded = true;
             parentOrigin = event.origin;
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
             notify('Conectado con Quantum Puzzle', 1500);
+            // Al conectarse, solicitar la URL del compilador
+            requestCompilerUrlFromFounder();
             return;
         }
         if (data.type === 'QCOL_OPEN_APP_FROM_PUZZLE') {
@@ -672,8 +720,24 @@ async function testCall() {
     loadProjects();
     renderRepository();
     bindEvents();
-    notify("Quantum App Studio · Editor puro · Toda la ejecución Python se delega a servidores remotos.", 4000);
-    setTimeout(() => sendToParent({ type: 'QCOL_STUDIO_READY', standalone: true }), 500);
+    
+    // Intentar conectar con el Founder y obtener la URL del compilador
+    setTimeout(() => {
+        // Si está embebido en el Founder, solicitar conexión
+        if (window.parent !== window) {
+            sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
+        } else {
+            // Si está standalone, intentar cargar URL desde localStorage
+            const savedUrl = localStorage.getItem('qcol_colab_url');
+            if (savedUrl) {
+                document.getElementById('server-url-input').value = savedUrl;
+                updateServerStatusText(savedUrl);
+                notify('📡 URL del compilador cargada desde almacenamiento local', 2000);
+            }
+        }
+    }, 500);
+    
+    notify("Quantum App Studio · Conectado al Panel Fundador · Usando servidor remoto", 4000);
 </script>
 </body>
 </html>
