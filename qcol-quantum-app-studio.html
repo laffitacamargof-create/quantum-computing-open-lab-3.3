@@ -53,7 +53,7 @@
         .screen { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
         .hidden { display: none !important; }
         .repo-header {
-            padding: 1rem;
+            padding: 0.8rem 1rem;
             background: var(--bg2);
             border-bottom: 1px solid var(--bd);
             display: flex;
@@ -65,16 +65,23 @@
             font-size: 1.2rem;
             font-weight: 700;
             color: var(--bl2);
+            /* texto eliminado: ya no contiene "Quantum App Studio · Conectado al Founder" */
         }
+        /* Botón más compacto */
         .btn-primary {
             background: linear-gradient(135deg, #003a9e, var(--bl));
             border: none;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
             font-weight: bold;
+            font-size: 0.75rem;
             color: white;
             font-family: monospace;
             cursor: pointer;
+            transition: 0.1s;
+        }
+        .btn-primary:hover {
+            transform: scale(0.98);
         }
         .projects-grid {
             flex: 1;
@@ -238,7 +245,7 @@
 <!-- REPOSITORIO -->
 <div id="repo-screen" class="screen">
     <div class="repo-header">
-        <div class="repo-title">⚛️ Quantum App Studio · Conectado al Founder</div>
+        <div class="repo-title"></div> <!-- Título eliminado -->
         <button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button>
     </div>
     <div class="projects-grid" id="projects-grid"></div>
