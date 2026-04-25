@@ -296,9 +296,18 @@ body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
 .ci-del { background:transparent; border:none; color:var(--rd); cursor:pointer; font-size:.7rem; }
 
 .q-row { display:flex; align-items:center; height:56px; position:relative; }
-.q-label { width:40px; text-align:right; padding-right:.5rem; font-family:var(--mono); font-size:.55rem; color:var(--mu); flex-shrink:0; }
+.q-label { width:48px; text-align:right; padding-right:.5rem; font-family:var(--mono); font-size:.5rem; color:var(--mu); flex-shrink:0; cursor:pointer; user-select:none; transition:color .15s, opacity .15s; }
+.q-label:hover { opacity:.75; }
+.q-label.qiskit-label { color:var(--bl2); }
+.q-label.cirq-label   { color:var(--gr);  }
 .q-wire { flex:1; position:relative; height:56px; min-width:200px; background:transparent; }
 .q-wire::before { content:''; position:absolute; left:0; right:0; top:50%; height:2px; background:linear-gradient(90deg, rgba(0,136,255,0.3), rgba(0,136,255,0.1)); transform:translateY(-50%); pointer-events:none; }
+.q-wire.qiskit-wire::before { background:linear-gradient(90deg, rgba(0,136,255,0.45), rgba(0,136,255,0.12)); }
+.q-wire.cirq-wire::before   { background:linear-gradient(90deg, rgba(0,255,136,0.45), rgba(0,255,136,0.12)); }
+.q-row.wire-selected { background:rgba(255,255,255,0.035); border-radius:6px; }
+.pal-lib-badge { font-family:var(--orb); font-size:.42rem; font-weight:700; text-align:center; padding:.18rem .4rem; border-radius:4px; margin-bottom:.35rem; letter-spacing:.06em; }
+.pal-lib-badge.qiskit { background:rgba(0,136,255,.15); color:var(--bl2); border:1px solid rgba(0,136,255,.28); }
+.pal-lib-badge.cirq   { background:rgba(0,255,136,.15); color:var(--gr);  border:1px solid rgba(0,255,136,.28); }
 .placed-gate { position:absolute; top:50%; transform:translateY(-50%); z-index:5; cursor:pointer; }
 .pg-box { width:38px; height:38px; border-radius:6px; display:flex; align-items:center; justify-content:center; border:1.5px solid rgba(255,255,255,.2); }
 .pg-sym { font-family:var(--mono); font-size:.8rem; font-weight:700; color:#fff; }
@@ -366,6 +375,7 @@ body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
         <span class="code-hdr-lbl">{ } EDITOR PYTHON</span>
         <div class="code-hdr-right">
           <span class="compiler-status" id="compiler-status">● SIN COMPILADOR</span>
+          <button class="bsm" id="btn-ver-todo" onclick="deselectWire()" style="padding:.15rem .4rem;" title="Ver código completo de todos los cables">VER TODO</button>
           <button class="bsm" id="btn-copy" style="padding:.15rem .4rem;">COPIAR</button>
           <button class="bsm" id="btn-clear-code" style="padding:.15rem .4rem;">LIMPIAR</button>
         </div>
@@ -429,8 +439,9 @@ body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
 // ARQUITECTO CUÁNTICO — Híbrido automático: sincronización local (Pyodide) + ejecución remota (servidor)
 // ═══════════════════════════════════════════════════════════
 
-let circuit = { qubits: 2, gates: [] };
+let circuit = { qubits: 2, gates: [], wireLibs: [] };
 let curLib = 'qiskit';
+let selectedWire = -1;
 let curMode = 'circ';
 let curUser = null;
 let engineURL = '', engineOK = false;
@@ -656,35 +667,38 @@ if 'QuantumCircuit' in globals():
 // Definición de puertas (colores originales)
 const GATES = {
   '1q': [
-    { id: 'H', sym: 'H', bg: '#1a5fb4', glow:'#1a5fb4', desc: 'Hadamard', code: 'qc.h({q})', regex: /qc\.h\((\d+)\)/ },
-    { id: 'X', sym: 'X', bg: '#c01c28', glow:'#c01c28', desc: 'Pauli-X', code: 'qc.x({q})', regex: /qc\.x\((\d+)\)/ },
-    { id: 'Y', sym: 'Y', bg: '#7a3e99', glow:'#7a3e99', desc: 'Pauli-Y', code: 'qc.y({q})', regex: /qc\.y\((\d+)\)/ },
-    { id: 'Z', sym: 'Z', bg: '#1c71d8', glow:'#1c71d8', desc: 'Pauli-Z', code: 'qc.z({q})', regex: /qc\.z\((\d+)\)/ },
-    { id: 'S', sym: 'S', bg: '#c64600', glow:'#c64600', desc: 'Fase π/2', code: 'qc.s({q})', regex: /qc\.s\((\d+)\)/ },
-    { id: 'T', sym: 'T', bg: '#26a269', glow:'#26a269', desc: 'Fase π/4', code: 'qc.t({q})', regex: /qc\.t\((\d+)\)/ },
-    { id: 'SX', sym: '√X', bg: '#c01c28', glow:'#c01c28', desc: 'Raíz X', code: 'qc.sx({q})', regex: /qc\.sx\((\d+)\)/ },
-    { id: 'RX', sym: 'Rx', bg: '#0077c2', glow:'#0077c2', desc: 'Rotación X', code: 'qc.rx(np.pi/4, {q})', regex: /qc\.rx\([^,]+,\s*(\d+)\)/ },
-    { id: 'RY', sym: 'Ry', bg: '#005f6a', glow:'#005f6a', desc: 'Rotación Y', code: 'qc.ry(np.pi/4, {q})', regex: /qc\.ry\([^,]+,\s*(\d+)\)/ },
-    { id: 'RZ', sym: 'Rz', bg: '#5e35b1', glow:'#5e35b1', desc: 'Rotación Z', code: 'qc.rz(np.pi/4, {q})', regex: /qc\.rz\([^,]+,\s*(\d+)\)/ }
+    { id: 'H',  sym: 'H',   bg: '#1a5fb4', glow:'#1a5fb4', desc: 'Hadamard',   code: 'qc.h({q})',              cirqCode: 'circuit_cirq.append(cirq.H(qubits[{q}]))',                        regex: /qc\.h\((\d+)\)/ },
+    { id: 'X',  sym: 'X',   bg: '#c01c28', glow:'#c01c28', desc: 'Pauli-X',    code: 'qc.x({q})',              cirqCode: 'circuit_cirq.append(cirq.X(qubits[{q}]))',                        regex: /qc\.x\((\d+)\)/ },
+    { id: 'Y',  sym: 'Y',   bg: '#7a3e99', glow:'#7a3e99', desc: 'Pauli-Y',    code: 'qc.y({q})',              cirqCode: 'circuit_cirq.append(cirq.Y(qubits[{q}]))',                        regex: /qc\.y\((\d+)\)/ },
+    { id: 'Z',  sym: 'Z',   bg: '#1c71d8', glow:'#1c71d8', desc: 'Pauli-Z',    code: 'qc.z({q})',              cirqCode: 'circuit_cirq.append(cirq.Z(qubits[{q}]))',                        regex: /qc\.z\((\d+)\)/ },
+    { id: 'S',  sym: 'S',   bg: '#c64600', glow:'#c64600', desc: 'Fase π/2',   code: 'qc.s({q})',              cirqCode: 'circuit_cirq.append(cirq.S(qubits[{q}]))',                        regex: /qc\.s\((\d+)\)/ },
+    { id: 'T',  sym: 'T',   bg: '#26a269', glow:'#26a269', desc: 'Fase π/4',   code: 'qc.t({q})',              cirqCode: 'circuit_cirq.append(cirq.T(qubits[{q}]))',                        regex: /qc\.t\((\d+)\)/ },
+    { id: 'SX', sym: '√X',  bg: '#c01c28', glow:'#c01c28', desc: 'Raíz X',     code: 'qc.sx({q})',             cirqCode: 'circuit_cirq.append(cirq.X(qubits[{q}])**0.5)',                   regex: /qc\.sx\((\d+)\)/ },
+    { id: 'RX', sym: 'Rx',  bg: '#0077c2', glow:'#0077c2', desc: 'Rotación X', code: 'qc.rx(np.pi/4, {q})',   cirqCode: 'circuit_cirq.append(cirq.rx(rads=np.pi/4)(qubits[{q}]))',         regex: /qc\.rx\([^,]+,\s*(\d+)\)/ },
+    { id: 'RY', sym: 'Ry',  bg: '#005f6a', glow:'#005f6a', desc: 'Rotación Y', code: 'qc.ry(np.pi/4, {q})',   cirqCode: 'circuit_cirq.append(cirq.ry(rads=np.pi/4)(qubits[{q}]))',         regex: /qc\.ry\([^,]+,\s*(\d+)\)/ },
+    { id: 'RZ', sym: 'Rz',  bg: '#5e35b1', glow:'#5e35b1', desc: 'Rotación Z', code: 'qc.rz(np.pi/4, {q})',   cirqCode: 'circuit_cirq.append(cirq.rz(rads=np.pi/4)(qubits[{q}]))',         regex: /qc\.rz\([^,]+,\s*(\d+)\)/ }
   ],
   '2q': [
-    { id: 'CX', sym: 'CX', bg: '#007070', glow:'#007070', desc: 'CNOT', code: 'qc.cx({q},{q2})', regex: /qc\.cx\((\d+),\s*(\d+)\)/, multi: true },
-    { id: 'CZ', sym: 'CZ', bg: '#00695c', glow:'#00695c', desc: 'CZ', code: 'qc.cz({q},{q2})', regex: /qc\.cz\((\d+),\s*(\d+)\)/, multi: true },
-    { id: 'SWAP', sym: 'SW', bg: '#1565c0', glow:'#1565c0', desc: 'SWAP', code: 'qc.swap({q},{q2})', regex: /qc\.swap\((\d+),\s*(\d+)\)/, multi: true }
+    { id: 'CX',   sym: 'CX',  bg: '#007070', glow:'#007070', desc: 'CNOT',  code: 'qc.cx({q},{q2})',    cirqCode: 'circuit_cirq.append(cirq.CNOT(qubits[{q}], qubits[{q2}]))',  regex: /qc\.cx\((\d+),\s*(\d+)\)/,   multi: true },
+    { id: 'CZ',   sym: 'CZ',  bg: '#00695c', glow:'#00695c', desc: 'CZ',    code: 'qc.cz({q},{q2})',    cirqCode: 'circuit_cirq.append(cirq.CZ(qubits[{q}], qubits[{q2}]))',   regex: /qc\.cz\((\d+),\s*(\d+)\)/,   multi: true },
+    { id: 'SWAP', sym: 'SW',  bg: '#1565c0', glow:'#1565c0', desc: 'SWAP',  code: 'qc.swap({q},{q2})',  cirqCode: 'circuit_cirq.append(cirq.SWAP(qubits[{q}], qubits[{q2}]))', regex: /qc\.swap\((\d+),\s*(\d+)\)/, multi: true }
   ],
   '3q': [
-    { id: 'CCX', sym: 'CCX', bg: '#005f6a', glow:'#005f6a', desc: 'Toffoli', code: 'qc.ccx({q},{q2},{q3})', regex: /qc\.ccx\((\d+),\s*(\d+),\s*(\d+)\)/, triple: true },
-    { id: 'CSW', sym: 'CSW', bg: '#283593', glow:'#283593', desc: 'Fredkin (CSWAP)', code: 'qc.cswap({q},{q2},{q3})', regex: /qc\.cswap\((\d+),\s*(\d+),\s*(\d+)\)/, triple: true }
+    { id: 'CCX', sym: 'CCX', bg: '#005f6a', glow:'#005f6a', desc: 'Toffoli',       code: 'qc.ccx({q},{q2},{q3})',   cirqCode: 'circuit_cirq.append(cirq.CCX(qubits[{q}], qubits[{q2}], qubits[{q3}]))',   regex: /qc\.ccx\((\d+),\s*(\d+),\s*(\d+)\)/,   triple: true },
+    { id: 'CSW', sym: 'CSW', bg: '#283593', glow:'#283593', desc: 'Fredkin (CSWAP)', code: 'qc.cswap({q},{q2},{q3})', cirqCode: 'circuit_cirq.append(cirq.CSWAP(qubits[{q}], qubits[{q2}], qubits[{q3}]))', regex: /qc\.cswap\((\d+),\s*(\d+),\s*(\d+)\)/, triple: true }
   ],
   'meas': [
-    { id: 'M', sym: 'M', bg: '#6d4c41', glow:'#6d4c41', desc: 'Medir', code: 'qc.measure({q},{q})', regex: /qc\.measure\((\d+),\s*\d+\)/ }
+    { id: 'M', sym: 'M', bg: '#6d4c41', glow:'#6d4c41', desc: 'Medir', code: 'qc.measure({q},{q})', cirqCode: 'circuit_cirq.append(cirq.measure(qubits[{q}], key="{q}"))', regex: /qc\.measure\((\d+),\s*\d+\)/ }
   ]
 };
 
 function buildPalette() {
   const container = document.getElementById('palette-body');
   if (!container) return;
-  let html = '';
+  const wLib    = selectedWire >= 0 ? getWireLib(selectedWire) : curLib;
+  const libLbl  = wLib === 'cirq' ? '● CIRQ ACTIVO' : '○ QISKIT ACTIVO';
+  const libCls  = wLib === 'cirq' ? 'cirq' : 'qiskit';
+  let html = `<div class="pal-lib-badge ${libCls}">${libLbl}</div>`;
   html += '<div class="pal-sec"><div class="pal-sec-lbl">1 QUBIT</div><div class="pal-grid">';
   GATES['1q'].forEach(g => { html += `<div class="pal-gate" draggable="true" data-gate="${g.id}" style="background:${g.bg};box-shadow:0 0 6px ${g.glow}" ondragstart="onDragStart(event)" ondragend="onDragEnd()"><span class="pal-gate-sym">${g.sym}</span><span class="pal-gate-lbl">${g.id}</span></div>`; });
   html += '</div></div><div class="pal-sec"><div class="pal-sec-lbl">2 QUBITS</div><div class="pal-grid">';
@@ -728,23 +742,23 @@ function placeGate(gateId, qubit) {
     if (qCtrl === qSwap2) qSwap2 = (qSwap2 + 1) % circuit.qubits;
     if (qSwap1 === qSwap2) qSwap2 = (qSwap2 + 1) % circuit.qubits;
     const qs = [qCtrl, qSwap1, qSwap2].sort((a, b) => a - b);
-    circuit.gates.push({ id: gateId, q: qs[0], q2: qs[1], q3: qs[2], def: def, uid: nextId++ });
+    circuit.gates.push({ id: gateId, q: qs[0], q2: qs[1], q3: qs[2], def: def, uid: nextId++, lib: getWireLib(qubit) });
   } else if (def.multi) {
     if (circuit.qubits < 2) { notify('Necesitas al menos 2 qubits'); isUpdatingFromCircuit = false; return; }
     const q2 = qubit + 1 < circuit.qubits ? qubit + 1 : qubit - 1;
-    circuit.gates.push({ id: gateId, q: Math.min(qubit, q2), q2: Math.max(qubit, q2), def: def, uid: nextId++ });
+    circuit.gates.push({ id: gateId, q: Math.min(qubit, q2), q2: Math.max(qubit, q2), def: def, uid: nextId++, lib: getWireLib(qubit) });
   } else {
     if (gateId === 'M') {
       // Medición: quitar M existente en este qubit y añadir al final
       circuit.gates = circuit.gates.filter(g => !(g.id === 'M' && g.q === qubit));
-      circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++ });
+      circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
     } else {
       // Puerta normal: insertar antes de las mediciones de este qubit
       const firstM = circuit.gates.findIndex(g => g.id === 'M' && g.q === qubit);
       if (firstM >= 0) {
-        circuit.gates.splice(firstM, 0, { id: gateId, q: qubit, def: def, uid: nextId++ });
+        circuit.gates.splice(firstM, 0, { id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
       } else {
-        circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++ });
+        circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
       }
     }
   }
@@ -765,6 +779,102 @@ function removeGate(uid) {
   isUpdatingFromCircuit = false;
 }
 
+// ═══════════════════════════════════════════════════════════
+// SISTEMA DE LIBRERÍA POR CABLE (HÍBRIDO QISKIT + CIRQ)
+// ═══════════════════════════════════════════════════════════
+
+function initWireLibs() {
+  if (!circuit.wireLibs) circuit.wireLibs = [];
+  while (circuit.wireLibs.length < circuit.qubits) circuit.wireLibs.push(curLib);
+  circuit.wireLibs = circuit.wireLibs.slice(0, circuit.qubits);
+}
+
+function getWireLib(q) {
+  return (circuit.wireLibs && circuit.wireLibs[q]) || curLib;
+}
+
+function setWireLib(q, lib) {
+  if (!circuit.wireLibs) circuit.wireLibs = [];
+  circuit.wireLibs[q] = lib;
+  circuit.gates.forEach(g => {
+    if (g.q === q || g.q2 === q || g.q3 === q) g.lib = lib;
+  });
+  renderCircuit();
+  buildPalette();
+  updateCodeFromCircuit();
+}
+
+function toggleWireLib(q) {
+  const newLib = getWireLib(q) === 'qiskit' ? 'cirq' : 'qiskit';
+  setWireLib(q, newLib);
+  selectedWire = q;
+  document.querySelectorAll('.lib-btn').forEach(b => b.classList.toggle('on', b.dataset.lib === newLib));
+  notify(`q[${q}] → ${newLib}`);
+}
+
+function selectWire(q) {
+  selectedWire = q;
+  const wLib = getWireLib(q);
+  document.querySelectorAll('.lib-btn').forEach(b => b.classList.toggle('on', b.dataset.lib === wLib));
+  renderCircuit();
+  buildPalette();
+  updateCodeFromCircuit();
+}
+
+function deselectWire() {
+  selectedWire = -1;
+  document.querySelectorAll('.lib-btn').forEach(b => b.classList.toggle('on', b.dataset.lib === curLib));
+  renderCircuit();
+  buildPalette();
+  updateCodeFromCircuit();
+}
+
+function getGateCode(gate) {
+  const lib = gate.lib || getWireLib(gate.q);
+  const tmpl = lib === 'cirq' ? (gate.def.cirqCode || gate.def.code) : gate.def.code;
+  return tmpl
+    .replace(/\{q\}/g,  String(gate.q))
+    .replace(/\{q2\}/g, String(gate.q2 !== undefined ? gate.q2 : 0))
+    .replace(/\{q3\}/g, String(gate.q3 !== undefined ? gate.q3 : 0));
+}
+
+function generateQiskitCode(gates) {
+  let c = `from qiskit import QuantumCircuit\nimport numpy as np\nfrom qiskit_aer import AerSimulator\n\nqc = QuantumCircuit(${circuit.qubits}, ${circuit.qubits})\n\n`;
+  gates.forEach(g => { c += getGateCode(g) + '\n'; });
+  c += `\nqc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\nprint(qc.draw(output='text'))\n\nsimulator = AerSimulator()\nresult = simulator.run(qc, shots=1024).result()\ncounts = result.get_counts()\nprint("Resultados:", counts)`;
+  return c;
+}
+
+function generateCirqCode(gates) {
+  let c = `import cirq\nimport numpy as np\n\nqubits = [cirq.GridQubit(0, i) for i in range(${circuit.qubits})]\ncircuit_cirq = cirq.Circuit()\n\n`;
+  gates.forEach(g => { c += getGateCode(g) + '\n'; });
+  c += `\nprint(circuit_cirq)`;
+  return c;
+}
+
+function generateHybridCode() {
+  const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
+  const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
+  let c = `# QUANTUM OPEN LAB — CIRCUITO HÍBRIDO\n`;
+  if (qGates.length > 0) {
+    c += `\n# ── Parte Qiskit ──────────────────────────────────\n`;
+    c += `from qiskit import QuantumCircuit\nimport numpy as np\nfrom qiskit_aer import AerSimulator\n\n`;
+    c += `qc = QuantumCircuit(${circuit.qubits}, ${circuit.qubits})\n`;
+    qGates.forEach(g => { c += getGateCode(g) + '\n'; });
+    c += `qc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\n`;
+    c += `print("--- Qiskit ---")\nprint(qc.draw(output='text'))\n`;
+    c += `simulator = AerSimulator()\nresult = simulator.run(qc, shots=1024).result()\ncounts = result.get_counts()\nprint("Resultados Qiskit:", counts)\n`;
+  }
+  if (cGates.length > 0) {
+    c += `\n# ── Parte Cirq ────────────────────────────────────\n`;
+    c += `import cirq\n\n`;
+    c += `qubits = [cirq.GridQubit(0, i) for i in range(${circuit.qubits})]\ncircuit_cirq = cirq.Circuit()\n`;
+    cGates.forEach(g => { c += getGateCode(g) + '\n'; });
+    c += `print("--- Cirq ---")\nprint(circuit_cirq)\n`;
+  }
+  return c;
+}
+
 function renderCircuit() {
   const container = document.getElementById('circuit-canvas');
   if (!container) return;
@@ -781,7 +891,12 @@ function renderCircuit() {
   const wireWidth = totalCols * step + 70;
   let html = `<div style="min-width:${wireWidth}px; position:relative;">`;
   for (let q = 0; q < circuit.qubits; q++) {
-    html += `<div class="q-row" style="height:${ROW_HEIGHT}px;"><div class="q-label">q[${q}]</div><div class="q-wire" ondragover="onWireDragOver(event)" ondragleave="onWireDragLeave(event)" ondrop="onWireDrop(event, ${q})" style="position:relative; height:${ROW_HEIGHT}px;"></div></div>`;
+    const wLib     = getWireLib(q);
+    const wireCls  = wLib === 'cirq' ? 'cirq-wire'  : 'qiskit-wire';
+    const labelCls = wLib === 'cirq' ? 'cirq-label' : 'qiskit-label';
+    const selCls   = selectedWire === q ? 'wire-selected' : '';
+    const libDot   = wLib === 'cirq' ? '●' : '○';
+    html += `<div class="q-row ${selCls}" style="height:${ROW_HEIGHT}px;"><div class="q-label ${labelCls}" onclick="toggleWireLib(${q})" title="Click: cambiar librería (${wLib})">${libDot} q[${q}]</div><div class="q-wire ${wireCls}" ondragover="onWireDragOver(event)" ondragleave="onWireDragLeave(event)" ondrop="onWireDrop(event, ${q})" onclick="selectWire(${q})" style="position:relative; height:${ROW_HEIGHT}px;"></div></div>`;
   }
   placed.forEach(g => {
     const left = g.col * step + 15;
@@ -873,16 +988,29 @@ function updateBlochSelector() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// GENERACIÓN DE CÓDIGO COMPATIBLE CON QISKIT 1.0+
+// GENERACIÓN DE CÓDIGO — HÍBRIDO QISKIT + CIRQ
 // ═══════════════════════════════════════════════════════════
 function updateCodeFromCircuit() {
   if (isUpdatingFromCode) return;
-  let code = `from qiskit import QuantumCircuit\nimport numpy as np\nfrom qiskit_aer import AerSimulator\n\nqc = QuantumCircuit(${circuit.qubits}, ${circuit.qubits})\n\n`;
-  circuit.gates.forEach(g => {
-    let line = g.def.code.replace('{q}', g.q).replace('{q2}', g.q2 !== undefined ? g.q2 : 0).replace('{q3}', g.q3 !== undefined ? g.q3 : 0);
-    code += line + '\n';
-  });
-  code += `\nqc.measure(range(${circuit.qubits}), range(${circuit.qubits}))\nprint(qc.draw(output='text'))\n\nsimulator = AerSimulator()\nresult = simulator.run(qc, shots=1024).result()\ncounts = result.get_counts()\nprint("Resultados:", counts)`;
+  let code;
+  if (selectedWire >= 0) {
+    // Vista del cable seleccionado
+    const wLib = getWireLib(selectedWire);
+    const wireGates = circuit.gates.filter(g =>
+      g.q === selectedWire || g.q2 === selectedWire || g.q3 === selectedWire);
+    const baseCode = wLib === 'cirq' ? generateCirqCode(wireGates) : generateQiskitCode(wireGates);
+    code = `# Cable q[${selectedWire}] — ${wLib.toUpperCase()}\n` + baseCode;
+  } else {
+    const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
+    const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
+    if (qGates.length > 0 && cGates.length > 0) {
+      code = generateHybridCode();
+    } else if (cGates.length > 0) {
+      code = generateCirqCode(circuit.gates);
+    } else {
+      code = generateQiskitCode(circuit.gates);
+    }
+  }
   const ta = document.getElementById('code-ta');
   if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
 }
@@ -2220,9 +2348,9 @@ function applyBlochGate(gate) {
     updateBlochSelector();
 }
 
-function addQubit() { if (circuit.qubits < MAX_QUBITS) { circuit.qubits++; if (!blochStates[circuit.qubits-1]) blochStates[circuit.qubits-1] = { theta: 0, phi: 0 }; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } else notify(`Máximo ${MAX_QUBITS} qubits`); }
-function removeQubit() { if (circuit.qubits > 1) { circuit.gates = circuit.gates.filter(g => g.q < circuit.qubits-1 && (!g.q2 || g.q2 < circuit.qubits-1) && (!g.q3 || g.q3 < circuit.qubits-1)); circuit.qubits--; if (currentBlochQubit >= circuit.qubits) currentBlochQubit = circuit.qubits-1; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } }
-function clearCircuit() { circuit.gates = []; for (let i = 0; i < circuit.qubits; i++) blochStates[i] = { theta: 0, phi: 0 }; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); drawBloch(); notify('Circuito limpiado'); }
+function addQubit() { if (circuit.qubits < MAX_QUBITS) { circuit.qubits++; if (!blochStates[circuit.qubits-1]) blochStates[circuit.qubits-1] = { theta: 0, phi: 0 }; initWireLibs(); renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } else notify(`Máximo ${MAX_QUBITS} qubits`); }
+function removeQubit() { if (circuit.qubits > 1) { circuit.gates = circuit.gates.filter(g => g.q < circuit.qubits-1 && (!g.q2 || g.q2 < circuit.qubits-1) && (!g.q3 || g.q3 < circuit.qubits-1)); circuit.qubits--; if (currentBlochQubit >= circuit.qubits) currentBlochQubit = circuit.qubits-1; initWireLibs(); if (selectedWire >= circuit.qubits) selectedWire = -1; renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); notify(`${circuit.qubits} qubits`); } }
+function clearCircuit() { circuit.gates = []; for (let i = 0; i < circuit.qubits; i++) blochStates[i] = { theta: 0, phi: 0 }; initWireLibs(); renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit(); drawBloch(); notify('Circuito limpiado'); }
 function clearCode() { 
     const defaultCode = `from qiskit import QuantumCircuit
 import numpy as np
@@ -2281,7 +2409,7 @@ function loadCircuit(i) {
     if (!c) return;
     document.getElementById('code-ta').value = c.code;
     document.getElementById('save-name').value = c.name;
-    if (c.circ) { try { const cc = JSON.parse(c.circ); circuit = cc; renderCircuit(); updateCircuitInfo(); } catch (e) { } }
+    if (c.circ) { try { const cc = JSON.parse(c.circ); circuit = cc; if (!circuit.wireLibs) circuit.wireLibs = []; initWireLibs(); circuit.gates.forEach(g => { if (!g.lib) g.lib = curLib; }); renderCircuit(); updateCircuitInfo(); } catch (e) { } }
     onCodeEdit();
     setTab('out');
     notify('Cargado: ' + c.name);
@@ -2402,7 +2530,18 @@ function setMode(mode) {
     document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.mode === mode));
 }
 
-function setLib(lib) { curLib = lib; document.querySelectorAll('.lib-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.lib === lib)); updateCodeFromCircuit(); notify('Librería: ' + lib); }
+function setLib(lib) {
+  curLib = lib;
+  // Propagar a todos los cables y puertas
+  for (let i = 0; i < circuit.qubits; i++) circuit.wireLibs[i] = lib;
+  circuit.gates.forEach(g => { g.lib = lib; });
+  selectedWire = -1;
+  document.querySelectorAll('.lib-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.lib === lib));
+  renderCircuit();
+  buildPalette();
+  updateCodeFromCircuit();
+  notify('Librería global: ' + lib);
+}
 
 function notify(msg, dur = 2000) {
     const n = document.getElementById('notif');
@@ -2434,6 +2573,7 @@ function init() {
         if (pyodide) injectIgnoredAttrsIntoPython(pyodide);
     });
     for (let i = 0; i < circuit.qubits; i++) blochStates[i] = { theta: 0, phi: 0 };
+    initWireLibs();
     buildPalette();
     renderCircuit();
     updateCircuitInfo();
@@ -2629,6 +2769,10 @@ window.addEventListener('message', e => {
             // Si no hay código pero sí estructura, reconstruir circuito
             circuit.qubits = d.circuitData.qubits || 2;
             circuit.gates  = d.circuitData.gates  || [];
+            if (!circuit.wireLibs) circuit.wireLibs = [];
+            if (d.circuitData.wireLibs) circuit.wireLibs = d.circuitData.wireLibs;
+            initWireLibs();
+            circuit.gates.forEach(g => { if (!g.lib) g.lib = curLib; });
             renderCircuit();
             updateCircuitInfo();
             updateCodeFromCircuit();
