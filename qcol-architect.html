@@ -227,6 +227,27 @@ body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
 .code-ta::-webkit-scrollbar { width:6px; }
 .code-ta::-webkit-scrollbar-thumb { background:var(--bd2); }
 
+/* ── Two-panel code display ────────────────────────────── */
+.code-panels-container { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+.code-panel { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.code-panel-hdr {
+  display:flex; align-items:center; padding:.18rem .7rem; flex-shrink:0;
+  font-family:var(--orb); font-size:.44rem; font-weight:700; letter-spacing:.07em;
+}
+.code-panel-hdr.qiskit-hdr {
+  background:rgba(0,136,255,.1); color:var(--bl2);
+  border-bottom:1px solid rgba(0,136,255,.22);
+}
+.code-panel-hdr.cirq-hdr {
+  background:rgba(0,255,136,.08); color:var(--gr);
+  border-top:1px solid rgba(0,255,136,.18);
+  border-bottom:1px solid rgba(0,255,136,.18);
+}
+.panel-divider {
+  height:1px; flex-shrink:0;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+}
+
 .statusbar {
   display:flex; align-items:center; gap:.5rem;
   padding:0 .7rem; height:22px;
@@ -380,11 +401,27 @@ body { background:var(--bg); color:var(--tx); font-family:var(--ex); }
           <button class="bsm" id="btn-clear-code" style="padding:.15rem .4rem;">LIMPIAR</button>
         </div>
       </div>
-      <div class="code-wrap">
-        <div class="lnums" id="lnums"></div>
-        <div class="editor-body">
-          <div class="syn-lay" id="syn-lay"></div>
-          <textarea class="code-ta" id="code-ta" spellcheck="false"></textarea>
+      <div class="code-panels-container" id="code-panels-container">
+        <div class="code-panel" id="panel-qiskit">
+          <div class="code-panel-hdr qiskit-hdr" id="qiskit-panel-hdr" style="display:none;">○ QISKIT</div>
+          <div class="code-wrap">
+            <div class="lnums" id="lnums"></div>
+            <div class="editor-body">
+              <div class="syn-lay" id="syn-lay"></div>
+              <textarea class="code-ta" id="code-ta" spellcheck="false"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="panel-divider" id="panel-divider" style="display:none;"></div>
+        <div class="code-panel" id="panel-cirq" style="display:none;">
+          <div class="code-panel-hdr cirq-hdr">● CIRQ</div>
+          <div class="code-wrap">
+            <div class="lnums" id="lnums-cirq"></div>
+            <div class="editor-body">
+              <div class="syn-lay" id="syn-lay-cirq"></div>
+              <textarea class="code-ta" id="code-ta-cirq" spellcheck="false"></textarea>
+            </div>
+          </div>
         </div>
       </div>
       <div class="statusbar">
@@ -996,16 +1033,43 @@ function updateCodeFromCircuit() {
   if (isUpdatingFromCode) return;
   const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
   const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
-  let code;
-  if (qGates.length > 0 && cGates.length > 0) {
-    code = generateHybridCode();
-  } else if (cGates.length > 0) {
-    code = generateCirqCode(circuit.gates);
+  const ta     = document.getElementById('code-ta');
+  const taCirq = document.getElementById('code-ta-cirq');
+  const panelQ = document.getElementById('panel-qiskit');
+  const panelC = document.getElementById('panel-cirq');
+  const divider  = document.getElementById('panel-divider');
+  const qiskitHdr = document.getElementById('qiskit-panel-hdr');
+  const isHybrid   = qGates.length > 0 && cGates.length > 0;
+  const isPureCirq = cGates.length > 0 && qGates.length === 0;
+
+  if (isHybrid) {
+    // Show both panels with coloured headers
+    if (panelQ)    panelQ.style.display    = 'flex';
+    if (panelC)    panelC.style.display    = 'flex';
+    if (divider)   divider.style.display   = 'block';
+    if (qiskitHdr) qiskitHdr.style.display = 'flex';
+    const qCode = generateQiskitCode(qGates);
+    const cCode = generateCirqCode(cGates);
+    if (ta     && ta.value     !== qCode) { ta.value     = qCode; updateSyntaxHighlight();     }
+    if (taCirq && taCirq.value !== cCode) { taCirq.value = cCode; updateSyntaxHighlightCirq(); }
+  } else if (isPureCirq) {
+    // Only Cirq panel visible
+    if (panelQ)    panelQ.style.display    = 'none';
+    if (panelC)    panelC.style.display    = 'flex';
+    if (divider)   divider.style.display   = 'none';
+    const cCode = generateCirqCode(circuit.gates);
+    if (taCirq && taCirq.value !== cCode) { taCirq.value = cCode; updateSyntaxHighlightCirq(); }
+    // Keep code-ta in sync so Pyodide/save still works
+    if (ta     && ta.value     !== cCode) { ta.value     = cCode; updateSyntaxHighlight();     }
   } else {
-    code = generateQiskitCode(circuit.gates);
+    // Pure Qiskit — single panel, no library badge
+    if (panelQ)    panelQ.style.display    = 'flex';
+    if (panelC)    panelC.style.display    = 'none';
+    if (divider)   divider.style.display   = 'none';
+    if (qiskitHdr) qiskitHdr.style.display = 'none';
+    const code = generateQiskitCode(circuit.gates);
+    if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
   }
-  const ta = document.getElementById('code-ta');
-  if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1663,7 +1727,7 @@ async function initPyodide() {
         await injectIgnoredAttrsIntoPython(pyodide);
         out.innerHTML = '<span class="ok">✅ Pyodide listo (numpy, scipy, matplotlib disponibles localmente)</span>\n';
         notify('✅ Pyodide listo');
-        if (document.getElementById('code-ta').value.trim()) {
+        if (getCodeForSync().trim()) {
             syncWithPyodide().catch(console.error);
         }
     } catch (err) {
@@ -1872,7 +1936,7 @@ function _parseTextDraw(text) {
 
 async function syncFromServer(reason) {
     if (!engineOK || !engineURL) return false;
-    const rawCode = document.getElementById('code-ta').value.trim();
+    const rawCode = getCodeForSync().trim();
     if (!rawCode) return false;
     const out = document.getElementById('out-body');
     out.innerHTML += `<span class="inf">🔧 Corrector activo (${reason}) — ejecutando en servidor...</span>\n`;
@@ -1920,7 +1984,7 @@ async function syncFromServer(reason) {
 async function syncWithPyodide(retryCount = 0) {
     if (isUpdatingFromCircuit) return;
     isUpdatingFromCircuit = true;
-    const rawCode = document.getElementById('code-ta').value;
+    const rawCode = getCodeForSync();
     if (!rawCode.trim()) { isUpdatingFromCircuit = false; return; }
     const out = document.getElementById('out-body');
     out.innerHTML += '<span class="inf">🔄 Sincronizando código → circuito visual...</span>\n';
@@ -2226,7 +2290,7 @@ json.dumps({
 // EJECUCIÓN EN SERVIDOR (código original adaptado)
 // ═══════════════════════════════════════════════════════════
 async function runServerCode() {
-    const code = document.getElementById('code-ta').value.trim();
+    const code = getCodeForSync().trim();
     if (!code) { notify('Escribe código primero'); return; }
     if (!engineOK || !engineURL) {
         notify('❌ No hay compilador configurado. Configura la URL en el panel Fundador.');
@@ -2391,7 +2455,60 @@ function updateSyntaxHighlight() {
     syn.scrollLeft = ta.scrollLeft;
 }
 
-function onCodeEdit() { 
+// ── Returns the full code to send to Pyodide ────────────────
+// In hybrid mode: Qiskit panel + Cirq panel combined.
+// In pure mode: the single active panel.
+function getCodeForSync() {
+    const ta     = document.getElementById('code-ta');
+    const taCirq = document.getElementById('code-ta-cirq');
+    const panelQ = document.getElementById('panel-qiskit');
+    const panelC = document.getElementById('panel-cirq');
+    const qVisible = panelQ && panelQ.style.display !== 'none';
+    const cVisible = panelC && panelC.style.display !== 'none';
+    if (qVisible && cVisible && ta && taCirq && ta.value.trim() && taCirq.value.trim()) {
+        return ta.value + '\n' + taCirq.value;
+    }
+    if (cVisible && taCirq && taCirq.value.trim()) return taCirq.value;
+    return ta ? ta.value : '';
+}
+
+function updateSyntaxHighlightCirq() {
+    const ta    = document.getElementById('code-ta-cirq');
+    const syn   = document.getElementById('syn-lay-cirq');
+    const lnums = document.getElementById('lnums-cirq');
+    if (!ta || !syn) return;
+    const plainCode = ta.value;
+    const lines = plainCode.split('\n');
+    if (lnums) {
+        lnums.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+        lnums.scrollTop = ta.scrollTop;
+    }
+    syn.innerHTML = highlightSyntax(plainCode) + '\n';
+    syn.scrollTop = ta.scrollTop;
+    syn.scrollLeft = ta.scrollLeft;
+}
+
+function onCirqCodeEdit() {
+    updateSyntaxHighlightCirq();
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        if (pyodide !== null) {
+            syncWithPyodide().catch(() => {});
+        } else if (engineOK && engineURL) {
+            syncFromServer('pyodide-not-loaded').catch(() => {});
+        }
+    }, 800);
+}
+
+function onCirqCodeScroll() {
+    const ta    = document.getElementById('code-ta-cirq');
+    const syn   = document.getElementById('syn-lay-cirq');
+    const lnums = document.getElementById('lnums-cirq');
+    if (ta && syn)   { syn.scrollTop = ta.scrollTop; syn.scrollLeft = ta.scrollLeft; }
+    if (ta && lnums) { lnums.scrollTop = ta.scrollTop; }
+}
+
+function onCodeEdit() {
     const code = document.getElementById('code-ta').value;
     const gateCallCount = (code.match(/\bqc\.\w+\s*\(/g) || []).length;
     if (gateCallCount > MAX_GATES) {
@@ -2419,7 +2536,7 @@ function onCodeEdit() {
     if (circuit.gates.length === 0) {
         clearTimeout(window._emptyCanvasTimeout);
         window._emptyCanvasTimeout = setTimeout(() => {
-            const code = document.getElementById('code-ta').value.trim();
+            const code = getCodeForSync().trim();
             if (code && circuit.gates.length === 0 && engineOK && engineURL) {
                 syncFromServer('empty-canvas').catch(() => {});
             }
@@ -2612,13 +2729,13 @@ print("Resultados:", counts)`;
     document.getElementById('code-ta').value = defaultCode; 
     onCodeEdit(); 
 }
-function copyCode() { navigator.clipboard.writeText(document.getElementById('code-ta').value); notify('📋 Código copiado'); }
+function copyCode() { navigator.clipboard.writeText(getCodeForSync()); notify('📋 Código copiado'); }
 function updCur() { const ta = document.getElementById('code-ta'); const txt = ta.value.substring(0, ta.selectionStart); const lines = txt.split('\n'); document.getElementById('sb-cur').textContent = `Ln ${lines.length}, Col ${lines[lines.length-1].length+1}`; }
 
 function saveCircuit() {
     if (!curUser) { notify('Inicia sesión para guardar circuitos'); return; }
     const name = document.getElementById('save-name').value.trim() || 'circuito_' + Date.now();
-    const code = document.getElementById('code-ta').value;
+    const code = getCodeForSync();
     const key = 'qcol_circuits_' + curUser.username;
     const all = JSON.parse(localStorage.getItem(key) || '[]');
     const idx = all.findIndex(c => c.name === name);
@@ -2855,6 +2972,17 @@ function init() {
         if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); runCode(); }
     };
 
+    const taCirq = document.getElementById('code-ta-cirq');
+    if (taCirq) {
+        taCirq.onscroll = onCirqCodeScroll;
+        taCirq.oninput  = onCirqCodeEdit;
+        taCirq.onkeydown = (e) => {
+            if (e.key === 'Tab') { e.preventDefault(); const s = taCirq.selectionStart; taCirq.value = taCirq.value.substring(0, s) + '    ' + taCirq.value.substring(taCirq.selectionEnd); taCirq.selectionStart = taCirq.selectionEnd = s + 4; onCirqCodeEdit(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveCircuit(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); runCode(); }
+        };
+    }
+
     drawBloch();
     renderSaveList();
     renderQueue();
@@ -2907,9 +3035,8 @@ function returnToNotebook(){
         postCore('QCOL_NAV', {screen:'home'});
         return;
     }
-    // Obtener código actual del editor
-    const ta   = document.getElementById('code-ta');
-    const code = ta ? ta.value.trim() : '';
+    // Obtener código actual del editor (combinado si híbrido)
+    const code = getCodeForSync().trim();
     // Serializar la estructura interna del circuito
     // Incluir def simplificado (solo lo necesario para dibujar)
     const circuitData = {
