@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Quantum App Studio · Editor puro con backend remoto</title>
+    <title>Quantum App Studio · Conectado al Founder</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -216,6 +216,14 @@
             display: inline-block;
         }
         .status-dot.active { background: var(--gr); box-shadow: 0 0 5px var(--gr); }
+        .auto-status {
+            font-size: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(0,255,136,0.1);
+            color: var(--gr);
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -224,7 +232,7 @@
 <!-- REPOSITORIO -->
 <div id="repo-screen" class="screen">
     <div class="repo-header">
-        <div class="repo-title">⚛️ Quantum App Studio · Repositorio</div>
+        <div class="repo-title">⚛️ Quantum App Studio · Conectado al Founder</div>
         <button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button>
     </div>
     <div class="projects-grid" id="projects-grid"></div>
@@ -235,9 +243,10 @@
     <div class="top-editor-bar">
         <input type="text" id="project-name-input" placeholder="Nombre del proyecto" style="background:var(--bg3); border:1px solid var(--bd); border-radius:6px; padding:0.4rem; color:white; width:240px;">
         <div class="editor-config">
-            <input type="text" id="server-url-input" class="server-input" placeholder="URL servidor cuántico (obligatorio)">
+            <input type="text" id="server-url-input" class="server-input" placeholder="URL servidor cuántico" readonly style="background:#0a0e1a; color:var(--cy);">
             <button class="btn-secondary" id="test-server-btn">🔌 Probar</button>
             <span id="server-status" style="font-size:0.55rem;"></span>
+            <span id="auto-status" class="auto-status">🔄 auto-conectado</span>
         </div>
         <button class="btn-primary" id="save-project-editor">💾 Guardar proyecto</button>
         <button class="btn-secondary" id="preview-run-btn">▶ Probar ejecución</button>
@@ -254,7 +263,7 @@
         </div>
     </div>
     <div style="padding:0.3rem 0.8rem; background:#060912; font-size:0.55rem; color:var(--mu);">
-        💡 Las funciones Python se llaman con <span style="color:var(--cy);">window.pyCall("funcion", args...)</span>. Requiere una URL de servidor cuántico activa (Hardware o simulador remoto).
+        💡 Las funciones Python se llaman con <span style="color:var(--cy);">window.pyCall("funcion", args...)</span>. La URL del servidor se obtiene automáticamente del Panel Fundador.
     </div>
 </div>
 
@@ -280,17 +289,13 @@
 </div>
 
 <script>
-    // ---------- REPOSITORIO + EDITOR + BACKEND REMOTO (sin ejecución local) ----------
+    // ---------- REPOSITORIO + EDITOR + BACKEND REMOTO ----------
     let projects = [];
     let currentEditId = null;
     let remoteSessionStatus = false;
-
-    // Comunicación con Quantum Puzzle (opcional)
     let isEmbedded = false;
     let parentOrigin = '*';
-    
-    // URL del compilador obtenida del Founder
-    let compilerUrlFromFounder = null;
+    let receivedUrl = false;
 
     function notify(msg, dur=2000) {
         const n = document.getElementById('notif');
@@ -305,50 +310,32 @@
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
     function sendToParent(msg) { if (window.parent && window.parent !== window) try { window.parent.postMessage(msg, parentOrigin); } catch(e) {} }
 
-    // Solicitar al Founder la URL del compilador
-    function requestCompilerUrlFromFounder() {
-        if (isEmbedded && window.parent !== window) {
-            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
-            setTimeout(() => {
-                if (!compilerUrlFromFounder) {
-                    // Si no recibió respuesta, intentar leer desde localStorage (fallback)
-                    const savedUrl = localStorage.getItem('qcol_colab_url');
-                    if (savedUrl && !document.getElementById('server-url-input').value) {
-                        document.getElementById('server-url-input').value = savedUrl;
-                        updateServerStatusText(savedUrl);
-                        notify('📡 URL del compilador cargada desde localStorage', 2000);
-                    }
-                }
-            }, 1000);
+    // Función principal: establecer URL automáticamente
+    function setServerUrl(url) {
+        if (!url) return;
+        const input = document.getElementById('server-url-input');
+        if (input && input.value !== url) {
+            input.value = url;
+            input.style.background = '#0a4a2a';
+            setTimeout(() => { if(input) input.style.background = '#0a0e1a'; }, 500);
+            updateServerStatusText(url);
+            notify('✅ URL del servidor configurada automáticamente', 1500);
+            receivedUrl = true;
         }
     }
 
-    // Mensajes desde el puzzle/founder
+    // Escuchar mensajes del Founder
     window.addEventListener('message', async (event) => {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
         
-        // Recibir URL del compilador desde el Founder
-        if (data.type === 'QCOL_CONFIG_UPDATE' && data.compilerUrl) {
-            compilerUrlFromFounder = data.compilerUrl;
-            const serverInput = document.getElementById('server-url-input');
-            if (serverInput && !serverInput.value) {
-                serverInput.value = compilerUrlFromFounder;
-                updateServerStatusText(compilerUrlFromFounder);
-                notify('✅ URL del compilador recibida del Panel Fundador', 2000);
-            }
+        // Recibir URL del compilador
+        if (data.type === 'QCOL_COMPILER_URL' && data.url) {
+            setServerUrl(data.url);
             return;
         }
-        
-        // También aceptar QCOL_COMPILER_URL directo
-        if (data.type === 'QCOL_COMPILER_URL' && data.url) {
-            compilerUrlFromFounder = data.url;
-            const serverInput = document.getElementById('server-url-input');
-            if (serverInput && !serverInput.value) {
-                serverInput.value = compilerUrlFromFounder;
-                updateServerStatusText(compilerUrlFromFounder);
-                notify('✅ URL del compilador recibida', 2000);
-            }
+        if (data.type === 'QCOL_CONFIG_UPDATE' && data.compilerUrl) {
+            setServerUrl(data.compilerUrl);
             return;
         }
         
@@ -356,11 +343,12 @@
             isEmbedded = true;
             parentOrigin = event.origin;
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
-            notify('Conectado con Quantum Puzzle', 1500);
-            // Al conectarse, solicitar la URL del compilador
-            requestCompilerUrlFromFounder();
+            notify('Conectado con Panel Fundador', 1500);
+            // Solicitar la URL activamente
+            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
             return;
         }
+        
         if (data.type === 'QCOL_OPEN_APP_FROM_PUZZLE') {
             const { appId, appName, pythonCode, htmlCode, serverUrl } = data;
             if (appId && appName) {
@@ -370,7 +358,7 @@
                     document.getElementById('project-name-input').value = existing.name;
                     document.getElementById('python-editor').value = existing.pythonCode;
                     document.getElementById('html-editor').value = existing.htmlCode;
-                    document.getElementById('server-url-input').value = existing.serverUrl || '';
+                    if (existing.serverUrl) setServerUrl(existing.serverUrl);
                 } else {
                     const newProj = {
                         id: appId,
@@ -385,15 +373,15 @@
                     document.getElementById('project-name-input').value = newProj.name;
                     document.getElementById('python-editor').value = newProj.pythonCode;
                     document.getElementById('html-editor').value = newProj.htmlCode;
-                    document.getElementById('server-url-input').value = newProj.serverUrl;
+                    if (newProj.serverUrl) setServerUrl(newProj.serverUrl);
                     saveProjects();
                 }
-                updateServerStatusText(document.getElementById('server-url-input').value);
                 showScreen('editor');
                 sendToParent({ type: 'QCOL_STUDIO_APP_LOADED', appId: currentEditId });
             }
             return;
         }
+        
         if (data.type === 'QCOL_GET_APPS') {
             const apps = projects.map(p => ({ id: p.id, name: p.name, serverUrl: p.serverUrl, createdAt: p.createdAt }));
             sendToParent({ type: 'QCOL_APPS_LIST', apps });
@@ -425,12 +413,7 @@
     return f"¡Hola {nombre}! desde Python en servidor cuántico 🧪"
 
 def suma(a,b):
-    return a+b
-
-# Puedes usar librerías cuánticas reales si el servidor las soporta
-# from qiskit import QuantumCircuit
-# qc = QuantumCircuit(1)
-# qc.h(0)`,
+    return a+b`,
                 htmlCode: `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
@@ -484,17 +467,16 @@ window.callGreet = async () => {
         document.getElementById('project-name-input').value = proj.name;
         document.getElementById('python-editor').value = proj.pythonCode || '';
         document.getElementById('html-editor').value = proj.htmlCode || '';
-        document.getElementById('server-url-input').value = proj.serverUrl || "";
-        updateServerStatusText(proj.serverUrl);
+        if (proj.serverUrl) setServerUrl(proj.serverUrl);
         showScreen('editor');
     }
 
     async function updateServerStatusText(url) {
         const statusSpan = document.getElementById('server-status');
-        if (!url) { statusSpan.innerHTML = '⚠️ Requiere URL'; remoteSessionStatus = false; return; }
+        if (!url) { statusSpan.innerHTML = '⚠️ Sin URL'; remoteSessionStatus = false; return; }
         statusSpan.innerHTML = '⏳ probando...';
         const ok = await testBackendConnection(url);
-        if (ok) { statusSpan.innerHTML = '✅ remoto activo'; remoteSessionStatus = true; }
+        if (ok) { statusSpan.innerHTML = '✅ servidor activo'; remoteSessionStatus = true; }
         else { statusSpan.innerHTML = '❌ no responde'; remoteSessionStatus = false; }
     }
 
@@ -515,7 +497,7 @@ window.callGreet = async () => {
     }
 
     async function executePythonRemote(code, serverUrl) {
-        if (!serverUrl) throw new Error("No se ha configurado ninguna URL de servidor cuántico. Ve a Editor → URL servidor cuántico.");
+        if (!serverUrl) throw new Error("No hay URL de servidor");
         const base = serverUrl.replace(/\/+$/, '');
         const isHF = base.includes('hf.space') || base.includes('huggingface');
         let url, body;
@@ -527,20 +509,18 @@ window.callGreet = async () => {
             body = JSON.stringify({ code: code, lib: 'python' });
         }
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw = await res.json();
         const data = isHF ? (raw.data?.[0] || raw) : raw;
-        if (data.success === false) throw new Error(data.output || data.error || "Error en backend remoto");
+        if (data.success === false) throw new Error(data.output || data.error);
         return data.output || data.result || "";
     }
 
-    // Handler para llamadas desde los iframes (pyCall)
     window.addEventListener('message', async (event) => {
         if (event.data.type === 'pyCall') {
             const { id, func, args, serverUrl, pythonCode } = event.data;
             try {
-                if (!serverUrl) throw new Error("Falta URL de servidor cuántico. Configúrala en el editor.");
-                // Ejecutar la función en el servidor remoto
+                if (!serverUrl) throw new Error("Falta URL del servidor");
                 const fullCode = `${pythonCode}\nimport json\n_result = ${func}(*${JSON.stringify(args)})\nprint(json.dumps(_result))`;
                 const output = await executePythonRemote(fullCode, serverUrl);
                 let parsed = output.trim();
@@ -590,25 +570,31 @@ window.callGreet = async () => {
         document.getElementById('runner-app-name').innerText = `⚛️ ${escapeHtml(proj.name)}`;
         const modeSpan = document.getElementById('runner-mode');
         const dot = document.getElementById('runner-dot');
-        const serverActive = proj.serverUrl && await testBackendConnection(proj.serverUrl);
+        
+        // Usar URL del campo si existe, sino la que ya tenemos
+        let serverToUse = proj.serverUrl || document.getElementById('server-url-input').value;
+        
+        const serverActive = serverToUse && await testBackendConnection(serverToUse);
         if (serverActive) {
-            modeSpan.innerHTML = '<span class="status-dot active"></span> Remoto (servidor hardware)';
+            modeSpan.innerHTML = '<span class="status-dot active"></span> Remoto (servidor activo)';
             dot.className = 'status-dot active';
         } else {
-            modeSpan.innerHTML = '<span class="status-dot"></span> ⚠️ Sin servidor configurado o inalcanzable';
+            modeSpan.innerHTML = '<span class="status-dot"></span> ⚠️ Sin servidor';
             dot.className = 'status-dot';
         }
-        const { blobUrl, revoke } = await buildAppBlob(proj.pythonCode, proj.htmlCode, proj.serverUrl);
+        const { blobUrl, revoke } = await buildAppBlob(proj.pythonCode, proj.htmlCode, serverToUse);
         const iframe = document.getElementById('app-iframe');
         iframe.src = blobUrl;
         iframe.onload = () => revoke();
     }
 
     async function runPreview() {
-        const pythonCode = document.getElementById('python-editor').value;
-        const htmlCode = document.getElementById('html-editor').value;
         const serverUrl = document.getElementById('server-url-input').value;
-        const { blobUrl, revoke } = await buildAppBlob(pythonCode, htmlCode, serverUrl);
+        const { blobUrl, revoke } = await buildAppBlob(
+            document.getElementById('python-editor').value,
+            document.getElementById('html-editor').value,
+            serverUrl
+        );
         const iframe = document.getElementById('preview-iframe');
         iframe.src = blobUrl;
         iframe.onload = () => revoke();
@@ -664,8 +650,8 @@ window.callGreet = async () => {
     }
 
     function deleteProject(id) {
-        if (projects.length === 1) { notify("Debe haber al menos un proyecto. Crea otro antes."); return; }
-        if (confirm("¿Eliminar aplicación permanentemente?")) {
+        if (projects.length === 1) { notify("Debe haber al menos un proyecto"); return; }
+        if (confirm("¿Eliminar aplicación?")) {
             const deleted = projects.find(p => p.id === id);
             projects = projects.filter(p => p.id !== id);
             if (currentEditId === id) currentEditId = null;
@@ -679,7 +665,7 @@ window.callGreet = async () => {
     function startNewProject() {
         currentEditId = null;
         document.getElementById('project-name-input').value = "Nuevo proyecto";
-        document.getElementById('python-editor').value = `# Funciones que se llamarán desde el frontend\ndef mi_funcion(param):\n    return f"Recibí: {param}"\n\n# Puedes usar numpy, qiskit, etc. si el servidor remoto los soporta\nimport numpy as np\nprint("Python remoto listo")`;
+        document.getElementById('python-editor').value = `def mi_funcion(param):\n    return f"Recibí: {param}"\n\nimport numpy as np\nprint("Python remoto listo")`;
         document.getElementById('html-editor').value = `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
@@ -695,8 +681,6 @@ async function testCall() {
 <\/script>
 </body>
 </html>`;
-        document.getElementById('server-url-input').value = "";
-        document.getElementById('server-status').innerHTML = '';
         showScreen('editor');
     }
 
@@ -709,35 +693,43 @@ async function testCall() {
         document.getElementById('close-modal-btn').onclick = closeModal;
         document.getElementById('test-server-btn').onclick = async () => {
             const url = document.getElementById('server-url-input').value;
-            if (!url) { notify("Ingresa una URL de servidor cuántico"); return; }
+            if (!url) { notify("Esperando URL automática del Founder...", 2000); return; }
             const ok = await testBackendConnection(url);
-            if (ok) notify("✅ Servidor remoto conectado (hardware/simulador activo)", 2000);
-            else notify("❌ No se pudo conectar al servidor. Verifica la URL y que el endpoint /run o /health/predict exista.", 2000);
+            if (ok) notify("✅ Servidor remoto conectado", 2000);
+            else notify("❌ No se pudo conectar", 2000);
             updateServerStatusText(url);
         };
     }
 
+    // Inicialización
     loadProjects();
     renderRepository();
     bindEvents();
     
-    // Intentar conectar con el Founder y obtener la URL del compilador
-    setTimeout(() => {
-        // Si está embebido en el Founder, solicitar conexión
-        if (window.parent !== window) {
+    // Conectar con el Founder automáticamente
+    if (window.parent !== window) {
+        setTimeout(() => {
             sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
-        } else {
-            // Si está standalone, intentar cargar URL desde localStorage
+            // También intentar desde localStorage
             const savedUrl = localStorage.getItem('qcol_colab_url');
-            if (savedUrl) {
-                document.getElementById('server-url-input').value = savedUrl;
-                updateServerStatusText(savedUrl);
-                notify('📡 URL del compilador cargada desde almacenamiento local', 2000);
+            if (savedUrl && !receivedUrl) {
+                setServerUrl(savedUrl);
             }
-        }
-    }, 500);
+        }, 500);
+    } else {
+        // Standalone: intentar desde localStorage
+        const savedUrl = localStorage.getItem('qcol_colab_url');
+        if (savedUrl) setServerUrl(savedUrl);
+    }
     
-    notify("Quantum App Studio · Conectado al Panel Fundador · Usando servidor remoto", 4000);
+    // Escuchar también mensajes desde el Founder (broadcast)
+    setInterval(() => {
+        if (window.parent !== window && !receivedUrl) {
+            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
+        }
+    }, 3000);
+    
+    notify("Quantum App Studio · Esperando URL del servidor desde el Founder...", 3000);
 </script>
 </body>
 </html>

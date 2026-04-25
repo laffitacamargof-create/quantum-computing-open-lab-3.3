@@ -145,15 +145,62 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6;}
     <table class="tbl">
       <thead><tr><th>MÓDULO</th><th>ARCHIVO</th><th>FUNCIÓN</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
       <tbody>
-        <tr><td><strong>Core</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">index.html</td><td style="font-size:.62rem;color:var(--mu);">Núcleo — une todo el ecosistema</td><td><span class="rb rba">ACTIVO</span></td><td><button class="bsm" onclick="downloadModule('core')">📥 Core</button></td></tr>
-        <tr><td><strong>Proyectos</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-projects.html</td><td style="font-size:.62rem;color:var(--mu);">Notebooks desde GitHub</td><td><span class="rb" id="st-projects" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('projects')">📥</button></td></tr>
-        <tr><td><strong>Arquitecto</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect.html</td><td style="font-size:.62rem;color:var(--mu);">Editor Qiskit · Cirq · QuTiP + GPU HuggingFace</td><td><span class="rb" id="st-architect" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('architect')">📥</button></td></tr>
-        <tr><td><strong>Arquitecto Pro</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect-pro.html</td><td style="font-size:.62rem;color:var(--mu);">Notebooks completos — Admin+</td><td><span class="rb" id="st-archpro" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('architect-pro')">📥</button></td></tr>
-        <tr><td><strong>Librería</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-library.html</td><td style="font-size:.62rem;color:var(--mu);">Recursos educativos desde GitHub</td><td><span class="rb" id="st-library" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('library')">📥</button></td></tr>
-        <tr><td><strong>Cuenta</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-account.html</td><td style="font-size:.62rem;color:var(--mu);">Perfil y circuitos guardados</td><td><span class="rb" id="st-account" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('account')">📥</button></td></tr>
-        <tr><td><strong>Ayuda</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-help.html</td><td style="font-size:.62rem;color:var(--mu);">Documentación del ecosistema</td><td><span class="rb" id="st-help" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('help')">📥</button></td></tr>
+        <tr>
+          <td><strong>Core</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">index.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Núcleo — une todo el ecosistema</td>
+          <td><span class="rb rba">ACTIVO</span></td>
+          <td><button class="bsm" onclick="downloadModule('core')">📥 Core</button></td>
+         </tr>
+        <tr>
+          <td><strong>Proyectos</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-projects.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Notebooks desde GitHub</td>
+          <td><span class="rb" id="st-projects" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('projects')">📥</button></td>
+         </tr>
+        <tr>
+          <td><strong>Arquitecto</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Editor Qiskit · Cirq · QuTiP + GPU HuggingFace</td>
+          <td><span class="rb" id="st-architect" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('architect')">📥</button></td>
+         </tr>
+        <tr>
+          <td><strong>Arquitecto Pro</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-architect-pro.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Notebooks completos — Admin+</td>
+          <td><span class="rb" id="st-archpro" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('architect-pro')">📥</button></td>
+         </tr>
+        <tr>
+          <td><strong>Librería</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-library.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Recursos educativos desde GitHub</td>
+          <td><span class="rb" id="st-library" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('library')">📥</button></td>
+         </tr>
+        <tr>
+          <td><strong>Cuenta</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-account.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Perfil y circuitos guardados</td>
+          <td><span class="rb" id="st-account" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('account')">📥</button></td>
+         </tr>
+        <tr>
+          <td><strong>Ayuda</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--gr);">qcol-help.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Documentación del ecosistema</td>
+          <td><span class="rb" id="st-help" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('help')">📥</button></td>
+         </tr>
         <!-- NUEVO MÓDULO: Quantum App Studio -->
-        <tr><td><strong>⚛️ Quantum App Studio</strong></td><td style="font-family:var(--mono);font-size:.6rem;color:var(--cy);">quantum-app-studio.html</td><td style="font-size:.62rem;color:var(--mu);">Editor visual de aplicaciones cuánticas con backend remoto</td><td><span class="rb" id="st-quantumapp" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td><td><button class="bsm" onclick="downloadModule('quantumapp')">📥</button></td></tr>
+        <tr>
+          <td><strong>⚛️ Quantum App Studio</strong></td>
+          <td style="font-family:var(--mono);font-size:.6rem;color:var(--cy);">quantum-app-studio.html</td>
+          <td style="font-size:.62rem;color:var(--mu);">Editor visual de aplicaciones cuánticas con backend remoto</td>
+          <td><span class="rb" id="st-quantumapp" style="background:rgba(255,184,0,.12);color:#ffb800;border:1px solid rgba(255,184,0,.3);">PENDIENTE</span></td>
+          <td><button class="bsm" onclick="downloadModule('quantumapp')">📥</button></td>
+         </tr>
       </tbody>
     </table>
     <div class="btn-row" style="margin-top:.8rem;">
@@ -1110,7 +1157,7 @@ function loadIgnoredAttrsTable() {
   const reasonsRaw = localStorage.getItem('qcol_ignored_attrs_reasons');
   if (reasonsRaw) try { reasons = JSON.parse(reasonsRaw); } catch(e) {}
   let html = `<table class="tbl" style="width:100%;">
-    <thead><tr><th>Atributo</th><th>Razón</th><th>Fecha</th><th></th> </tr></thead>
+    <thead><tr><th>Atributo</th><th>Razón</th><th>Fecha</th><th></th> </table></thead>
     <tbody>`;
   for (let attr of attrs) {
     const reason = reasons[attr] || 'Clasificado por DeepSeek';
@@ -1123,7 +1170,7 @@ function loadIgnoredAttrsTable() {
     </tr>`;
   }
   html += `</tbody>
-  </table>`;
+  }</table>`;
   container.innerHTML = html;
 }
 
@@ -1440,7 +1487,7 @@ function loadUserStats(){
         <th style="padding:.3rem .5rem;color:var(--bl2);">Último uso</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    ｜DSML｜`;
 }
 function loadHistorial(){
   const data = getMonitorData();
@@ -1765,110 +1812,6 @@ async function uploadToGitHub(){
 }
 function getGH(){const s=JSON.parse(localStorage.getItem('qcol_gh')||'{}');return{user:s.user||'laffitacamargof-create',repo:s.repo||'quantum-computing-open-lab',branch:s.branch||'main',token:s.token||''};}
 function addSysLog(msg,type){const l=document.getElementById('sys-log');if(l){const t=new Date().toLocaleTimeString();l.innerHTML+=\`\\n<span class="log-\${type}">[\${t}] \${msg}</span>\`;l.scrollTop=l.scrollHeight;}}
-loadSaved();addSysLog('Quantum App Studio inicializado','info');
-setTimeout(()=>sendToParent({type:'QCOL_REQUEST_COMPILER_URL'}),500);
-<\/script>
-</body>
-</html>`;
-    const blob = new Blob([quantumStudioContent], {type: 'text/html'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'quantum-app-studio.html';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    notify('✅ quantum-app-studio.html descargado');
-    return;
-  }
-  notify('Módulo ' + mod + ' — pendiente de desarrollo.');
-}
-
-function downloadAll() {
-  notify('Los módulos se descargan individualmente.');
-}
-
-function getCustomModules(){return JSON.parse(localStorage.getItem('qcol_custom_modules')||'[]');}
-function saveCustomModules(m){localStorage.setItem('qcol_custom_modules',JSON.stringify(m));}
-function createModule(){
-  const name=document.getElementById('nm-name').value.trim();
-  const id=document.getElementById('nm-id').value.trim().replace(/\s/g,'-').toLowerCase();
-  const file=document.getElementById('nm-file').value.trim();
-  const icon=document.getElementById('nm-icon').value.trim()||'🔬';
-  const desc=document.getElementById('nm-desc').value.trim();
-  const role=document.getElementById('nm-role').value;
-  if(!name||!id||!file){notify('Nombre, ID y archivo son obligatorios');return;}
-  const mods=getCustomModules();
-  if(mods.find(m=>m.id===id)){notify('Ya existe un módulo con ese ID');return;}
-  mods.push({name,id,file,icon,desc,role,created:new Date().toLocaleDateString()});
-  saveCustomModules(mods);
-  renderCustomModules();
-  notify('✅ Módulo "'+name+'" creado. Sube '+file+' a GitHub.');
-  addSysLog('Módulo creado: '+name+' → '+file,'ok');
-  ['nm-name','nm-id','nm-file','nm-icon','nm-desc'].forEach(k=>document.getElementById(k).value='');
-}
-function renderCustomModules(){
-  const div=document.getElementById('custom-modules-list');if(!div)return;
-  const mods=getCustomModules();
-  if(mods.length===0){div.innerHTML='<div style="font-size:.65rem;color:var(--mu);padding:.5rem 0;">Sin módulos personalizados.</div>';return;}
-  div.innerHTML=mods.map((m,i)=>`<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;background:rgba(0,0,0,.2);border:1px solid var(--b);border-radius:7px;margin-bottom:.35rem;">
-    <span style="font-size:1rem;">${m.icon}</span>
-    <div style="flex:1;">
-      <div style="font-family:var(--orb);font-size:.62rem;color:var(--bl2);">${m.name}</div>
-      <div style="font-family:var(--mono);font-size:.55rem;color:var(--mu);">${m.file} · acceso: ${m.role}</div>
-    </div>
-    <button class="bsm red" onclick="deleteModule(${i})">✕ Eliminar</button>
-  </div>`).join('');
-}
-function deleteModule(i){
-  if(!confirm('¿Eliminar este módulo del menú?'))return;
-  const mods=getCustomModules();mods.splice(i,1);saveCustomModules(mods);renderCustomModules();notify('Módulo eliminado del menú');addSysLog('Módulo eliminado','warn');
-}
-
-// ══ FUNCIONES GITHUB (mantenidas) ══
-function saveGH(){
-  const user=document.getElementById('gh-user').value.trim();
-  const repo=document.getElementById('gh-repo').value.trim();
-  const branch=document.getElementById('gh-branch').value.trim();
-  const token=document.getElementById('gh-token').value.trim();
-  localStorage.setItem('qcol_gh',JSON.stringify({user,repo,branch,token}));
-  notify('✅ GitHub guardado');
-  addSysLog('Config GitHub guardada','ok');
-}
-function openGH(){const gh=getGH();if(gh.user&&gh.repo)window.open(`https://github.com/${gh.user}/${gh.repo}`,'_blank');}
-async function testGH(){
-  const gh=getGH();
-  if(!gh.user||!gh.repo){notify('Usuario o repo vacío');return;}
-  const dot=document.getElementById('gh-dot');const st=document.getElementById('gh-status');
-  dot.className='sdot warn';st.textContent='Verificando...';
-  try{
-    const res=await fetch(`https://api.github.com/repos/${gh.user}/${gh.repo}`,{headers:gh.token?{'Authorization':'token '+gh.token}:{}});
-    if(res.ok){dot.className='sdot ok';st.textContent='✅ Repositorio accesible';notify('✅ Repositorio acceso OK');}
-    else if(res.status===401){dot.className='sdot err';st.textContent='❌ Token inválido';notify('Token inválido');}
-    else{dot.className='sdot err';st.textContent='❌ Repo no encontrado';notify('Repo no encontrado');}
-  }catch(e){dot.className='sdot err';st.textContent='❌ Error';notify(e.message);}
-}
-function previewUpload(input){const p=document.getElementById('gh-file-preview');if(input.files.length){p.innerHTML='📄 '+input.files[0].name+' ('+(input.files[0].size/1024).toFixed(1)+' KB)';}else{p.innerHTML='';}}
-async function uploadToGitHub(){
-  const gh=getGH();const fileInput=document.getElementById('gh-file-input');const folder=document.getElementById('gh-folder').value.trim();const commitMsg=document.getElementById('gh-commit-msg').value.trim();
-  if(!gh.token){notify('Token requerido');return;}
-  if(!fileInput.files.length){notify('Selecciona archivo');return;}
-  const file=fileInput.files[0];const reader=new FileReader();
-  reader.onload=async()=>{
-    const content=btoa(unescape(encodeURIComponent(reader.result)));
-    let path=folder?folder+'/'+file.name:file.name;
-    const apiURL=`https://api.github.com/repos/${gh.user}/${gh.repo}/contents/${path}`;
-    const log=document.getElementById('gh-upload-log');log.innerHTML='🔄 Subiendo...';
-    try{
-      let sha;try{const chk=await fetch(apiURL,{headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json'}});if(chk.ok){const d=await chk.json();sha=d.sha;}}catch(e){}
-      const body={message:commitMsg||'Subido desde QCOL',content};if(sha)body.sha=sha;
-      const res=await fetch(apiURL,{method:'PUT',headers:{'Authorization':'token '+gh.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(res.ok){log.innerHTML='✅ Subido: '+path;notify('✅ Archivo subido a GitHub');addSysLog('Subido: '+path,'ok');fileInput.value='';document.getElementById('gh-file-preview').innerHTML='';}
-      else{const e=await res.json();log.innerHTML='❌ Error: '+e.message;notify('❌ '+e.message);}
-    }catch(e){log.innerHTML='❌ '+e.message;notify(e.message);}
-  };
-  reader.readAsText(file);
-}
-function getGH(){const s=JSON.parse(localStorage.getItem('qcol_gh')||'{}');return{user:s.user||'laffitacamargof-create',repo:s.repo||'quantum-computing-open-lab',branch:s.branch||'main',token:s.token||''};}
-function addSysLog(msg,type){const l=document.getElementById('sys-log');if(l){const t=new Date().toLocaleTimeString();l.innerHTML+=\`\\n<span class="log-\${type}">[\${t}] \${msg}</span>\`;l.scrollTop=l.scrollHeight;}}
 loadSaved();addSysLog('Configuración del ecosistema iniciada','info');
 addSysLog('QCOL v3.0.0 — Sistema modular','info');
 renderCustomModules();
@@ -1881,6 +1824,61 @@ postToCore('QCOL_GET_CONFIG');
 const toggle = document.getElementById('mistral-toggle');
 if (toggle) toggle.addEventListener('change', saveMistralSettings);
 updateMistralUI();
+
+// === NUEVO: Enviar URL del compilador a los módulos cuando se cargan ===
+function broadcastCompilerUrlToModules() {
+    const compilerUrl = localStorage.getItem('qcol_colab_url');
+    if (!compilerUrl) return;
+    
+    // Buscar todos los iframes que contienen módulos
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach(iframe => {
+        try {
+            iframe.contentWindow?.postMessage({
+                type: 'QCOL_COMPILER_URL',
+                url: compilerUrl
+            }, '*');
+        } catch(e) {}
+    });
+    
+    // También enviar al padre si estamos embebidos
+    if (window.parent !== window) {
+        window.parent.postMessage({
+            type: 'QCOL_COMPILER_URL',
+            url: compilerUrl
+        }, '*');
+    }
+}
+
+// Escuchar cuando se carga un nuevo iframe (módulo)
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+            if (node.nodeName === 'IFRAME') {
+                setTimeout(() => broadcastCompilerUrlToModules(), 500);
+            }
+        });
+    });
+});
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Enviar URL cada vez que se guarda en el compilador
+const originalSaveColab = window.saveColab;
+if (originalSaveColab) {
+    window.saveColab = function() {
+        originalSaveColab();
+        setTimeout(broadcastCompilerUrlToModules, 500);
+    };
+}
+
+// Enviar URL periódicamente (cada 5 segundos) mientras haya URL
+setInterval(() => {
+    broadcastCompilerUrlToModules();
+}, 5000);
+
+// Enviar inmediatamente al cargar
+setTimeout(broadcastCompilerUrlToModules, 1000);
+
 </script>
 
 <!-- ════════════ PUENTE PARA QUANTUM PUZZLE ════════════ -->
@@ -1967,10 +1965,10 @@ updateMistralUI();
         });
     }
 
-    const originalSaveColab = window.saveColab;
-    if (originalSaveColab) {
+    const originalSaveColabLocal = window.saveColab;
+    if (originalSaveColabLocal) {
         window.saveColab = function() {
-            originalSaveColab();
+            originalSaveColabLocal();
             setTimeout(broadcastCompilerUrl, 500);
         };
     }
