@@ -484,6 +484,7 @@ let curUser = null;
 let engineURL = '', engineOK = false;
 let running = false;
 let dragGate = null;
+let dragGateUid = null;
 let nextId = 1;
 let isUpdatingFromCode = false;
 let isUpdatingFromCircuit = false;
@@ -748,11 +749,26 @@ function buildPalette() {
   container.innerHTML = html;
 }
 
-function onDragStart(e) { dragGate = e.target.closest('.pal-gate')?.dataset.gate; if (dragGate) e.dataTransfer.setData('text/plain', dragGate); }
-function onDragEnd() { dragGate = null; }
+function onDragStart(e) { dragGate = e.target.closest('.pal-gate')?.dataset.gate; dragGateUid = null; if (dragGate) e.dataTransfer.setData('text/plain', dragGate); }
+function onDragEnd() { dragGate = null; dragGateUid = null; }
 function onWireDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dh'); }
 function onWireDragLeave(e) { e.currentTarget.classList.remove('dh'); }
-function onWireDrop(e, qubit) { e.preventDefault(); e.currentTarget.classList.remove('dh'); const gateId = dragGate || e.dataTransfer.getData('text/plain'); if (gateId) placeGate(gateId, qubit); dragGate = null; }
+function onWireDrop(e, qubit) {
+  e.preventDefault(); e.currentTarget.classList.remove('dh');
+  const data = dragGateUid !== null ? 'move:' + dragGateUid : (dragGate || e.dataTransfer.getData('text/plain'));
+  if (data && String(data).startsWith('move:')) {
+    const uid = parseInt(String(data).replace('move:', ''));
+    moveGateToWire(uid, qubit);
+  } else if (data) {
+    placeGate(data, qubit);
+  }
+  dragGate = null; dragGateUid = null;
+}
+function onPlacedGateDragStart(e, uid) {
+  dragGateUid = uid; dragGate = null;
+  e.dataTransfer.setData('text/plain', 'move:' + uid);
+  e.stopPropagation();
+}
 
 function findGateDef(id) { for (const cat of Object.values(GATES)) { const g = cat.find(g => g.id === id); if (g) return g; } return null; }
 
@@ -763,7 +779,7 @@ function placeGate(gateId, qubit) {
   if (!def) { isUpdatingFromCircuit = false; return; }
 
   if (circuit.gates.length >= MAX_GATES) {
-    notify(`⛔ Límite de ${MAX_GATES} puertas alcanzado`);
+    notify(`⛔ Límite de ${MAX_GATES} puertas`);
     isUpdatingFromCircuit = false;
     return;
   }
@@ -784,21 +800,19 @@ function placeGate(gateId, qubit) {
     if (circuit.qubits < 2) { notify('Necesitas al menos 2 qubits'); isUpdatingFromCircuit = false; return; }
     const q2 = qubit + 1 < circuit.qubits ? qubit + 1 : qubit - 1;
     circuit.gates.push({ id: gateId, q: Math.min(qubit, q2), q2: Math.max(qubit, q2), def: def, uid: nextId++, lib: getWireLib(qubit) });
+  } else if (gateId === 'M') {
+    // MEDIDOR: exactamente uno por cable, siempre al final
+    // Quitar cualquier M existente en este qubit y añadir uno nuevo al final
+    circuit.gates = circuit.gates.filter(g => !(g.id === 'M' && g.q === qubit));
+    circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
   } else {
-    if (gateId === 'M') {
-      // Medición: quitar M existente en este qubit y añadir al final
-      circuit.gates = circuit.gates.filter(g => !(g.id === 'M' && g.q === qubit));
-      circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
-    } else {
-      // Puerta normal: insertar antes de las mediciones de este qubit
-      const firstM = circuit.gates.findIndex(g => g.id === 'M' && g.q === qubit);
-      if (firstM >= 0) {
-        circuit.gates.splice(firstM, 0, { id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
-      } else {
-        circuit.gates.push({ id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) });
-      }
-    }
+    // Puerta normal: insertar ANTES del medidor de este qubit (nunca después)
+    const firstM = circuit.gates.findIndex(g => g.id === 'M' && g.q === qubit);
+    const newGate = { id: gateId, q: qubit, def: def, uid: nextId++, lib: getWireLib(qubit) };
+    if (firstM >= 0) circuit.gates.splice(firstM, 0, newGate);
+    else circuit.gates.push(newGate);
   }
+
   renderCircuit();
   updateCircuitInfo();
   updateCodeFromCircuit();
@@ -814,6 +828,50 @@ function removeGate(uid) {
   updateCircuitInfo();
   updateCodeFromCircuit();
   isUpdatingFromCircuit = false;
+}
+
+function moveGateToWire(uid, newQubit) {
+  if (isUpdatingFromCode) return;
+  const gate = circuit.gates.find(g => g.uid === uid);
+  if (!gate) return;
+  isUpdatingFromCircuit = true;
+
+  if (gate.id === 'M') {
+    // Medidor: quitar M existente en qubit destino, mover al final
+    circuit.gates = circuit.gates.filter(g => !(g.id === 'M' && g.q === newQubit && g.uid !== uid));
+    circuit.gates = circuit.gates.filter(g => g.uid !== uid);
+    gate.q = newQubit; gate.lib = getWireLib(newQubit);
+    circuit.gates.push(gate);
+  } else if (gate.q2 !== undefined && gate.q3 !== undefined) {
+    // Puerta triple: reubicar control en newQubit, recalcular q2/q3 adyacentes
+    circuit.gates = circuit.gates.filter(g => g.uid !== uid);
+    let q1 = newQubit;
+    let q2 = q1 + 1 < circuit.qubits ? q1 + 1 : q1 - 1;
+    let q3 = q1 + 2 < circuit.qubits ? q1 + 2 : q1 - 2;
+    if (q2 < 0) q2 = 0; if (q3 < 0) q3 = 1;
+    const qs = [...new Set([q1, q2, q3])].sort((a, b) => a - b).slice(0, 3);
+    gate.q = qs[0]; gate.q2 = qs[1]; gate.q3 = qs[2];
+    gate.lib = getWireLib(newQubit);
+    circuit.gates.push(gate);
+  } else if (gate.q2 !== undefined) {
+    // Puerta de 2 qubits: mover control al nuevo qubit, target = adyacente
+    circuit.gates = circuit.gates.filter(g => g.uid !== uid);
+    const q2 = newQubit + 1 < circuit.qubits ? newQubit + 1 : newQubit - 1;
+    gate.q = Math.min(newQubit, q2); gate.q2 = Math.max(newQubit, q2);
+    gate.lib = getWireLib(newQubit);
+    circuit.gates.push(gate);
+  } else {
+    // Puerta simple: quitar de posición actual, insertar antes del medidor del qubit destino
+    circuit.gates = circuit.gates.filter(g => g.uid !== uid);
+    gate.q = newQubit; gate.lib = getWireLib(newQubit);
+    const firstM = circuit.gates.findIndex(g => g.id === 'M' && g.q === newQubit);
+    if (firstM >= 0) circuit.gates.splice(firstM, 0, gate);
+    else circuit.gates.push(gate);
+  }
+
+  renderCircuit(); updateCircuitInfo(); updateCodeFromCircuit();
+  isUpdatingFromCircuit = false;
+  notify(`Puerta → q[${newQubit}]`);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -917,6 +975,20 @@ function generateHybridCode() {
 function renderCircuit() {
   const container = document.getElementById('circuit-canvas');
   if (!container) return;
+  // Dedup: eliminar puertas con uid duplicado (conservar la primera aparición)
+  const seenUids = new Set();
+  circuit.gates = circuit.gates.filter(g => {
+    if (seenUids.has(g.uid)) return false;
+    seenUids.add(g.uid); return true;
+  });
+  // Dedup medidores: máximo 1 por qubit, siempre al final
+  for (let q = 0; q < circuit.qubits; q++) {
+    const mIndices = circuit.gates.reduce((acc, g, i) => (g.id === 'M' && g.q === q ? [...acc, i] : acc), []);
+    if (mIndices.length > 1) {
+      const keep = mIndices[mIndices.length - 1];
+      circuit.gates = circuit.gates.filter((g, i) => g.id !== 'M' || g.q !== q || i === keep);
+    }
+  }
   const depth = Array(circuit.qubits).fill(0);
   const placed = circuit.gates.map(g => {
     let col;
@@ -964,7 +1036,7 @@ function renderCircuit() {
           <line x1="34" y1="${ROW_HEIGHT / 2 + height - 6}" x2="18" y2="${ROW_HEIGHT / 2 + height + 6}" stroke="${gCol}" stroke-width="2"/>
         </svg>`;
       }
-      html += `<div style="position:absolute; left:${left}px; top:${topY}px;">${svg}</div>`;
+      html += `<div draggable="true" ondragstart="onPlacedGateDragStart(event,${g.uid})" ondragend="onDragEnd()" style="position:absolute; left:${left}px; top:${topY}px; cursor:grab;">${svg}</div>`;
     } else if (g.q2 !== undefined) {
       const topY = g.q * ROW_HEIGHT;
       const height = (g.q2 - g.q) * ROW_HEIGHT;
@@ -993,10 +1065,10 @@ function renderCircuit() {
           <line x1="32" y1="${ROW_HEIGHT / 2 + height - 6}" x2="16" y2="${ROW_HEIGHT / 2 + height + 6}" stroke="${gCol}" stroke-width="2"/>
         </svg>`;
       }
-      html += `<div style="position:absolute; left:${left}px; top:${topY}px;">${svg}</div>`;
+      html += `<div draggable="true" ondragstart="onPlacedGateDragStart(event,${g.uid})" ondragend="onDragEnd()" style="position:absolute; left:${left}px; top:${topY}px; cursor:grab;">${svg}</div>`;
     } else {
       const yPos = g.q * ROW_HEIGHT;
-      html += `<div class="placed-gate" style="left:${left}px; top:${yPos + ROW_HEIGHT / 2}px; transform:translateY(-50%);" onclick="removeGate(${g.uid})"><div class="pg-box" style="background:${g.def.bg};box-shadow:0 0 6px ${g.def.glow}"><span class="pg-sym">${g.def.sym}</span></div></div>`;
+      html += `<div class="placed-gate" draggable="true" style="left:${left}px; top:${yPos + ROW_HEIGHT / 2}px; transform:translateY(-50%); cursor:grab;" ondragstart="onPlacedGateDragStart(event,${g.uid})" ondragend="onDragEnd()" onclick="removeGate(${g.uid})"><div class="pg-box" style="background:${g.def.bg};box-shadow:0 0 6px ${g.def.glow}"><span class="pg-sym">${g.def.sym}</span></div></div>`;
     }
   });
   html += `</div>`;
@@ -1027,49 +1099,33 @@ function updateBlochSelector() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// GENERACIÓN DE CÓDIGO — HÍBRIDO QISKIT + CIRQ
+// GENERACIÓN DE CÓDIGO — EDITOR ÚNICO CONTINUO
 // ═══════════════════════════════════════════════════════════
 function updateCodeFromCircuit() {
   if (isUpdatingFromCode) return;
-  const qGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
-  const cGates = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
-  const ta     = document.getElementById('code-ta');
-  const taCirq = document.getElementById('code-ta-cirq');
-  const panelQ = document.getElementById('panel-qiskit');
-  const panelC = document.getElementById('panel-cirq');
-  const divider  = document.getElementById('panel-divider');
+  const ta        = document.getElementById('code-ta');
+  const panelQ    = document.getElementById('panel-qiskit');
+  const panelC    = document.getElementById('panel-cirq');
+  const divider   = document.getElementById('panel-divider');
   const qiskitHdr = document.getElementById('qiskit-panel-hdr');
+
+  // Always single panel — never split
+  if (panelQ)    panelQ.style.display    = 'flex';
+  if (panelC)    panelC.style.display    = 'none';
+  if (divider)   divider.style.display   = 'none';
+  if (qiskitHdr) qiskitHdr.style.display = 'none';
+
+  const qGates     = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'qiskit');
+  const cGates     = circuit.gates.filter(g => (g.lib || getWireLib(g.q)) === 'cirq');
   const isHybrid   = qGates.length > 0 && cGates.length > 0;
   const isPureCirq = cGates.length > 0 && qGates.length === 0;
 
-  if (isHybrid) {
-    // Show both panels with coloured headers
-    if (panelQ)    panelQ.style.display    = 'flex';
-    if (panelC)    panelC.style.display    = 'flex';
-    if (divider)   divider.style.display   = 'block';
-    if (qiskitHdr) qiskitHdr.style.display = 'flex';
-    const qCode = generateQiskitCode(qGates);
-    const cCode = generateCirqCode(cGates);
-    if (ta     && ta.value     !== qCode) { ta.value     = qCode; updateSyntaxHighlight();     }
-    if (taCirq && taCirq.value !== cCode) { taCirq.value = cCode; updateSyntaxHighlightCirq(); }
-  } else if (isPureCirq) {
-    // Only Cirq panel visible
-    if (panelQ)    panelQ.style.display    = 'none';
-    if (panelC)    panelC.style.display    = 'flex';
-    if (divider)   divider.style.display   = 'none';
-    const cCode = generateCirqCode(circuit.gates);
-    if (taCirq && taCirq.value !== cCode) { taCirq.value = cCode; updateSyntaxHighlightCirq(); }
-    // Keep code-ta in sync so Pyodide/save still works
-    if (ta     && ta.value     !== cCode) { ta.value     = cCode; updateSyntaxHighlight();     }
-  } else {
-    // Pure Qiskit — single panel, no library badge
-    if (panelQ)    panelQ.style.display    = 'flex';
-    if (panelC)    panelC.style.display    = 'none';
-    if (divider)   divider.style.display   = 'none';
-    if (qiskitHdr) qiskitHdr.style.display = 'none';
-    const code = generateQiskitCode(circuit.gates);
-    if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
-  }
+  let code;
+  if (isHybrid)        code = generateHybridCode();
+  else if (isPureCirq) code = generateCirqCode(circuit.gates);
+  else                 code = generateQiskitCode(circuit.gates);
+
+  if (ta && ta.value !== code) { ta.value = code; updateSyntaxHighlight(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2456,19 +2512,8 @@ function updateSyntaxHighlight() {
 }
 
 // ── Returns the full code to send to Pyodide ────────────────
-// In hybrid mode: Qiskit panel + Cirq panel combined.
-// In pure mode: the single active panel.
 function getCodeForSync() {
-    const ta     = document.getElementById('code-ta');
-    const taCirq = document.getElementById('code-ta-cirq');
-    const panelQ = document.getElementById('panel-qiskit');
-    const panelC = document.getElementById('panel-cirq');
-    const qVisible = panelQ && panelQ.style.display !== 'none';
-    const cVisible = panelC && panelC.style.display !== 'none';
-    if (qVisible && cVisible && ta && taCirq && ta.value.trim() && taCirq.value.trim()) {
-        return ta.value + '\n' + taCirq.value;
-    }
-    if (cVisible && taCirq && taCirq.value.trim()) return taCirq.value;
+    const ta = document.getElementById('code-ta');
     return ta ? ta.value : '';
 }
 
@@ -2996,6 +3041,8 @@ window.onWireDragOver = onWireDragOver;
 window.onWireDragLeave = onWireDragLeave;
 window.onWireDrop = onWireDrop;
 window.removeGate = removeGate;
+window.onPlacedGateDragStart = onPlacedGateDragStart;
+window.moveGateToWire = moveGateToWire;
 window.loadCircuit = loadCircuit;
 window.deleteCircuit = deleteCircuit;
 window.removeFromQueue = removeFromQueue;
