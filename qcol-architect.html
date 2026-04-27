@@ -2037,6 +2037,190 @@ async function syncFromServer(reason) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════
+// SINCRONIZACIÓN BIDIRECCIONAL — Capas 1 (JS puro) + 3 (Reconciliador)
+// La Capa 2 (Pyodide) es syncWithPyodide(), que ya existía y se preserva.
+// ═══════════════════════════════════════════════════════════
+
+const _parseCache = new Map();
+let _parseCacheTs = Date.now();
+
+// djb2 hash para key de caché
+function _djb2(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+    return h >>> 0;
+}
+
+// Expande bucles simples "for i in range(N): qc.gate(i)" en N líneas individuales
+function _expandLoops(code) {
+    return code.replace(
+        /^(\s*)for\s+(\w+)\s+in\s+range\s*\(\s*(\d+)\s*\)\s*:\s*(.+)$/gm,
+        (_, indent, v, n, body) => {
+            const count = Math.min(parseInt(n), MAX_QUBITS);
+            const out = [];
+            for (let i = 0; i < count; i++)
+                out.push(indent + body.trim().replace(new RegExp(`\\b${v}\\b`, 'g'), i));
+            return out.join('\n');
+        }
+    );
+}
+
+// Extrae índice entero de expresiones como q[0], qubits[2], qr[1] o entero plano
+function _qIdx(expr) {
+    const m = expr.match(/(?:qubits?|q[r]?)\s*\[?\s*(\d+)\s*\]?/) || expr.trim().match(/^(\d+)$/);
+    return m ? parseInt(m[1]) : null;
+}
+
+// ── CAPA 1: Parser JS puro, síncrono ────────────────────────────────────────
+// Devuelve { qubits, gates[], lib } o null si el código es demasiado complejo.
+// Es rápido e instantáneo (sin Python). Capa 2 (Pyodide) siempre verifica.
+function parseCodeToCircuit(code) {
+    if (!code || !code.trim()) return null;
+    const key = _djb2(code);
+    if (_parseCache.has(key)) return _parseCache.get(key);
+    // Limpiar caché cada minuto para no crecer indefinidamente
+    if (Date.now() - _parseCacheTs > 60000) { _parseCache.clear(); _parseCacheTs = Date.now(); }
+
+    const isQ = /QuantumCircuit|qc\s*\.\s*\w|from\s+qiskit/.test(code);
+    const isC = /\bcirq\b|circuit_cirq|import\s+cirq/.test(code);
+    if (!isQ && !isC) { _parseCache.set(key, null); return null; }
+
+    // Detectar número de qubits
+    let nq = 2;
+    const qcM  = code.match(/QuantumCircuit\s*\(\s*(\d+)/);
+    if (qcM)  nq = parseInt(qcM[1]);
+    const lrM  = code.match(/LineQubit\.range\s*\(\s*(\d+)\s*\)/);
+    if (lrM)  nq = Math.max(nq, parseInt(lrM[1]));
+    const rgM  = code.match(/range\s*\(\s*(\d+)\s*\)\s*\]/);
+    if (rgM)  nq = Math.max(nq, parseInt(rgM[1]));
+
+    const expanded = _expandLoops(code);
+    const allDefs  = [...GATES['1q'], ...GATES['2q'], ...GATES['3q'], ...GATES['meas']];
+
+    // Mapa de nombre Cirq → ID de puerta interna
+    const cirqMap = {
+        'H':'H','X':'X','Y':'Y','Z':'Z','S':'S','T':'T',
+        'CNOT':'CX','CX':'CX','CZ':'CZ','SWAP':'SWAP',
+        'CCX':'CCX','Toffoli':'CCX','CSWAP':'CSW','Fredkin':'CSW','measure':'M'
+    };
+
+    const gates = [];
+    for (const raw of expanded.split('\n')) {
+        const ln = raw.trim();
+        if (!ln || ln.startsWith('#')) continue;
+
+        // ── Qiskit ─────────────────────────────────────────────────────────
+        if (isQ) {
+            // measure_all() → M en todos los qubits
+            if (/qc\s*\.\s*measure_all\s*\(\s*\)/.test(ln)) {
+                const def = findGateDef('M');
+                if (def) for (let qi = 0; qi < nq; qi++)
+                    gates.push({ id: 'M', q: qi, def, uid: nextId++, lib: 'qiskit' });
+                continue;
+            }
+            // Probar todos los regex de GATES
+            let hit = false;
+            for (const gd of allDefs) {
+                if (!gd.regex) continue;
+                const m = ln.match(gd.regex);
+                if (!m) continue;
+                const q0 = parseInt(m[1] || 0);
+                const q1 = m[2] !== undefined ? parseInt(m[2]) : undefined;
+                const q2 = m[3] !== undefined ? parseInt(m[3]) : undefined;
+                const mq = Math.max(q0, q1 ?? 0, q2 ?? 0);
+                if (mq >= nq) nq = mq + 1;
+                const g = { id: gd.id, q: q0, def: gd, uid: nextId++, lib: 'qiskit' };
+                if (gd.triple && q2 !== undefined) {
+                    const s = [q0, q1, q2].sort((a,b) => a-b);
+                    g.q = s[0]; g.q2 = s[1]; g.q3 = s[2];
+                } else if (gd.multi && q1 !== undefined) {
+                    g.q = Math.min(q0, q1); g.q2 = Math.max(q0, q1);
+                }
+                gates.push(g); hit = true; break;
+            }
+            if (hit) continue;
+            // Fallback genérico: qc.GATE(N)
+            const gf = ln.match(/qc\s*\.\s*(\w+)\s*\(\s*(\d+)\s*\)/);
+            if (gf) {
+                const gid = mapOpNameToGateId(gf[1].toLowerCase());
+                const def = findGateDef(gid);
+                if (def) { const q = parseInt(gf[2]); if (q >= nq) nq = q+1; gates.push({ id: gid, q, def, uid: nextId++, lib: 'qiskit' }); }
+            }
+        }
+
+        // ── Cirq ────────────────────────────────────────────────────────────
+        if (isC) {
+            for (const [cn, gid] of Object.entries(cirqMap)) {
+                const m = ln.match(new RegExp(`cirq\\.${cn}\\s*\\(([^)]+)\\)`));
+                if (!m) continue;
+                const idxs = m[1].split(',').map(p => _qIdx(p)).filter(i => i !== null);
+                if (!idxs.length) continue;
+                const def = findGateDef(gid);
+                if (!def) continue;
+                const mq = Math.max(...idxs); if (mq >= nq) nq = mq + 1;
+                const g = { id: gid, q: idxs[0], def, uid: nextId++, lib: 'cirq' };
+                if (idxs.length === 2) { g.q = Math.min(idxs[0],idxs[1]); g.q2 = Math.max(idxs[0],idxs[1]); }
+                else if (idxs.length >= 3) { const s = idxs.slice().sort((a,b)=>a-b); g.q=s[0]; g.q2=s[1]; g.q3=s[2]; }
+                gates.push(g); break;
+            }
+        }
+    }
+
+    // Sin puertas y sin indicadores de tamaño → demasiado complejo para el parser JS
+    if (!gates.length && !qcM && !lrM && !rgM) { _parseCache.set(key, null); return null; }
+    const result = { qubits: Math.min(Math.max(nq, 1), MAX_QUBITS), gates, lib: isC && !isQ ? 'cirq' : 'qiskit' };
+    _parseCache.set(key, result);
+    return result;
+}
+
+// ── CAPA 3: Reconciliador — reutilizar UIDs viejos para evitar flicker ───────
+// Compara old gates con new gates por firma (id:q:q2:q3) y preserva los UIDs.
+function reconcileCircuits(oldGates, newGates) {
+    const byKey = new Map();
+    for (const g of oldGates) {
+        const k = `${g.id}:${g.q}:${g.q2 ?? ''}:${g.q3 ?? ''}`;
+        if (!byKey.has(k)) byKey.set(k, []);
+        byKey.get(k).push(g);
+    }
+    const used = new Set();
+    return newGates.map(ng => {
+        const k = `${ng.id}:${ng.q}:${ng.q2 ?? ''}:${ng.q3 ?? ''}`;
+        const match = (byKey.get(k) || []).find(c => !used.has(c.uid));
+        if (match) { used.add(match.uid); return { ...ng, uid: match.uid }; }
+        return ng;
+    });
+}
+
+// ── Orquestador bidireccional ─────────────────────────────────────────────────
+// Capa 1 (JS) da feedback instantáneo; Capa 2 (Pyodide) verifica con precisión.
+// El código del usuario en el textarea NUNCA se sobreescribe durante este flujo.
+async function syncCodeToCircuit(code) {
+    if (isUpdatingFromCircuit) return;
+
+    // CAPA 1: parser JS instantáneo
+    const jsResult = parseCodeToCircuit(code);
+    if (jsResult && jsResult.gates.length > 0) {
+        const reconciled = reconcileCircuits(circuit.gates, jsResult.gates);
+        const nonM = reconciled.filter(g => g.id !== 'M');
+        const meas  = reconciled.filter(g => g.id === 'M');
+        isUpdatingFromCode = true;
+        circuit.qubits = jsResult.qubits;
+        circuit.gates  = [...nonM, ...meas];
+        initWireLibs();
+        renderCircuit();
+        updateCircuitInfo();
+        isUpdatingFromCode = false;
+    }
+
+    // CAPA 2: Pyodide para máxima precisión (maneja variables, bucles, funciones)
+    if (pyodide !== null) {
+        await syncWithPyodide();
+    } else if (!jsResult && engineOK && engineURL) {
+        await syncFromServer('js-parser-fallback');
+    }
+}
+
 async function syncWithPyodide(retryCount = 0) {
     if (isUpdatingFromCircuit) return;
     isUpdatingFromCircuit = true;
@@ -2221,6 +2405,9 @@ json.dumps({
         if (data.success && data.circuit_exists) {
             _errorLine = -1;
 
+            // Guardar estado anterior para reconciliación de UIDs
+            const _prevGates = [...circuit.gates];
+
             circuit.qubits = Math.min(data.num_qubits, MAX_QUBITS);
             const newGates = [];
 
@@ -2250,10 +2437,13 @@ json.dumps({
             _buildGates(data.gates      || [], 'qiskit');
             _buildGates(data.cirq_gates || [], 'cirq');
 
-            // Mediciones al final
+            // Mediciones al final; reconciliar UIDs para evitar flicker visual
             const _nonM = newGates.filter(g => g.id !== 'M');
             const _meas  = newGates.filter(g => g.id === 'M');
-            circuit.gates = [..._nonM, ..._meas];
+            circuit.gates = [
+                ...reconcileCircuits(_prevGates, _nonM),
+                ...reconcileCircuits(_prevGates, _meas)
+            ];
 
             // Actualizar wireLibs según qué librería usa cada qubit
             initWireLibs();
@@ -2269,7 +2459,7 @@ json.dumps({
 
             renderCircuit();
             updateCircuitInfo();
-            updateCodeFromCircuit();
+            // código→visual: el textarea ya tiene el código del usuario, no regenerar
             const _hybrid = _cCount > 0 && _qCount > 0 ? ' (híbrido)' : _cCount > 0 ? ' (Cirq)' : '';
             out.innerHTML += `<span class="ok">✅ Sincronizado — ${data.num_qubits} qubits · ${_gCount} puertas${_mCount > 0 ? ' · '+_mCount+' medic.' : ''}${_hybrid}</span>\n`;
             notify(`Circuito actualizado: ${_gCount} puertas`);
@@ -2568,15 +2758,11 @@ function onCodeEdit() {
         ta.value = lines.slice(0, cutLine).join('\n');
         notify(`⛔ Límite de ${MAX_GATES} puertas en el código. Líneas extra eliminadas.`);
     }
-    updateSyntaxHighlight(); 
+    updateSyntaxHighlight();
     if (syncTimeout) clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
-        if (pyodide !== null) {
-            syncWithPyodide().catch(() => {});
-        } else if (engineOK && engineURL) {
-            syncFromServer('pyodide-not-loaded').catch(() => {});
-        }
-    }, 800);
+        syncCodeToCircuit(getCodeForSync()).catch(() => {});
+    }, 400);
     
     if (circuit.gates.length === 0) {
         clearTimeout(window._emptyCanvasTimeout);
