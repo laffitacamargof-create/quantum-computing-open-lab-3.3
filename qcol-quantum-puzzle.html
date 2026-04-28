@@ -548,29 +548,30 @@ function escapeHtml(str) {
     });
 }
 
-// ========== MODIFICACIÓN CLAVE: ejecutar app completa (backend remoto + frontend local) ==========
+// ========== FUNCIÓN MODIFICADA: ejecutar app abriendo el Studio ==========
 function executeQuantumApp(appId) {
     const apps = getPublishedApps();
     const app = apps.find(a => a.id === appId);
     if(!app) { showNotification('⚠️ App no encontrada'); return; }
     
-    // Usar la URL del compilador recibida del Fundador si la app no tiene una propia
-    const finalServerUrl = app.serverUrl || compilerUrl;
+    // Abrir el Quantum App Studio
+    openQuantumAppStudio();
     
-    // Enviar todos los datos necesarios para que el Panel Fundador (padre) ejecute la app real
-    window.parent.postMessage({
-        type: "QCOL_LAUNCH_QUANTUM_APP",
-        appId: app.id,
-        appTitle: app.title,
-        appMetadata: {
-            tags: app.tags,
-            description: app.desc,
-            duration: app.duration,
-            pythonCode: app.pythonCode || '',
-            htmlCode: app.htmlCode || '',
-            serverUrl: finalServerUrl   // ← importante
+    // Esperar a que el iframe del Studio esté listo y enviar la app
+    const waitForStudio = setInterval(() => {
+        if (studioIframeReady && studioIframe && studioIframe.contentWindow) {
+            clearInterval(waitForStudio);
+            studioIframe.contentWindow.postMessage({
+                type: 'QCOL_RUN_APP_FROM_PUZZLE',
+                appId: app.id,
+                appName: app.title,
+                pythonCode: app.pythonCode || '',
+                htmlCode: app.htmlCode || '',
+                serverUrl: app.serverUrl || compilerUrl
+            }, '*');
         }
-    }, '*');
+    }, 500);
+    setTimeout(() => clearInterval(waitForStudio), 10000);
 }
 
 // ---------- COMUNICACIÓN DIRECTA CON EL QUANTUM APP STUDIO (iframe) ----------
@@ -876,218 +877,6 @@ renderPublishedApps();
 document.getElementById('studioModalReal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModalReal')) closeStudioModal(); });
 document.getElementById('pendingModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('pendingModal')) closePendingModal(); });
 document.getElementById('previewAppModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('previewAppModal')) closePreviewModal(); });
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PUENTE QUANTUM PUZZLE ↔ FOUNDER — Rediseño de lógica de conexión
-// Sin modificar ninguna función existente.
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Mapa de iframes activos que esperan respuestas pyCall
-// key = msgId, value = {source (iframe window), timeoutId}
-const _pendingPyCalls = new Map();
-
-// ── HANDLER pyCall: PUZZLE recibe llamada del iframe de la app ────────────
-// El iframe de la app llama window.parent.postMessage({type:'pyCall', ...})
-// El puzzle lo recibe y lo reenvía al PADRE (Founder) que tiene el motor remoto
-window.addEventListener('message', function _pyCallBridge(event) {
-    const d = event.data;
-    if (!d || d.type !== 'pyCall') return;
-
-    const { id, func, args, serverUrl: appServerUrl, pythonCode } = d;
-    const iframeSource = event.source; // ventana del iframe de la app
-
-    // Registrar la fuente para devolver la respuesta cuando llegue del Founder
-    const timeoutId = setTimeout(() => {
-        if (_pendingPyCalls.has(id)) {
-            _pendingPyCalls.delete(id);
-            try {
-                iframeSource.postMessage({ type: 'pyResult', id, error: 'Timeout: el servidor cuántico no respondió en 35s' }, '*');
-            } catch(e) {}
-        }
-    }, 35000);
-
-    _pendingPyCalls.set(id, { source: iframeSource, timeoutId });
-
-    // Resolver URL del servidor: app > compilerUrl global > localStorage
-    const finalServerUrl = appServerUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
-
-    // Reenviar al FOUNDER (window.parent) que tiene executePythonRemoteFull
-    window.parent.postMessage({
-        type: 'pyCall',
-        id,
-        func,
-        args,
-        pythonCode,
-        serverUrl: finalServerUrl
-    }, '*');
-});
-
-// ── HANDLER pyResult: FOUNDER devuelve el resultado → Puzzle lo despacha al iframe ──
-window.addEventListener('message', function _pyResultDispatcher(event) {
-    const d = event.data;
-    if (!d || d.type !== 'pyResult') return;
-
-    const { id } = d;
-    const pending = _pendingPyCalls.get(id);
-    if (!pending) return; // no es nuestro o ya expiró
-
-    clearTimeout(pending.timeoutId);
-    _pendingPyCalls.delete(id);
-
-    // Devolver al iframe que hizo la llamada original
-    try {
-        pending.source.postMessage({ type: 'pyResult', id: d.id, result: d.result, error: d.error }, '*');
-    } catch(e) {
-        console.warn('[Puzzle] No se pudo despachar pyResult al iframe:', e);
-    }
-});
-
-// ── MEJORA executeQuantumApp: delegar al Founder usando QCOL_LAUNCH_QUANTUM_APP ──
-// La función original ya hace esto pero vamos a garantizar que serverUrl siempre llegue
-const _originalExecuteQuantumApp = executeQuantumApp;
-window.executeQuantumApp = function(appId) {
-    const apps = getPublishedApps();
-    const app = apps.find(a => a.id === appId);
-    if (!app) { showNotification('⚠️ App no encontrada'); return; }
-
-    // Resolver la URL del servidor con máxima prioridad
-    const finalServerUrl = app.serverUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
-
-    if (!finalServerUrl) {
-        showNotification('⚠️ No hay URL del servidor cuántico. El Fundador debe configurarla.');
-        // Pedir al padre que nos envíe la URL del compilador
-        window.parent.postMessage({ type: 'QCOL_GET_COMPILER_URL' }, '*');
-        // Reintentar tras 2s si llega la URL
-        setTimeout(() => {
-            const url2 = compilerUrl || localStorage.getItem('qcol_colab_url') || '';
-            if (url2) window.executeQuantumApp(appId);
-        }, 2000);
-        return;
-    }
-
-    // Delegar al Founder que tiene launchQuantumAppModal + executePythonRemoteFull
-    window.parent.postMessage({
-        type: 'QCOL_LAUNCH_QUANTUM_APP',
-        appId: app.id,
-        appTitle: app.title,
-        appMetadata: {
-            tags:        app.tags,
-            description: app.desc,
-            duration:    app.duration,
-            pythonCode:  app.pythonCode  || '',
-            htmlCode:    app.htmlCode    || '',
-            serverUrl:   finalServerUrl
-        }
-    }, '*');
-
-    showNotification(`⚛️ Lanzando "${app.title}"...`);
-};
-
-// ── MEJORA previewPendingApp: también delegar al Founder ─────────────────
-// El Founder tiene launchQuantumAppModal que construye el blob correctamente
-// Reemplazamos la función original que tenía el handler pyCall incompleto
-const _originalPreviewPendingApp = previewPendingApp;
-window.previewPendingApp = function(appId) {
-    const pending = getPendingApps();
-    const app = pending.find(p => p.id === appId);
-    if (!app) { showNotification('App no encontrada'); return; }
-
-    const finalServerUrl = app.serverUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
-
-    if (!finalServerUrl) {
-        showNotification('⚠️ Sin URL del servidor. Configúrala en el Panel Fundador.');
-        return;
-    }
-
-    // Delegar la ejecución al Founder (tiene el modal + el motor completo)
-    window.parent.postMessage({
-        type: 'QCOL_LAUNCH_QUANTUM_APP',
-        appId:     app.id,
-        appTitle:  app.title + ' [PREVIEW]',
-        appMetadata: {
-            tags:        app.tags,
-            description: app.desc,
-            duration:    app.duration,
-            pythonCode:  app.pythonCode  || '',
-            htmlCode:    app.htmlCode    || '',
-            serverUrl:   finalServerUrl
-        }
-    }, '*');
-
-    showNotification(`🔍 Ejecutando preview de "${app.title}" vía Founder...`);
-};
-
-// ── SYNC de compilerUrl: polling robusto hasta que llegue del Founder ────
-let _compilerUrlRetries = 0;
-function _pollCompilerUrl() {
-    if (compilerUrl) return; // ya la tenemos
-    const local = localStorage.getItem('qcol_colab_url');
-    if (local) { compilerUrl = local; return; }
-    if (_compilerUrlRetries < 10) {
-        _compilerUrlRetries++;
-        window.parent.postMessage({ type: 'QCOL_GET_COMPILER_URL' }, '*');
-        setTimeout(_pollCompilerUrl, 2000);
-    }
-}
-// Iniciar polling al arrancar
-setTimeout(_pollCompilerUrl, 500);
-
-// ── FORWARD pyCall del Quantum App Studio (iframe interno) al Founder ────
-// El Studio también puede generar pyCall (cuando ejecuta apps en preview propio)
-// Puzzle actúa como proxy: Studio → Puzzle → Founder → Puzzle → Studio
-window.addEventListener('message', function _studioPyCallBridge(event) {
-    const d = event.data;
-    if (!d) return;
-
-    // Solo interceptar si viene del iframe del Studio
-    const studioIframe = document.getElementById('studioIframe');
-    if (!studioIframe || event.source !== studioIframe.contentWindow) return;
-
-    if (d.type === 'pyCall') {
-        // Registrar origen para reenviar la respuesta
-        const { id } = d;
-        if (!_pendingPyCalls.has(id)) {
-            const timeoutId = setTimeout(() => {
-                _pendingPyCalls.delete(id);
-                try { event.source.postMessage({ type: 'pyResult', id, error: 'Timeout' }, '*'); } catch(e) {}
-            }, 35000);
-            _pendingPyCalls.set(id, { source: event.source, timeoutId });
-        }
-        // Reenviar al Founder
-        const finalUrl = d.serverUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
-        window.parent.postMessage({ ...d, serverUrl: finalUrl }, '*');
-    }
-});
-
-// ── Notificar al Studio cuando llegue la compilerUrl ────────────────────
-const _origCompilerHandler = null; // no reemplazamos el handler existente
-// El handler existente ya hace esto en el listener principal (línea: data.type === 'QCOL_COMPILER_URL')
-// Solo añadimos: cuando compilerUrl cambie, notificar al Studio si está abierto
-function _broadcastUrlToStudio(url) {
-    const iframe = document.getElementById('studioIframe');
-    if (iframe && iframe.contentWindow && studioIframeReady) {
-        iframe.contentWindow.postMessage({ type: 'QCOL_SET_COMPILER_URL', url }, '*');
-        iframe.contentWindow.postMessage({ type: 'QCOL_CONFIG_UPDATE', compilerUrl: url }, '*');
-    }
-}
-
-// Interceptar la asignación de compilerUrl para que también notifique al Studio
-// Usamos un proxy sobre la variable global
-let _compilerUrl_internal = '';
-Object.defineProperty(window, 'compilerUrl', {
-    get() { return _compilerUrl_internal; },
-    set(v) {
-        _compilerUrl_internal = v;
-        if (v) {
-            _broadcastUrlToStudio(v);
-            // También guardar en localStorage para persistencia
-            localStorage.setItem('qcol_colab_url', v);
-        }
-    },
-    configurable: true
-});
-
-console.log('⚛️ [Quantum Puzzle] Puente Founder activo. Listo para ejecutar apps cuánticas.');
 </script>
 </body>
 </html>

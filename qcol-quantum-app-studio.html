@@ -398,6 +398,49 @@
             }
             return;
         }
+
+        // ========== NUEVO MANEJADOR PARA EJECUTAR APP DESDE PUZZLE ==========
+        if (data.type === 'QCOL_RUN_APP_FROM_PUZZLE') {
+            const { appId, appName, pythonCode, htmlCode, serverUrl } = data;
+            
+            // Buscar si la app ya existe en el repositorio local
+            let existing = projects.find(p => p.id === appId);
+            if (existing) {
+                currentEditId = appId;
+                document.getElementById('project-name-input').value = existing.name;
+                document.getElementById('python-editor').value = existing.pythonCode;
+                document.getElementById('html-editor').value = existing.htmlCode;
+                if (existing.serverUrl) setServerUrl(existing.serverUrl);
+            } else {
+                // Crear un nuevo proyecto con los datos recibidos
+                const newProj = {
+                    id: appId,
+                    name: appName,
+                    pythonCode: pythonCode || '# Código Python\n',
+                    htmlCode: htmlCode || '<!DOCTYPE html>\n<html>\n<body>\n<h1>App desde Puzzle</h1>\n</body>\n</html>',
+                    serverUrl: serverUrl || '',
+                    createdAt: Date.now()
+                };
+                projects.push(newProj);
+                currentEditId = appId;
+                document.getElementById('project-name-input').value = newProj.name;
+                document.getElementById('python-editor').value = newProj.pythonCode;
+                document.getElementById('html-editor').value = newProj.htmlCode;
+                if (newProj.serverUrl) setServerUrl(newProj.serverUrl);
+                saveProjects();  // Guardar en localStorage
+            }
+            
+            // Cambiar a la pantalla del editor (por si no estaba visible)
+            showScreen('editor');
+            
+            // Ejecutar la previsualización automáticamente después de un breve retardo
+            setTimeout(() => {
+                runPreview();   // Abre el modal con la app corriendo
+            }, 200);
+            
+            return;
+        }
+        // ================================================================
         
         if (data.type === 'QCOL_GET_APPS') {
             const apps = projects.map(p => ({ id: p.id, name: p.name, serverUrl: p.serverUrl, createdAt: p.createdAt }));
