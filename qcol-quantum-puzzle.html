@@ -442,6 +442,7 @@ let isFounder = false;
 let activeTagFilter = "all";
 let studioIframeReady = false;
 let pendingPreviewApp = null; // almacena la app que se está previsualizando
+let compilerUrl = '';         // URL del compilador recibida desde el Fundador
 
 // ---------- DATA STORES (repositorio vacío por defecto) ----------
 function getPublishedApps() {
@@ -553,6 +554,9 @@ function executeQuantumApp(appId) {
     const app = apps.find(a => a.id === appId);
     if(!app) { showNotification('⚠️ App no encontrada'); return; }
     
+    // Usar la URL del compilador recibida del Fundador si la app no tiene una propia
+    const finalServerUrl = app.serverUrl || compilerUrl;
+    
     // Enviar todos los datos necesarios para que el Panel Fundador (padre) ejecute la app real
     window.parent.postMessage({
         type: "QCOL_LAUNCH_QUANTUM_APP",
@@ -564,7 +568,7 @@ function executeQuantumApp(appId) {
             duration: app.duration,
             pythonCode: app.pythonCode || '',
             htmlCode: app.htmlCode || '',
-            serverUrl: app.serverUrl || ''
+            serverUrl: finalServerUrl   // ← importante
         }
     }, '*');
 }
@@ -590,9 +594,33 @@ window.addEventListener('message', (e) => {
     const data = e.data;
     if (!data || typeof data !== 'object') return;
     
+    // 1. Recibir URL del compilador desde el Fundador
+    if (data.type === 'QCOL_COMPILER_URL') {
+        compilerUrl = data.url;
+        console.log('🔗 URL del compilador recibida:', compilerUrl);
+        // Opcional: notificar al Studio si ya está listo
+        if (studioIframeReady && studioIframe?.contentWindow) {
+            studioIframe.contentWindow.postMessage({
+                type: 'QCOL_SET_COMPILER_URL',
+                url: compilerUrl
+            }, '*');
+        }
+        return;
+    }
+    
     if (data.type === 'QCOL_STUDIO_READY' && e.source === studioIframe?.contentWindow) {
         studioIframeReady = true;
-        studioIframe.contentWindow.postMessage({ type: 'QCOL_REQUEST_STUDIO_CONNECTION', source: 'quantum-puzzle' }, '*');
+        // Enviar la URL del compilador al Studio si ya la tenemos
+        studioIframe.contentWindow.postMessage({ 
+            type: 'QCOL_REQUEST_STUDIO_CONNECTION', 
+            source: 'quantum-puzzle' 
+        }, '*');
+        if (compilerUrl) {
+            studioIframe.contentWindow.postMessage({
+                type: 'QCOL_SET_COMPILER_URL',
+                url: compilerUrl
+            }, '*');
+        }
     }
     
     if (data.type === 'QCOL_APP_SAVED' && data.appId) {
@@ -654,6 +682,10 @@ function postCore(type, data={}) {
     if(window.parent !== window) window.parent.postMessage({type, ...data}, '*');
 }
 postCore('QCOL_GET_CONFIG');
+// Solicitar explícitamente la URL del compilador al Fundador
+if (window.parent !== window) {
+    window.parent.postMessage({ type: 'QCOL_GET_COMPILER_URL' }, '*');
+}
 
 // ---------- FUNCIONES DE ADMINISTRACIÓN (pendientes, eliminación) ----------
 function openPendingManager() {
@@ -706,16 +738,17 @@ function previewPendingApp(appId) {
     // Como necesitamos ejecutar el código Python+HTML, aprovechamos la lógica del estudio,
     // pero como no tenemos Pyodide aquí, usamos un iframe que se comunique con el padre.
     // Simplemente creamos un iframe que cargue un pequeño script puente.
-    // Para no duplicar código, usamos una función auxiliar que construye la app.
     buildAppBlobAndPreview(app);
 }
 
 async function buildAppBlobAndPreview(app) {
+    // Usar la URL global del compilador si la app no tiene una propia
+    const server = app.serverUrl || compilerUrl;
     // Construimos un blob HTML que incluya el puente pyCall similar al del studio
-    const { pythonCode, htmlCode, serverUrl } = app;
+    const { pythonCode, htmlCode } = app;
     const bridge = `
     <script>
-    window.__serverUrl = ${JSON.stringify(serverUrl || '')};
+    window.__serverUrl = ${JSON.stringify(server)};
     window.__pyCode = ${JSON.stringify(pythonCode || '# Python vacío')};
     window.pyCall = async (funcName, ...args) => {
         return new Promise((resolve, reject) => {
