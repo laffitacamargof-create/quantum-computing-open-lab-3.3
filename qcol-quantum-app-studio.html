@@ -59,6 +59,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         .repo-title {
             font-family: 'JetBrains Mono', monospace;
@@ -80,6 +82,9 @@
         }
         .btn-primary:hover {
             transform: scale(0.98);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #9e003a, var(--rd));
         }
         .projects-grid {
             flex: 1;
@@ -244,7 +249,9 @@
 <div id="repo-screen" class="screen">
     <div class="repo-header">
         <div class="repo-title"></div>
-        <button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-primary" id="new-project-btn">+ Nueva aplicación</button>
+        </div>
     </div>
     <div class="projects-grid" id="projects-grid"></div>
 </div>
@@ -308,6 +315,12 @@
     let parentOrigin = '*';
     let receivedUrl = false;
 
+    // Definición del proyecto demo original (protegido)
+    const DEMO_ID = 'demo_saludo_cuantico';
+    const DEMO_NAME = "Demo: Saludo cuántico";
+    const DEMO_PYTHON = `def saludar(nombre):\n    return f"¡Hola {nombre}! desde Python en servidor cuántico 🧪"\n\ndef suma(a,b):\n    return a+b`;
+    const DEMO_HTML = `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0a0e1a; color:white; font-family:monospace; padding:1rem;">\n<h2>Demo Interactiva</h2>\n<input id="nameInput" placeholder="Tu nombre" style="padding:0.3rem;">\n<button onclick="callGreet()">Saludar</button>\n<p id="result"></p>\n<script>\nwindow.callGreet = async () => {\n    const name = document.getElementById('nameInput').value;\n    const res = await window.pyCall("saludar", name);\n    document.getElementById('result').innerText = res;\n};\n<\/script>\n</body>\n</html>`;
+
     function notify(msg, dur=2000) {
         const n = document.getElementById('notif');
         n.textContent = msg;
@@ -321,13 +334,11 @@
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
     function sendToParent(msg) { if (window.parent && window.parent !== window) try { window.parent.postMessage(msg, parentOrigin); } catch(e) {} }
 
-    // Función para decodificar correctamente caracteres Unicode escapados
     function decodeUnicode(str) {
         if (!str || typeof str !== 'string') return str;
         return str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
     }
 
-    // Función principal: establecer URL automáticamente
     function setServerUrl(url) {
         if (!url) return;
         const input = document.getElementById('server-url-input');
@@ -341,7 +352,6 @@
         }
     }
 
-    // Escuchar mensajes del Founder
     window.addEventListener('message', async (event) => {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
@@ -403,14 +413,10 @@
             return;
         }
 
-        // ========== NUEVA FUNCIONALIDAD: Compilar app para ejecución en Puzzle ==========
         if (data.type === 'QCOL_REQUEST_COMPILE') {
             const { requestId, appId, appName, pythonCode, htmlCode, serverUrl } = data;
             try {
-                // Usar la URL del servidor proporcionada o la actual
                 const finalServerUrl = serverUrl || document.getElementById('server-url-input').value;
-                
-                // Generar HTML con el puente pyCall
                 const bridge = `
                 <script>
                 window.__serverUrl = ${JSON.stringify(finalServerUrl)};
@@ -432,7 +438,6 @@
                 console.log("Bridge listo, servidor:", window.__serverUrl);
                 <\/script>
                 `;
-                
                 let finalHtml = htmlCode || '<!DOCTYPE html><html><body><h1>App sin interfaz</h1></body></html>';
                 if (finalHtml.includes('<head>')) {
                     finalHtml = finalHtml.replace('<head>', '<head>' + bridge);
@@ -441,8 +446,6 @@
                 } else {
                     finalHtml = bridge + finalHtml;
                 }
-                
-                // Enviar respuesta con el HTML compilado
                 if (event.source) {
                     event.source.postMessage({
                         type: 'QCOL_COMPILE_RESPONSE',
@@ -463,8 +466,29 @@
             }
             return;
         }
-        // ========== FIN NUEVA FUNCIONALIDAD ==========
     });
+
+    function restoreDemoProject() {
+        const demoExists = projects.find(p => p.id === DEMO_ID);
+        if (demoExists) {
+            demoExists.name = DEMO_NAME;
+            demoExists.pythonCode = DEMO_PYTHON;
+            demoExists.htmlCode = DEMO_HTML;
+            demoExists.serverUrl = "";
+        } else {
+            projects.unshift({
+                id: DEMO_ID,
+                name: DEMO_NAME,
+                pythonCode: DEMO_PYTHON,
+                htmlCode: DEMO_HTML,
+                serverUrl: "",
+                createdAt: Date.now()
+            });
+        }
+        saveProjects();
+        renderRepository();
+        notify("✅ Proyecto demo restablecido a su estado original", 2000);
+    }
 
     function notifyParentAboutChange(action, appId, appData = null) {
         if (!isEmbedded) return;
@@ -482,17 +506,22 @@
     function loadProjects() {
         const stored = localStorage.getItem('quantum_apps_repo_v2');
         if (stored) try { projects = JSON.parse(stored); } catch(e) { projects = []; }
-        if (!projects.length) {
-            projects.push({
-                id: generateId(),
-                name: "Demo: Saludo cuántico",
-                pythonCode: `def saludar(nombre):\n    return f"¡Hola {nombre}! desde Python en servidor cuántico 🧪"\n\ndef suma(a,b):\n    return a+b`,
-                htmlCode: `<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body style="background:#0a0e1a; color:white; font-family:monospace; padding:1rem;">\n<h2>Demo Interactiva</h2>\n<input id="nameInput" placeholder="Tu nombre" style="padding:0.3rem;">\n<button onclick="callGreet()">Saludar</button>\n<p id="result"></p>\n<script>\nwindow.callGreet = async () => {\n    const name = document.getElementById('nameInput').value;\n    const res = await window.pyCall("saludar", name);\n    document.getElementById('result').innerText = res;\n};\n<\/script>\n</body>\n</html>`,
-                serverUrl: "",
-                createdAt: Date.now()
-            });
-            saveProjects();
+        
+        // Verificar si el demo existe y está corrupto, restaurarlo automáticamente
+        const demo = projects.find(p => p.name === DEMO_NAME || p.id === DEMO_ID);
+        if (demo) {
+            if (demo.htmlCode && (demo.htmlCode.includes('circuito') || demo.htmlCode.includes('selector') || demo.htmlCode.includes('<select'))) {
+                console.warn("Demo corrupto detectado, restaurando...");
+                restoreDemoProject();
+            } else if (demo.id !== DEMO_ID) {
+                demo.id = DEMO_ID;
+                saveProjects();
+            }
+        } else {
+            restoreDemoProject();
         }
+        
+        if (projects.length === 0) restoreDemoProject();
     }
 
     function renderRepository() {
@@ -519,15 +548,9 @@
         document.querySelectorAll('.delete-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteProject(btn.getAttribute('data-id')); }));
     }
 
-    // NUEVA FUNCIÓN: Enviar app a la lista de pendientes del Quantum Puzzle
     function sendToPending(id) {
         const proj = projects.find(p => p.id === id);
-        if (!proj) {
-            notify("❌ Proyecto no encontrado");
-            return;
-        }
-        
-        // Construir mensaje para el padre (Founder / Quantum Puzzle)
+        if (!proj) { notify("❌ Proyecto no encontrado"); return; }
         const message = {
             type: 'QCOL_LAUNCH_QUANTUM_APP',
             appId: proj.id,
@@ -540,13 +563,10 @@
                 createdAt: proj.createdAt
             }
         };
-        
-        // Enviar al padre si estamos embebidos, si no, notificar que no hay conexión
         if (window.parent !== window) {
             sendToParent(message);
             notify(`🚀 App "${proj.name}" enviada a la lista de pendientes del Fundador`, 2500);
         } else {
-            // Si está standalone, intentar guardar en localStorage para que el Founder lo recoja después
             let pendingApps = JSON.parse(localStorage.getItem('qcol_pending_apps') || '[]');
             pendingApps.push({
                 id: proj.id,
@@ -619,7 +639,6 @@
         return output;
     }
 
-    // Handler para llamadas desde los iframes (pyCall)
     window.addEventListener('message', async (event) => {
         if (event.data.type === 'pyCall') {
             const { id, func, args, serverUrl, pythonCode } = event.data;
@@ -678,9 +697,7 @@
         document.getElementById('runner-app-name').innerText = `⚛️ ${escapeHtml(proj.name)}`;
         const modeSpan = document.getElementById('runner-mode');
         const dot = document.getElementById('runner-dot');
-        
         let serverToUse = proj.serverUrl || document.getElementById('server-url-input').value;
-        
         const serverActive = serverToUse && await testBackendConnection(serverToUse);
         if (serverActive) {
             modeSpan.innerHTML = '<span class="status-dot active"></span> Remoto (servidor activo)';
@@ -722,7 +739,9 @@
         else if (screenId === 'runner') document.getElementById('runner-screen').classList.remove('hidden');
     }
 
+    // ========== FUNCIÓN MODIFICADA: PROTECCIÓN CONTRA SOBRESCRITURA PARA TODOS LOS PROYECTOS ==========
     function saveCurrentEdit() {
+        // Caso: creación de nuevo proyecto (sin ID actual)
         if (!currentEditId) {
             const newName = document.getElementById('project-name-input').value.trim();
             if (!newName) { notify("Ingresa un nombre"); return; }
@@ -743,29 +762,65 @@
             renderRepository();
             return;
         }
-        const idx = projects.findIndex(p => p.id === currentEditId);
-        if (idx !== -1) {
-            projects[idx].name = document.getElementById('project-name-input').value.trim() || "Sin nombre";
-            projects[idx].pythonCode = document.getElementById('python-editor').value;
-            projects[idx].htmlCode = document.getElementById('html-editor').value;
-            projects[idx].serverUrl = document.getElementById('server-url-input').value;
-            saveProjects();
-            notify("Proyecto guardado");
-            showScreen('repo');
-            renderRepository();
+        
+        // Caso: edición de un proyecto existente → crear una copia en lugar de sobrescribir
+        const originalProj = projects.find(p => p.id === currentEditId);
+        if (!originalProj) {
+            notify("Error: proyecto original no encontrado");
+            return;
         }
+        
+        // Preguntar al usuario si desea crear una copia (o guardar como nuevo)
+        const userChoice = confirm(
+            `Estás editando el proyecto "${originalProj.name}".\n` +
+            `Para proteger los proyectos contra pérdida de datos, se creará una NUEVA COPIA con los cambios.\n` +
+            `El proyecto original permanecerá intacto.\n\n` +
+            `¿Deseas continuar y crear una copia?`
+        );
+        
+        if (!userChoice) {
+            notify("Guardado cancelado. El proyecto original no se ha modificado.", 2000);
+            return;
+        }
+        
+        // Crear un nuevo proyecto con los datos actuales del editor
+        const newNameBase = document.getElementById('project-name-input').value.trim();
+        const newName = newNameBase ? newNameBase : `${originalProj.name} (copia)`;
+        const newId = generateId();
+        const newProj = {
+            id: newId,
+            name: newName,
+            pythonCode: document.getElementById('python-editor').value,
+            htmlCode: document.getElementById('html-editor').value,
+            serverUrl: document.getElementById('server-url-input').value,
+            createdAt: Date.now()
+        };
+        projects.push(newProj);
+        saveProjects();
+        
+        // Actualizar el editor para que ahora apunte al nuevo proyecto (opcional)
+        currentEditId = newId;
+        document.getElementById('project-name-input').value = newName;
+        
+        notify(`✅ Cambios guardados como nuevo proyecto: "${newName}". El proyecto original "${originalProj.name}" no ha sido modificado.`, 4000);
+        showScreen('repo');
+        renderRepository();
     }
+    // ========== FIN DE LA MODIFICACIÓN ==========
 
     function deleteProject(id) {
+        if (id === DEMO_ID) {
+            notify("❌ El proyecto demo no se puede eliminar, pero puedes restablecerlo.", 2000);
+            return;
+        }
         if (projects.length === 1) { notify("Debe haber al menos un proyecto"); return; }
         if (confirm("¿Eliminar aplicación?")) {
-            const deleted = projects.find(p => p.id === id);
             projects = projects.filter(p => p.id !== id);
             if (currentEditId === id) currentEditId = null;
             saveProjects();
             renderRepository();
             notify("Proyecto eliminado");
-            if (isEmbedded && deleted) sendToParent({ type: 'QCOL_APP_DELETED', appId: id });
+            if (isEmbedded) sendToParent({ type: 'QCOL_APP_DELETED', appId: id });
         }
     }
 
@@ -792,6 +847,7 @@
             else notify("❌ No se pudo conectar", 2000);
             updateServerStatusText(url);
         };
+        // Eliminado el botón de restablecer demo (ya no está en la interfaz)
     }
 
     // Inicialización
@@ -801,7 +857,6 @@
     
     if (window.parent !== window) {
         setTimeout(() => {
-            // Enviar señal directa de que el Studio está listo
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
             notify('Conectado con Panel Fundador', 1500);
             sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
@@ -817,7 +872,7 @@
         if (window.parent !== window && !receivedUrl) sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
     }, 3000);
     
-    notify("Quantum App Studio · Botón 'Lanzar' activo · Envía apps a la lista de pendientes del Fundador", 4000);
+    notify("Quantum App Studio · Protección activa: al editar cualquier proyecto se crea una copia automática.", 4000);
 </script>
 </body>
 </html>
