@@ -722,22 +722,10 @@
         else if (screenId === 'runner') document.getElementById('runner-screen').classList.remove('hidden');
     }
 
-    // ========== PROTECCIÓN CONTRA SOBRESCRITURA ==========
-    // Se añade una verificación en la creación de nuevos proyectos para evitar nombres duplicados
-    // (no se modifica la edición de proyectos existentes)
-    function isDuplicateName(name, excludeId = null) {
-        return projects.some(p => p.name.toLowerCase() === name.toLowerCase() && (excludeId === null || p.id !== excludeId));
-    }
-
     function saveCurrentEdit() {
         if (!currentEditId) {
-            // Nuevo proyecto: verificar que el nombre no exista ya
             const newName = document.getElementById('project-name-input').value.trim();
             if (!newName) { notify("Ingresa un nombre"); return; }
-            if (isDuplicateName(newName)) {
-                notify(`❌ Ya existe un proyecto con el nombre "${newName}". Elige otro nombre.`, 3000);
-                return;
-            }
             const newId = generateId();
             const newProj = {
                 id: newId,
@@ -755,15 +743,9 @@
             renderRepository();
             return;
         }
-        // Edición de proyecto existente: se permite cambiar el nombre, pero se evita duplicado con otro proyecto
         const idx = projects.findIndex(p => p.id === currentEditId);
         if (idx !== -1) {
-            const newName = document.getElementById('project-name-input').value.trim() || "Sin nombre";
-            if (isDuplicateName(newName, currentEditId)) {
-                notify(`❌ Ya existe otro proyecto con el nombre "${newName}". Elige otro nombre.`, 3000);
-                return;
-            }
-            projects[idx].name = newName;
+            projects[idx].name = document.getElementById('project-name-input').value.trim() || "Sin nombre";
             projects[idx].pythonCode = document.getElementById('python-editor').value;
             projects[idx].htmlCode = document.getElementById('html-editor').value;
             projects[idx].serverUrl = document.getElementById('server-url-input').value;
@@ -773,7 +755,6 @@
             renderRepository();
         }
     }
-    // ========== FIN PROTECCIÓN ==========
 
     function deleteProject(id) {
         if (projects.length === 1) { notify("Debe haber al menos un proyecto"); return; }
@@ -820,10 +801,7 @@
     
     if (window.parent !== window) {
         setTimeout(() => {
-            // Enviar señal directa de que el Studio está listo
-            sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
-            notify('Conectado con Panel Fundador', 1500);
-            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
+            sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
             const savedUrl = localStorage.getItem('qcol_colab_url');
             if (savedUrl && !receivedUrl) setServerUrl(savedUrl);
         }, 500);

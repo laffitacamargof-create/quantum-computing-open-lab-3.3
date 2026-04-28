@@ -787,12 +787,14 @@ function executeWithStudio(app) {
         return;
     }
     
-    // Si no está listo, abrir el Studio y esperar
-    const studioModal = document.getElementById('studioModalReal');
-    if (!studioModal.classList.contains('open')) {
-        studioModal.classList.add('open');
+    // Si no está listo, abrir el Studio, enviar handshake y esperar
+    const studioModalEl = document.getElementById('studioModalReal');
+    if (!studioModalEl.classList.contains('open')) {
+        studioModalEl.classList.add('open');
         statusSpan.innerHTML = '⏳ Abriendo Quantum App Studio...';
     }
+    // Disparar handshake siempre que no esté listo
+    _requestStudioConnection();
     
     // Esperar a que el Studio esté listo
     let attempts = 0;
@@ -912,11 +914,49 @@ function closeExecModal() {
 }
 
 // ========== COMUNICACIÓN CON QUANTUM APP STUDIO ==========
-const studioModal = document.getElementById('studioModalReal');
-const studioIframe = document.getElementById('studioIframe');
+// Getters lazy para evitar null si el DOM no está listo al declarar
+const studioModal  = document.getElementById('studioModalReal');
+function getStudioIframe() { return document.getElementById('studioIframe'); }
+// Mantener compatibilidad: studioIframe apunta siempre al elemento real
+Object.defineProperty(window, 'studioIframe', {
+    get() { return document.getElementById('studioIframe'); },
+    configurable: true
+});
 
 function openQuantumAppStudio() {
     studioModal.classList.add('open');
+    // Iniciar handshake con el Studio si aún no está listo
+    if (!studioIframeReady) {
+        _requestStudioConnection();
+    }
+}
+
+// Enviar handshake al Studio para que responda QCOL_STUDIO_OPENED
+function _requestStudioConnection() {
+    const iframe = document.getElementById('studioIframe');
+    if (!iframe) return;
+
+    // El Studio puede no haber cargado aún — esperar el onload si hace falta
+    function doHandshake() {
+        const win = document.getElementById('studioIframe')?.contentWindow;
+        if (win) {
+            win.postMessage({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' }, '*');
+        }
+    }
+
+    const iframe2 = document.getElementById('studioIframe');
+    if (iframe2.contentDocument?.readyState === 'complete') {
+        doHandshake();
+        // Reintentar una vez más en 500ms por si el Studio aún no registró el listener
+        setTimeout(doHandshake, 500);
+    } else {
+        // Esperar carga completa del iframe
+        iframe2.addEventListener('load', function onLoad() {
+            iframe2.removeEventListener('load', onLoad);
+            doHandshake();
+            setTimeout(doHandshake, 500);
+        });
+    }
 }
 
 function closeStudioModal() {
@@ -936,18 +976,28 @@ window.addEventListener('message', (e) => {
         return;
     }
     
-    // Studio listo
-    if (data.type === 'QCOL_STUDIO_OPENED' && e.source === studioIframe?.contentWindow) {
-        studioIframeReady = true;
-        console.log('Studio conectado y listo');
-        showNotification('Quantum App Studio conectado', 1500);
-        
-        // Enviar URL del compilador si la tenemos
-        if (compilerUrl) {
-            studioIframe.contentWindow.postMessage({
-                type: 'QCOL_SET_COMPILER_URL',
-                url: compilerUrl
-            }, '*');
+    // Studio listo — aceptar de cualquier fuente que sea el iframe del Studio
+    if (data.type === 'QCOL_STUDIO_OPENED') {
+        const sf = document.getElementById('studioIframe');
+        // Aceptar si viene del iframe correcto O si aún no teníamos referencia
+        if (!sf || e.source === sf.contentWindow || !studioIframeReady) {
+            studioIframeReady = true;
+            studioIframeLoaded = true;
+            console.log('[Puzzle] Studio conectado y listo');
+            showNotification('⚡ Quantum App Studio conectado', 1500);
+
+            // Enviar URL del compilador si la tenemos
+            const win = sf?.contentWindow || e.source;
+            const urlToSend = compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+            if (urlToSend && win) {
+                win.postMessage({ type: 'QCOL_SET_COMPILER_URL', url: urlToSend }, '*');
+                win.postMessage({ type: 'QCOL_COMPILER_URL',     url: urlToSend }, '*');
+            }
+
+            // Si había una ejecución pendiente, reanudarla ahora
+            if (currentExecutingApp) {
+                setTimeout(() => sendCompileRequest(currentExecutingApp), 200);
+            }
         }
         return;
     }
@@ -960,6 +1010,30 @@ window.addEventListener('message', (e) => {
     }
     
     if (data.type === 'QCOL_APP_SAVED') {
+        // El Studio guardó una app — añadir a pendientes sin sobreescribir existentes
+        if (data.app) {
+            const { id, name, pythonCode, htmlCode, serverUrl } = data.app;
+            if (id && name) {
+                const pending   = getPendingApps();
+                const published = getPublishedApps();
+                const alreadyPending   = pending.find(p => p.id === id);
+                const alreadyPublished = published.find(p => p.id === id);
+                if (!alreadyPending && !alreadyPublished) {
+                    pending.push({
+                        id, title: name,
+                        desc: '', tags: '',
+                        duration: 8,
+                        pythonCode: pythonCode || '',
+                        htmlCode:   htmlCode   || '',
+                        serverUrl:  serverUrl  || compilerUrl || '',
+                        createdBy:  currentUser?.username || 'studio',
+                        createdAt:  Date.now()
+                    });
+                    savePendingApps(pending);
+                    showNotification(`📥 "${name}" guardada. Revisa pendientes.`, 2000);
+                }
+            }
+        }
         renderTagFilters();
         renderPublishedApps();
     }
@@ -971,26 +1045,41 @@ window.addEventListener('message', (e) => {
     
     if (data.type === 'QCOL_LAUNCH_QUANTUM_APP') {
         const { appId, appTitle, appMetadata } = data;
-        let pending = getPendingApps();
-        if (!pending.find(p => p.id === appId)) {
-            const newApp = {
-                id: appId,
-                title: appTitle,
-                desc: appMetadata.description || '',
-                tags: appMetadata.tags || '',
-                duration: appMetadata.duration || 8,
-                pythonCode: appMetadata.pythonCode || '',
-                htmlCode: appMetadata.htmlCode || '',
-                serverUrl: appMetadata.serverUrl || '',
-                createdBy: currentUser?.username || 'desconocido',
-                createdAt: Date.now()
-            };
-            pending.push(newApp);
-            savePendingApps(pending);
-            showNotification(`📥 App "${appTitle}" recibida. Revisa pendientes.`);
-            if (document.getElementById('pendingModal').classList.contains('open')) {
-                renderPendingList();
-            }
+        if (!appId || !appTitle) return;
+
+        // ── PROTECCIÓN: no sobreescribir si ya existe en pendientes o publicadas
+        const pending   = getPendingApps();
+        const published = getPublishedApps();
+
+        const alreadyPending   = pending.find(p => p.id === appId);
+        const alreadyPublished = published.find(p => p.id === appId);
+
+        if (alreadyPublished) {
+            showNotification(`ℹ️ "${appTitle}" ya está publicada. No se sobreescribió.`);
+            return;
+        }
+        if (alreadyPending) {
+            showNotification(`ℹ️ "${appTitle}" ya está en pendientes. No se duplicó.`);
+            return;
+        }
+
+        const newApp = {
+            id:         appId,
+            title:      appTitle,
+            desc:       appMetadata.description || '',
+            tags:       appMetadata.tags        || '',
+            duration:   appMetadata.duration    || 8,
+            pythonCode: appMetadata.pythonCode  || '',
+            htmlCode:   appMetadata.htmlCode    || '',
+            serverUrl:  appMetadata.serverUrl   || '',
+            createdBy:  currentUser?.username   || 'desconocido',
+            createdAt:  Date.now()
+        };
+        pending.push(newApp);
+        savePendingApps(pending);
+        showNotification(`📥 App "${appTitle}" recibida. Revisa pendientes.`);
+        if (document.getElementById('pendingModal').classList.contains('open')) {
+            renderPendingList();
         }
         return;
     }
@@ -1140,9 +1229,20 @@ function editPendingApp(appId) {
 
 function publishPendingApp(appId) {
     const pending = getPendingApps();
-    const index = pending.findIndex(p => p.id === appId);
-    if(index === -1) return;
+    const index   = pending.findIndex(p => p.id === appId);
+    if (index === -1) return;
     const appToPublish = { ...pending[index] };
+
+    // ── PROTECCIÓN: no publicar si ya existe una app publicada con el mismo id
+    const published = getPublishedApps();
+    if (published.find(p => p.id === appId)) {
+        showNotification(`⚠️ "${appToPublish.title}" ya está publicada.`);
+        // Eliminar de pendientes de todos modos (limpieza)
+        pending.splice(index, 1);
+        savePendingApps(pending);
+        renderPendingList();
+        return;
+    }
     delete appToPublish.status;
     delete appToPublish.createdBy;
     const published = getPublishedApps();
@@ -1188,6 +1288,42 @@ function showNotification(msg, dur=2800) {
 // Inicialización
 renderTagFilters();
 renderPublishedApps();
+
+// Handshake proactivo: el iframe del Studio ya está en el DOM con src=
+// Lo iniciamos en cuanto el iframe cargue, sin necesidad de abrir el modal
+(function initStudioHandshake() {
+    const iframe = document.getElementById('studioIframe');
+    if (!iframe) return;
+
+    function attemptHandshake() {
+        if (studioIframeReady) return; // ya conectado
+        const win = document.getElementById('studioIframe')?.contentWindow;
+        if (win) {
+            win.postMessage({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' }, '*');
+            // También enviar URL del compilador si ya la tenemos
+            const url = compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+            if (url) {
+                win.postMessage({ type: 'QCOL_SET_COMPILER_URL', url }, '*');
+                win.postMessage({ type: 'QCOL_COMPILER_URL',     url }, '*');
+            }
+        }
+    }
+
+    // Disparar cuando cargue el iframe
+    iframe.addEventListener('load', function() {
+        studioIframeLoaded = true;
+        // Dar tiempo al Studio para registrar sus listeners
+        setTimeout(attemptHandshake, 300);
+        setTimeout(attemptHandshake, 900);   // segundo intento
+        setTimeout(attemptHandshake, 2000);  // tercer intento
+    });
+
+    // Si ya estaba cargado (caché del navegador)
+    if (iframe.contentDocument?.readyState === 'complete') {
+        setTimeout(attemptHandshake, 200);
+        setTimeout(attemptHandshake, 800);
+    }
+})();
 
 // Cerrar modales al hacer clic fuera
 document.getElementById('studioModalReal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModalReal')) closeStudioModal(); });
