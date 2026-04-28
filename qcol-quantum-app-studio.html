@@ -305,7 +305,7 @@
     let currentEditId = null;
     let remoteSessionStatus = false;
     let isEmbedded = false;
-    let parentOrigin = '*';
+    let parentOrigin = null;          // origen confiable cuando estamos embebidos
     let receivedUrl = false;
 
     function notify(msg, dur=2000) {
@@ -319,15 +319,17 @@
 
     function generateId() { return Date.now() + '-' + Math.random().toString(36).substring(2, 10); }
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
-    function sendToParent(msg) { if (window.parent && window.parent !== window) try { window.parent.postMessage(msg, parentOrigin); } catch(e) {} }
+    function sendToParent(msg) { 
+        if (window.parent && window.parent !== window && parentOrigin) {
+            try { window.parent.postMessage(msg, parentOrigin); } catch(e) {}
+        }
+    }
 
-    // Función para decodificar correctamente caracteres Unicode escapados
     function decodeUnicode(str) {
         if (!str || typeof str !== 'string') return str;
         return str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
     }
 
-    // Función principal: establecer URL automáticamente
     function setServerUrl(url) {
         if (!url) return;
         const input = document.getElementById('server-url-input');
@@ -341,10 +343,34 @@
         }
     }
 
-    // Escuchar mensajes del Founder
+    // ================== PROTECCIÓN CONTRA SOBRE-LECTURA ==================
+    // Se valida el origen de cada mensaje antes de procesarlo
     window.addEventListener('message', async (event) => {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
+
+        // --- Validación de origen (protect against over-reading) ---
+        if (isEmbedded) {
+            // Si aún no tenemos un origen confiable, solo aceptamos el mensaje de conexión
+            if (!parentOrigin) {
+                if (data.type === 'QCOL_REQUEST_STUDIO_CONNECTION') {
+                    parentOrigin = event.origin;
+                    // Continuamos con el manejo normal del mensaje
+                } else {
+                    return; // cualquier otro mensaje antes de la conexión es ignorado
+                }
+            } else if (event.origin !== parentOrigin) {
+                // Origen no autorizado
+                return;
+            }
+        } else {
+            // Modo standalone: solo aceptamos mensajes del mismo origen (o null para file://)
+            const selfOrigin = window.location.origin;
+            if (selfOrigin !== 'null' && event.origin !== selfOrigin) return;
+            if (selfOrigin === 'null' && event.origin !== 'null') return;
+        }
+
+        // --- A partir de aquí el mensaje proviene de un origen confiable ---
         
         if (data.type === 'QCOL_COMPILER_URL' && data.url) {
             setServerUrl(data.url);
@@ -357,9 +383,9 @@
         
         if (data.type === 'QCOL_REQUEST_STUDIO_CONNECTION') {
             isEmbedded = true;
-            parentOrigin = event.origin;
+            if (!parentOrigin) parentOrigin = event.origin;
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
-            notify('Conectado con Panel Fundador', 1500);
+            notify('Conectado con Panel Fundador (origen validado)', 1500);
             sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
             return;
         }
@@ -403,14 +429,11 @@
             return;
         }
 
-        // ========== NUEVA FUNCIONALIDAD: Compilar app para ejecución en Puzzle ==========
         if (data.type === 'QCOL_REQUEST_COMPILE') {
             const { requestId, appId, appName, pythonCode, htmlCode, serverUrl } = data;
             try {
-                // Usar la URL del servidor proporcionada o la actual
                 const finalServerUrl = serverUrl || document.getElementById('server-url-input').value;
                 
-                // Generar HTML con el puente pyCall
                 const bridge = `
                 <script>
                 window.__serverUrl = ${JSON.stringify(finalServerUrl)};
@@ -442,14 +465,13 @@
                     finalHtml = bridge + finalHtml;
                 }
                 
-                // Enviar respuesta con el HTML compilado
                 if (event.source) {
                     event.source.postMessage({
                         type: 'QCOL_COMPILE_RESPONSE',
                         requestId: requestId,
                         html: finalHtml,
                         error: null
-                    }, '*');
+                    }, parentOrigin || '*');
                 }
             } catch (err) {
                 if (event.source) {
@@ -458,22 +480,21 @@
                         requestId: requestId,
                         html: null,
                         error: err.message
-                    }, '*');
+                    }, parentOrigin || '*');
                 }
             }
             return;
         }
-        // ========== FIN NUEVA FUNCIONALIDAD ==========
     });
 
     function notifyParentAboutChange(action, appId, appData = null) {
-        if (!isEmbedded) return;
+        if (!isEmbedded || !parentOrigin) return;
         sendToParent({ type: action === 'save' ? 'QCOL_APP_SAVED' : 'QCOL_APP_DELETED', appId, appData });
     }
 
     function saveProjects() {
         localStorage.setItem('quantum_apps_repo_v2', JSON.stringify(projects));
-        if (isEmbedded && currentEditId) {
+        if (isEmbedded && currentEditId && parentOrigin) {
             const proj = projects.find(p => p.id === currentEditId);
             if (proj) notifyParentAboutChange('save', currentEditId, { name: proj.name, serverUrl: proj.serverUrl });
         }
@@ -519,7 +540,6 @@
         document.querySelectorAll('.delete-proj').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteProject(btn.getAttribute('data-id')); }));
     }
 
-    // NUEVA FUNCIÓN: Enviar app a la lista de pendientes del Quantum Puzzle
     function sendToPending(id) {
         const proj = projects.find(p => p.id === id);
         if (!proj) {
@@ -527,7 +547,6 @@
             return;
         }
         
-        // Construir mensaje para el padre (Founder / Quantum Puzzle)
         const message = {
             type: 'QCOL_LAUNCH_QUANTUM_APP',
             appId: proj.id,
@@ -541,12 +560,10 @@
             }
         };
         
-        // Enviar al padre si estamos embebidos, si no, notificar que no hay conexión
-        if (window.parent !== window) {
+        if (window.parent !== window && parentOrigin) {
             sendToParent(message);
             notify(`🚀 App "${proj.name}" enviada a la lista de pendientes del Fundador`, 2500);
         } else {
-            // Si está standalone, intentar guardar en localStorage para que el Founder lo recoja después
             let pendingApps = JSON.parse(localStorage.getItem('qcol_pending_apps') || '[]');
             pendingApps.push({
                 id: proj.id,
@@ -619,9 +636,14 @@
         return output;
     }
 
-    // Handler para llamadas desde los iframes (pyCall)
+    // Handler para llamadas desde los iframes (pyCall) - mismo origen, no necesita token
     window.addEventListener('message', async (event) => {
+        // Solo procesamos pyCall si el origen es el mismo (blob:iframe origen es el mismo)
         if (event.data.type === 'pyCall') {
+            // Verificar origen para evitar abusos
+            if (isEmbedded && parentOrigin && event.origin !== parentOrigin) return;
+            if (!isEmbedded && event.origin !== window.location.origin && window.location.origin !== 'null') return;
+            
             const { id, func, args, serverUrl, pythonCode } = event.data;
             try {
                 if (!serverUrl) throw new Error("Falta URL del servidor");
@@ -633,9 +655,9 @@
                     (result.startsWith('[') && result.endsWith(']'))) {
                     try { result = JSON.parse(result); } catch(e) {}
                 }
-                event.source.postMessage({ type: 'pyResult', id: id, result: result }, '*');
+                event.source.postMessage({ type: 'pyResult', id: id, result: result }, event.origin);
             } catch(err) {
-                event.source.postMessage({ type: 'pyResult', id: id, error: err.message }, '*');
+                event.source.postMessage({ type: 'pyResult', id: id, error: err.message }, event.origin);
             }
         }
     });
@@ -765,7 +787,7 @@
             saveProjects();
             renderRepository();
             notify("Proyecto eliminado");
-            if (isEmbedded && deleted) sendToParent({ type: 'QCOL_APP_DELETED', appId: id });
+            if (isEmbedded && deleted && parentOrigin) sendToParent({ type: 'QCOL_APP_DELETED', appId: id });
         }
     }
 
@@ -801,9 +823,8 @@
     
     if (window.parent !== window) {
         setTimeout(() => {
-            // Enviar señal directa de que el Studio está listo
             sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
-            notify('Conectado con Panel Fundador', 1500);
+            notify('Conectado con Panel Fundador (origen validado)', 1500);
             sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
             const savedUrl = localStorage.getItem('qcol_colab_url');
             if (savedUrl && !receivedUrl) setServerUrl(savedUrl);
@@ -814,10 +835,10 @@
     }
     
     setInterval(() => {
-        if (window.parent !== window && !receivedUrl) sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
+        if (window.parent !== window && !receivedUrl && parentOrigin) sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
     }, 3000);
     
-    notify("Quantum App Studio · Botón 'Lanzar' activo · Envía apps a la lista de pendientes del Fundador", 4000);
+    notify("Quantum App Studio · Protegido contra sobrelectura · Orígenes validados", 4000);
 </script>
 </body>
 </html>
