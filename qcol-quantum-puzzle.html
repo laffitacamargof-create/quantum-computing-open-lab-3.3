@@ -379,6 +379,140 @@ body::before{
     border: none;
     background: white;
 }
+
+/* ===== NUEVO MODAL DE EJECUCIÓN ===== */
+.exec-modal .modal {
+    width: min(1200px, 95vw);
+    height: 85vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.exec-modal .modal-header {
+    padding: 0.8rem 1rem;
+    background: linear-gradient(135deg, #0a1428, #050a14);
+    border-bottom: 1px solid var(--bl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+.exec-modal .modal-header h3 {
+    font-family: var(--orb);
+    font-size: 0.9rem;
+    color: var(--bl2);
+}
+.exec-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(0,0,0,0.3);
+    padding: 0.3rem 0.8rem;
+    border-radius: 40px;
+}
+.exec-tab {
+    padding: 0.3rem 1rem;
+    border-radius: 30px;
+    font-size: 0.65rem;
+    font-family: var(--orb);
+    cursor: pointer;
+    background: transparent;
+    color: var(--mu);
+    transition: all 0.2s;
+}
+.exec-tab.active {
+    background: var(--bl);
+    color: white;
+}
+.exec-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+.exec-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+.exec-code-panel {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #050a14;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+}
+.exec-code-panel.active {
+    display: block;
+}
+.exec-code-block {
+    margin-bottom: 1.5rem;
+}
+.exec-code-block h4 {
+    color: var(--gd);
+    font-size: 0.7rem;
+    margin-bottom: 0.5rem;
+    font-family: var(--orb);
+}
+.exec-code-block pre {
+    background: #010608;
+    padding: 0.8rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #aaffdd;
+}
+.exec-footer {
+    padding: 0.6rem 1rem;
+    background: #0a1428;
+    border-top: 1px solid var(--b);
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 0.6rem;
+}
+.exec-status {
+    flex: 1;
+    color: var(--mu);
+}
+.exec-status.success { color: var(--gr); }
+.exec-status.error { color: var(--rd); }
+.btn-small {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.55rem;
+    background: rgba(0,136,255,0.2);
+    border: 1px solid var(--bl);
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--bl2);
+}
+.btn-small:hover {
+    background: var(--bl);
+    color: white;
+}
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--b2);
+    border-top-color: var(--bl2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -434,6 +568,42 @@ body::before{
     </div>
 </div>
 
+<!-- ===== NUEVO MODAL DE EJECUCIÓN DE APP (usa Quantum App Studio) ===== -->
+<div class="modal-ov exec-modal" id="execAppModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="execAppTitle">⚛️ Ejecutando app cuántica...</h3>
+            <div class="exec-tabs">
+                <span class="exec-tab active" data-tab="run">▶ EJECUTAR</span>
+                <span class="exec-tab" data-tab="code">📄 CÓDIGO</span>
+            </div>
+            <button class="btn-cancel" onclick="closeExecModal()" style="margin:0;">CERRAR</button>
+        </div>
+        <div class="exec-content">
+            <div id="execRunPanel" class="exec-iframe-container" style="width:100%;height:100%;">
+                <iframe id="execIframe" class="exec-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+                <div id="execLoading" class="loading-overlay" style="display: none;">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            <div id="execCodePanel" class="exec-code-panel">
+                <div class="exec-code-block">
+                    <h4>🐍 Código Python (backend remoto)</h4>
+                    <pre id="execPythonCode"># Cargando...</pre>
+                </div>
+                <div class="exec-code-block">
+                    <h4>🌐 Código HTML/JS (frontend)</h4>
+                    <pre id="execHtmlCode"># Cargando...</pre>
+                </div>
+            </div>
+        </div>
+        <div class="exec-footer">
+            <span id="execStatus" class="exec-status">🟢 Usando Quantum App Studio para ejecución</span>
+            <button class="btn-small" onclick="reloadExecApp()">🔄 Recargar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ---------- GLOBALS ----------
 let currentUser = null;
@@ -441,8 +611,10 @@ let isAdmin = false;
 let isFounder = false;
 let activeTagFilter = "all";
 let studioIframeReady = false;
-let pendingPreviewApp = null; // almacena la app que se está previsualizando
+let pendingPreviewApp = null;
 let compilerUrl = '';         // URL del compilador recibida desde el Fundador
+let currentExecutingApp = null; // App que se está ejecutando en el modal
+let pendingCompileRequest = null; // Para manejar respuestas de compilación
 
 // ---------- DATA STORES (repositorio vacío por defecto) ----------
 function getPublishedApps() {
@@ -548,29 +720,176 @@ function escapeHtml(str) {
     });
 }
 
-// ========== MODIFICACIÓN CLAVE: ejecutar app completa (backend remoto + frontend local) ==========
+// ========== NUEVA FUNCIÓN: Ejecutar app usando Quantum App Studio ==========
 function executeQuantumApp(appId) {
     const apps = getPublishedApps();
     const app = apps.find(a => a.id === appId);
     if(!app) { showNotification('⚠️ App no encontrada'); return; }
     
-    // Usar la URL del compilador recibida del Fundador si la app no tiene una propia
-    const finalServerUrl = app.serverUrl || compilerUrl;
+    currentExecutingApp = app;
     
-    // Enviar todos los datos necesarios para que el Panel Fundador (padre) ejecute la app real
-    window.parent.postMessage({
-        type: "QCOL_LAUNCH_QUANTUM_APP",
-        appId: app.id,
-        appTitle: app.title,
-        appMetadata: {
-            tags: app.tags,
-            description: app.desc,
-            duration: app.duration,
-            pythonCode: app.pythonCode || '',
-            htmlCode: app.htmlCode || '',
-            serverUrl: finalServerUrl   // ← importante
+    // Mostrar modal de ejecución
+    const modal = document.getElementById('execAppModal');
+    const titleSpan = document.getElementById('execAppTitle');
+    titleSpan.innerHTML = `⚛️ ${escapeHtml(app.title)}`;
+    
+    // Mostrar código en la pestaña de código
+    document.getElementById('execPythonCode').innerText = app.pythonCode || '# No hay código Python';
+    document.getElementById('execHtmlCode').innerText = app.htmlCode || '<!-- No hay código HTML -->';
+    
+    // Abrir modal
+    modal.classList.add('open');
+    
+    // Configurar pestañas
+    document.querySelectorAll('.exec-tab').forEach(tab => {
+        tab.onclick = () => {
+            document.querySelectorAll('.exec-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.getAttribute('data-tab');
+            const runPanel = document.getElementById('execRunPanel');
+            const codePanel = document.getElementById('execCodePanel');
+            if(tabName === 'run') {
+                runPanel.style.display = 'block';
+                codePanel.classList.remove('active');
+            } else {
+                runPanel.style.display = 'none';
+                codePanel.classList.add('active');
+            }
+        };
+    });
+    
+    // Solicitar al Quantum App Studio que compile y ejecute la app
+    requestCompileFromStudio(app);
+}
+
+function requestCompileFromStudio(app) {
+    // Mostrar loading
+    const loadingDiv = document.getElementById('execLoading');
+    loadingDiv.style.display = 'flex';
+    
+    const statusSpan = document.getElementById('execStatus');
+    statusSpan.innerHTML = '⏳ Solicitando compilación al Quantum App Studio...';
+    statusSpan.className = 'exec-status';
+    
+    // Si el Studio no está listo, abrirlo en segundo plano
+    if (!studioIframeReady) {
+        // Abrir Studio silenciosamente
+        const studioModal = document.getElementById('studioModalReal');
+        if (!studioModal.classList.contains('open')) {
+            studioModal.classList.add('open');
         }
+        // Esperar a que esté listo
+        const waitInterval = setInterval(() => {
+            if (studioIframeReady) {
+                clearInterval(waitInterval);
+                sendCompileRequest(app);
+            }
+        }, 500);
+        setTimeout(() => {
+            clearInterval(waitInterval);
+            if (!studioIframeReady) {
+                loadingDiv.style.display = 'none';
+                statusSpan.innerHTML = '❌ No se pudo conectar con Quantum App Studio';
+                statusSpan.className = 'exec-status error';
+                showNotification('Error: No se pudo conectar con el Studio');
+            }
+        }, 10000);
+    } else {
+        sendCompileRequest(app);
+    }
+}
+
+function sendCompileRequest(app) {
+    if (!studioIframeReady || !studioIframe || !studioIframe.contentWindow) {
+        document.getElementById('execLoading').style.display = 'none';
+        document.getElementById('execStatus').innerHTML = '❌ Quantum App Studio no está listo';
+        document.getElementById('execStatus').className = 'exec-status error';
+        return;
+    }
+    
+    // Crear un ID único para esta solicitud
+    const requestId = 'compile_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+    pendingCompileRequest = requestId;
+    
+    // Enviar solicitud de compilación al Studio
+    studioIframe.contentWindow.postMessage({
+        type: 'QCOL_REQUEST_COMPILE',
+        requestId: requestId,
+        appId: app.id,
+        appName: app.title,
+        pythonCode: app.pythonCode || '',
+        htmlCode: app.htmlCode || '',
+        serverUrl: app.serverUrl || compilerUrl
     }, '*');
+    
+    // Timeout por si el Studio no responde
+    setTimeout(() => {
+        if (pendingCompileRequest === requestId) {
+            pendingCompileRequest = null;
+            const loadingDiv = document.getElementById('execLoading');
+            loadingDiv.style.display = 'none';
+            const statusSpan = document.getElementById('execStatus');
+            statusSpan.innerHTML = '❌ Tiempo de espera agotado. ¿El Studio está respondiendo?';
+            statusSpan.className = 'exec-status error';
+        }
+    }, 15000);
+}
+
+function onCompileResponse(requestId, compiledHtml, error) {
+    if (pendingCompileRequest !== requestId) return;
+    pendingCompileRequest = null;
+    
+    const loadingDiv = document.getElementById('execLoading');
+    loadingDiv.style.display = 'none';
+    const statusSpan = document.getElementById('execStatus');
+    const iframe = document.getElementById('execIframe');
+    
+    if (error) {
+        statusSpan.innerHTML = `❌ Error de compilación: ${error}`;
+        statusSpan.className = 'exec-status error';
+        iframe.src = 'about:blank';
+        return;
+    }
+    
+    if (!compiledHtml) {
+        statusSpan.innerHTML = '❌ No se recibió HTML compilado';
+        statusSpan.className = 'exec-status error';
+        return;
+    }
+    
+    // Crear blob URL y cargar en iframe
+    if (window._currentExecBlobUrl) {
+        URL.revokeObjectURL(window._currentExecBlobUrl);
+    }
+    const blob = new Blob([compiledHtml], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    window._currentExecBlobUrl = blobUrl;
+    
+    iframe.src = blobUrl;
+    statusSpan.innerHTML = '✅ App ejecutándose correctamente (compilada por Quantum App Studio)';
+    statusSpan.className = 'exec-status success';
+}
+
+function reloadExecApp() {
+    if (currentExecutingApp) {
+        requestCompileFromStudio(currentExecutingApp);
+    }
+}
+
+function closeExecModal() {
+    const modal = document.getElementById('execAppModal');
+    modal.classList.remove('open');
+    // Limpiar iframe
+    const iframe = document.getElementById('execIframe');
+    if (iframe.src) {
+        iframe.src = 'about:blank';
+    }
+    if (window._currentExecBlobUrl) {
+        URL.revokeObjectURL(window._currentExecBlobUrl);
+        window._currentExecBlobUrl = null;
+    }
+    pendingCompileRequest = null;
+    currentExecutingApp = null;
 }
 
 // ---------- COMUNICACIÓN DIRECTA CON EL QUANTUM APP STUDIO (iframe) ----------
@@ -579,10 +898,6 @@ let studioIframe = document.getElementById('studioIframe');
 
 function openQuantumAppStudio() {
     studioModal.classList.add('open');
-    // Aseguramos que el iframe tenga el src correcto (ya lo tiene)
-    if (!studioIframeReady) {
-        // El iframe enviará un mensaje "QCOL_STUDIO_READY" cuando esté listo
-    }
 }
 
 function closeStudioModal() {
@@ -598,7 +913,6 @@ window.addEventListener('message', (e) => {
     if (data.type === 'QCOL_COMPILER_URL') {
         compilerUrl = data.url;
         console.log('🔗 URL del compilador recibida:', compilerUrl);
-        // Opcional: notificar al Studio si ya está listo
         if (studioIframeReady && studioIframe?.contentWindow) {
             studioIframe.contentWindow.postMessage({
                 type: 'QCOL_SET_COMPILER_URL',
@@ -610,7 +924,6 @@ window.addEventListener('message', (e) => {
     
     if (data.type === 'QCOL_STUDIO_READY' && e.source === studioIframe?.contentWindow) {
         studioIframeReady = true;
-        // Enviar la URL del compilador al Studio si ya la tenemos
         studioIframe.contentWindow.postMessage({ 
             type: 'QCOL_REQUEST_STUDIO_CONNECTION', 
             source: 'quantum-puzzle' 
@@ -621,6 +934,14 @@ window.addEventListener('message', (e) => {
                 url: compilerUrl
             }, '*');
         }
+        showNotification('Quantum App Studio conectado', 1500);
+    }
+    
+    // ===== RESPUESTA DE COMPILACIÓN =====
+    if (data.type === 'QCOL_COMPILE_RESPONSE') {
+        const { requestId, html, error } = data;
+        onCompileResponse(requestId, html, error);
+        return;
     }
     
     if (data.type === 'QCOL_APP_SAVED' && data.appId) {
@@ -633,11 +954,9 @@ window.addEventListener('message', (e) => {
         renderPublishedApps();
     }
     
-    // ============ NUEVO: Recibir apps lanzadas desde el Quantum App Studio ============
     if (data.type === 'QCOL_LAUNCH_QUANTUM_APP') {
         const { appId, appTitle, appMetadata } = data;
         let pending = getPendingApps();
-        // Evitar duplicados por ID
         if (!pending.find(p => p.id === appId)) {
             const newApp = {
                 id: appId,
@@ -654,14 +973,12 @@ window.addEventListener('message', (e) => {
             pending.push(newApp);
             savePendingApps(pending);
             showNotification(`📥 App "${appTitle}" recibida. Revisa pendientes.`);
-            // Si el modal de pendientes está visible, refrescar la lista
             if (document.getElementById('pendingModal').classList.contains('open')) {
                 renderPendingList();
             }
         }
         return;
     }
-    // ===============================================================================
     
     if(data.type === 'QCOL_USER_UPDATE') {
         currentUser = data.user;
@@ -682,7 +999,6 @@ function postCore(type, data={}) {
     if(window.parent !== window) window.parent.postMessage({type, ...data}, '*');
 }
 postCore('QCOL_GET_CONFIG');
-// Solicitar explícitamente la URL del compilador al Fundador
 if (window.parent !== window) {
     window.parent.postMessage({ type: 'QCOL_GET_COMPILER_URL' }, '*');
 }
@@ -727,24 +1043,16 @@ function renderPendingList() {
     container.innerHTML = html;
 }
 
-// --- Nuevas funciones: EJECUTAR y EDITAR para pendientes ---
 function previewPendingApp(appId) {
     const pending = getPendingApps();
     const app = pending.find(p => p.id === appId);
     if(!app) { showNotification("App no encontrada"); return; }
     pendingPreviewApp = app;
-    // Construir un HTML temporal que muestre la app.
-    // Usamos el mismo método que el Quantum App Studio para generar un blob URL.
-    // Como necesitamos ejecutar el código Python+HTML, aprovechamos la lógica del estudio,
-    // pero como no tenemos Pyodide aquí, usamos un iframe que se comunique con el padre.
-    // Simplemente creamos un iframe que cargue un pequeño script puente.
     buildAppBlobAndPreview(app);
 }
 
 async function buildAppBlobAndPreview(app) {
-    // Usar la URL global del compilador si la app no tiene una propia
     const server = app.serverUrl || compilerUrl;
-    // Construimos un blob HTML que incluya el puente pyCall similar al del studio
     const { pythonCode, htmlCode } = app;
     const bridge = `
     <script>
@@ -779,7 +1087,6 @@ async function buildAppBlobAndPreview(app) {
     const blobUrl = URL.createObjectURL(blob);
     const previewIframe = document.getElementById('previewIframe');
     previewIframe.src = blobUrl;
-    // Liberar URL cuando se cierre el modal (en closePreviewModal)
     if(window._currentPreviewBlobUrl) URL.revokeObjectURL(window._currentPreviewBlobUrl);
     window._currentPreviewBlobUrl = blobUrl;
     document.getElementById('previewAppModal').classList.add('open');
@@ -802,9 +1109,7 @@ function editPendingApp(appId) {
     const pending = getPendingApps();
     const app = pending.find(p => p.id === appId);
     if(!app) { showNotification("App no encontrada"); return; }
-    // Abrimos el Quantum App Studio y le enviamos los datos para que cargue la app
     openQuantumAppStudio();
-    // Esperamos un poco a que el iframe del studio esté listo y luego enviamos mensaje
     const waitForStudio = setInterval(() => {
         if (studioIframeReady && studioIframe && studioIframe.contentWindow) {
             clearInterval(waitForStudio);
@@ -819,7 +1124,6 @@ function editPendingApp(appId) {
             showNotification(`Editando "${app.title}" en el Studio.`);
         }
     }, 500);
-    // timeout por si acaso
     setTimeout(() => clearInterval(waitForStudio), 10000);
 }
 
@@ -862,12 +1166,12 @@ function deletePublishedApp(appId) {
     renderTagFilters();
     renderPublishedApps();
 }
-function showNotification(msg) {
+function showNotification(msg, dur=2800) {
     const n = document.getElementById('notifMsg');
     n.textContent = msg;
     n.classList.add('show');
     if(n._timeout) clearTimeout(n._timeout);
-    n._timeout = setTimeout(() => n.classList.remove('show'), 2800);
+    n._timeout = setTimeout(() => n.classList.remove('show'), dur);
 }
 
 // Inicialización
@@ -876,6 +1180,7 @@ renderPublishedApps();
 document.getElementById('studioModalReal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('studioModalReal')) closeStudioModal(); });
 document.getElementById('pendingModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('pendingModal')) closePendingModal(); });
 document.getElementById('previewAppModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('previewAppModal')) closePreviewModal(); });
+document.getElementById('execAppModal')?.addEventListener('click', (e) => { if(e.target === document.getElementById('execAppModal')) closeExecModal(); });
 </script>
 </body>
 </html>
