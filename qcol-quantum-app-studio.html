@@ -801,7 +801,10 @@
     
     if (window.parent !== window) {
         setTimeout(() => {
-            sendToParent({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' });
+            // Enviar señal directa de que el Studio está listo
+            sendToParent({ type: 'QCOL_STUDIO_OPENED', version: '2.0', status: 'ready' });
+            notify('Conectado con Panel Fundador', 1500);
+            sendToParent({ type: 'QCOL_REQUEST_COMPILER_URL' });
             const savedUrl = localStorage.getItem('qcol_colab_url');
             if (savedUrl && !receivedUrl) setServerUrl(savedUrl);
         }, 500);
