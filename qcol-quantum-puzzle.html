@@ -573,10 +573,7 @@ body::before{
     <div class="modal">
         <div class="modal-header">
             <h3 id="execAppTitle">⚛️ Ejecutando app cuántica...</h3>
-            <div class="exec-tabs">
-                <span class="exec-tab active" data-tab="run">▶ EJECUTAR</span>
-                <span class="exec-tab" data-tab="code">📄 CÓDIGO</span>
-            </div>
+            <!-- Botones EJECUTAR y CÓDIGO eliminados -->
             <button class="btn-cancel" onclick="closeExecModal()" style="margin:0;">CERRAR</button>
         </div>
         <div class="exec-content">
@@ -587,20 +584,10 @@ body::before{
                 </div>
             </div>
             <div id="execCodePanel" class="exec-code-panel">
-                <div class="exec-code-block">
-                    <h4>🐍 Código Python (backend remoto)</h4>
-                    <pre id="execPythonCode"># Cargando...</pre>
-                </div>
-                <div class="exec-code-block">
-                    <h4>🌐 Código HTML/JS (frontend)</h4>
-                    <pre id="execHtmlCode"># Cargando...</pre>
-                </div>
+                <!-- El panel de código queda oculto permanentemente al eliminar los tabs -->
             </div>
         </div>
-        <div class="exec-footer">
-            <span id="execStatus" class="exec-status">🟢 Usando Quantum App Studio para ejecución</span>
-            <button class="btn-small" onclick="reloadExecApp()">🔄 Recargar</button>
-        </div>
+        <!-- Pie de ejecución eliminado (estado y recargar) -->
     </div>
 </div>
 
@@ -744,28 +731,7 @@ function executeQuantumApp(appId) {
     const titleSpan = document.getElementById('execAppTitle');
     titleSpan.innerHTML = `⚛️ ${escapeHtml(app.title)}`;
     
-    // Mostrar código
-    document.getElementById('execPythonCode').innerText = app.pythonCode || '# No hay código Python';
-    document.getElementById('execHtmlCode').innerText = app.htmlCode || '<!-- No hay código HTML -->';
-    
-    // Configurar pestañas
-    document.querySelectorAll('.exec-tab').forEach(tab => {
-        tab.onclick = () => {
-            document.querySelectorAll('.exec-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const tabName = tab.getAttribute('data-tab');
-            const runPanel = document.getElementById('execRunPanel');
-            const codePanel = document.getElementById('execCodePanel');
-            if(tabName === 'run') {
-                runPanel.style.display = 'block';
-                codePanel.classList.remove('active');
-            } else {
-                runPanel.style.display = 'none';
-                codePanel.classList.add('active');
-            }
-        };
-    });
-    
+    // No mostramos código, ni pestañas, la interfaz queda totalmente dedicada a la app
     modal.classList.add('open');
     
     // Intentar ejecutar la app
@@ -883,26 +849,32 @@ function _buildAppBlob(pythonCode, htmlCode, serverUrl) {
 
 function executeWithStudio(app) {
     const loadingDiv = document.getElementById('execLoading');
-    const statusSpan = document.getElementById('execStatus');
+    const statusSpan = document.getElementById('execStatus'); // puede ser null tras eliminar el footer
     const iframe     = document.getElementById('execIframe');
 
     loadingDiv.style.display = 'flex';
-    statusSpan.innerHTML     = '⏳ Preparando aplicación cuántica...';
-    statusSpan.className     = 'exec-status';
+    if (statusSpan) {
+        statusSpan.innerHTML = '⏳ Preparando aplicación cuántica...';
+        statusSpan.className = 'exec-status';
+    }
 
     const serverUrl = app.serverUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
 
     if (!app.htmlCode && !app.pythonCode) {
         loadingDiv.style.display = 'none';
-        statusSpan.innerHTML     = '❌ La app no tiene código HTML ni Python.';
-        statusSpan.className     = 'exec-status error';
+        if (statusSpan) {
+            statusSpan.innerHTML = '❌ La app no tiene código HTML ni Python.';
+            statusSpan.className = 'exec-status error';
+        }
         return;
     }
 
     if (!serverUrl && app.pythonCode) {
         // Avisar pero seguir — la app puede funcionar sin backend
-        statusSpan.innerHTML = '⚠️ Sin servidor configurado — funciones pyCall no disponibles';
-        statusSpan.className = 'exec-status';
+        if (statusSpan) {
+            statusSpan.innerHTML = '⚠️ Sin servidor configurado — funciones pyCall no disponibles';
+            statusSpan.className = 'exec-status';
+        }
     }
 
     // Liberar blob anterior
@@ -914,24 +886,30 @@ function executeWithStudio(app) {
 
         iframe.onload = function() {
             loadingDiv.style.display = 'none';
-            statusSpan.innerHTML     = serverUrl
-                ? '✅ App ejecutándose · servidor cuántico conectado'
-                : '✅ App ejecutándose · modo sin servidor';
-            statusSpan.className     = 'exec-status success';
+            if (statusSpan) {
+                statusSpan.innerHTML = serverUrl
+                    ? '✅ App ejecutándose · servidor cuántico conectado'
+                    : '✅ App ejecutándose · modo sin servidor';
+                statusSpan.className = 'exec-status success';
+            }
         };
 
         setTimeout(function() {
             if (loadingDiv.style.display !== 'none') {
                 loadingDiv.style.display = 'none';
-                statusSpan.innerHTML     = '✅ App cargada';
-                statusSpan.className     = 'exec-status success';
+                if (statusSpan) {
+                    statusSpan.innerHTML = '✅ App cargada';
+                    statusSpan.className = 'exec-status success';
+                }
             }
         }, 5000);
 
     } catch(err) {
         loadingDiv.style.display = 'none';
-        statusSpan.innerHTML     = '❌ Error: ' + escapeHtml(err.message);
-        statusSpan.className     = 'exec-status error';
+        if (statusSpan) {
+            statusSpan.innerHTML = '❌ Error: ' + escapeHtml(err.message);
+            statusSpan.className = 'exec-status error';
+        }
         showNotification('Error al construir la app: ' + err.message);
     }
 }
@@ -949,16 +927,20 @@ function onCompileResponse(requestId, compiledHtml, error) {
     const iframe = document.getElementById('execIframe');
     
     if (error) {
-        statusSpan.innerHTML = `❌ Error: ${error}`;
-        statusSpan.className = 'exec-status error';
+        if (statusSpan) {
+            statusSpan.innerHTML = `❌ Error: ${error}`;
+            statusSpan.className = 'exec-status error';
+        }
         iframe.src = 'about:blank';
         showNotification(`Error de compilación: ${error}`);
         return;
     }
     
     if (!compiledHtml) {
-        statusSpan.innerHTML = '❌ No se recibió respuesta del Studio';
-        statusSpan.className = 'exec-status error';
+        if (statusSpan) {
+            statusSpan.innerHTML = '❌ No se recibió respuesta del Studio';
+            statusSpan.className = 'exec-status error';
+        }
         return;
     }
     
@@ -972,8 +954,10 @@ function onCompileResponse(requestId, compiledHtml, error) {
     window._currentExecBlobUrl = blobUrl;
     
     iframe.src = blobUrl;
-    statusSpan.innerHTML = '✅ App ejecutándose correctamente';
-    statusSpan.className = 'exec-status success';
+    if (statusSpan) {
+        statusSpan.innerHTML = '✅ App ejecutándose correctamente';
+        statusSpan.className = 'exec-status success';
+    }
     showNotification('App cargada correctamente', 1500);
 }
 
@@ -1153,7 +1137,7 @@ function renderPendingList() {
                 <div style="font-size:0.55rem; color:#aaa; display:flex; gap:12px; flex-wrap:wrap;">🏷️ ${escapeHtml(app.tags)} | ⏱️ ${app.duration} min | 👤 creado por ${escapeHtml(app.createdBy || 'anon')}</div>
                 <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn" style="background: #2a5f8a;" onclick="previewPendingApp('${app.id}')">🔍 EJECUTAR</button>
-                    <button class="btn" style="background: #6d28d9;" onclick="editPendingApp('${app.id}')">✏️ EDITAR</button>
+                    <!-- Botón EDITAR eliminado -->
                     <button class="btn" style="background: #00aa66;" onclick="publishPendingApp('${app.id}')">✅ PUBLICAR</button>
                     <button class="btn" style="background: #aa3355;" onclick="rejectPendingApp('${app.id}')">🗑️ RECHAZAR</button>
                 </div>
