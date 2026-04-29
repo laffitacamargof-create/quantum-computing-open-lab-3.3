@@ -772,85 +772,172 @@ function executeQuantumApp(appId) {
     executeWithStudio(app);
 }
 
-function executeWithStudio(app) {
-    // Mostrar loading
-    const loadingDiv = document.getElementById('execLoading');
-    const statusSpan = document.getElementById('execStatus');
-    
-    loadingDiv.style.display = 'flex';
-    statusSpan.innerHTML = '⏳ Conectando con Quantum App Studio...';
-    statusSpan.className = 'exec-status';
-    
-    // Si el Studio ya está listo, enviar solicitud directamente
-    if (studioIframeReady && studioIframe && studioIframe.contentWindow) {
-        sendCompileRequest(app);
-        return;
-    }
-    
-    // Si no está listo, abrir el Studio y esperar
-    const studioModal = document.getElementById('studioModalReal');
-    if (!studioModal.classList.contains('open')) {
-        studioModal.classList.add('open');
-        statusSpan.innerHTML = '⏳ Abriendo Quantum App Studio...';
-    }
-    
-    // Esperar a que el Studio esté listo
-    let attempts = 0;
-    const maxAttempts = 50; // 10 segundos máximo
-    const waitInterval = setInterval(() => {
-        attempts++;
-        if (studioIframeReady && studioIframe && studioIframe.contentWindow) {
-            clearInterval(waitInterval);
-            sendCompileRequest(app);
-        } else if (attempts >= maxAttempts) {
-            clearInterval(waitInterval);
-            loadingDiv.style.display = 'none';
-            statusSpan.innerHTML = '❌ No se pudo conectar con Quantum App Studio. Asegúrate de que el Studio esté cargado.';
-            statusSpan.className = 'exec-status error';
-            showNotification('Error: No se pudo establecer conexión con el Studio');
-        } else {
-            statusSpan.innerHTML = `⏳ Esperando Studio... (${Math.floor(attempts/5)}s)`;
-        }
-    }, 200);
+// ── Ejecutar app cuántica DIRECTAMENTE — sin depender del Studio ──
+// El Puzzle construye el blob con el bridge pyCall inyectado y lo
+// carga en el execIframe. El Studio solo se usa para editar/crear.
+
+// Ejecutar Python en el servidor remoto
+async function _runPythonRemote(code, serverUrl) {
+    const base = (serverUrl || '').replace(/\/+$/, '');
+    if (!base) throw new Error('No hay URL del servidor cuántico configurada');
+    const isHF  = base.includes('hf.space') || base.includes('huggingface');
+    const url   = base + (isHF ? '/run/predict' : '/run');
+    const body  = isHF
+        ? JSON.stringify({ data: [code], fn_index: 1 })
+        : JSON.stringify({ code });
+    const res   = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+    const raw = await res.json();
+    const out = isHF ? (raw.data?.[0] ?? raw) : raw;
+    if (out?.success === false) throw new Error(out.output || out.error || 'Error en el servidor');
+    return out?.output ?? out?.result ?? String(out ?? '');
 }
 
-function sendCompileRequest(app) {
-    if (!studioIframeReady || !studioIframe || !studioIframe.contentWindow) {
-        document.getElementById('execLoading').style.display = 'none';
-        document.getElementById('execStatus').innerHTML = '❌ Studio no disponible';
-        document.getElementById('execStatus').className = 'exec-status error';
+// Map pyCall pendientes del execIframe
+const _execPyCalls = new Map();
+
+// Escuchar pyCall del execIframe y ejecutarlos remotamente
+window.addEventListener('message', async function _execPyCallHandler(ev) {
+    const d = ev.data;
+    if (!d || d.type !== 'pyCall') return;
+    const { id, func, args, serverUrl: appUrl, pythonCode } = d;
+    const src = ev.source;
+
+    const tid = setTimeout(() => {
+        _execPyCalls.delete(id);
+        try { src.postMessage({ type: 'pyResult', id, error: 'Timeout 35s' }, '*'); } catch(e) {}
+    }, 35000);
+    _execPyCalls.set(id, { src, tid });
+
+    const serverUrl = appUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+    try {
+        if (!serverUrl) throw new Error('Sin URL del servidor. Configúrala en el Panel Fundador.');
+        // Construir llamada Python: ejecutar la función pedida por la app
+        const callCode = (pythonCode ? pythonCode + '\n\n' : '') +
+            'import json as _json\n' +
+            '_args = _json.loads(' + JSON.stringify(JSON.stringify(args)) + ')\n' +
+            '_result = ' + func + '(*_args)\n' +
+            'print(_json.dumps(_result, ensure_ascii=False, default=str))';
+        const output = await _runPythonRemote(callCode, serverUrl);
+        clearTimeout(tid); _execPyCalls.delete(id);
+        let parsed = (output || '').trim();
+        try { parsed = JSON.parse(parsed); } catch(e) {}
+        src.postMessage({ type: 'pyResult', id, result: parsed }, '*');
+    } catch(err) {
+        clearTimeout(tid); _execPyCalls.delete(id);
+        src.postMessage({ type: 'pyResult', id, error: err.message }, '*');
+    }
+});
+
+// Construir blob HTML con bridge pyCall inyectado
+function _buildAppBlob(pythonCode, htmlCode, serverUrl) {
+    const bridge = `<script>
+(function(){
+    window.__serverUrl  = ${JSON.stringify(serverUrl  || '')};
+    window.__pyCode     = ${JSON.stringify(pythonCode || '')};
+    window.pyCall = function(funcName) {
+        const args = Array.prototype.slice.call(arguments, 1);
+        return new Promise(function(resolve, reject) {
+            var msgId = Date.now() + '-' + Math.random().toString(36).slice(2);
+            function handler(ev) {
+                var d = ev.data;
+                if (d && d.type === 'pyResult' && d.id === msgId) {
+                    window.removeEventListener('message', handler);
+                    if (d.error) reject(new Error(d.error));
+                    else resolve(d.result);
+                }
+            }
+            window.addEventListener('message', handler);
+            window.parent.postMessage({
+                type: 'pyCall', id: msgId, func: funcName, args: args,
+                serverUrl: window.__serverUrl, pythonCode: window.__pyCode
+            }, '*');
+        });
+    };
+})();
+<\/script>`;
+
+    let html = htmlCode || [
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+        '<style>body{background:#0a0e1a;color:#c8d8f0;font-family:monospace;',
+        'padding:2rem;display:flex;flex-direction:column;align-items:center;gap:1rem;}',
+        'h2{color:#00ccff;font-family:Orbitron,monospace;}',
+        '.info{color:#4a7a9b;font-size:.85rem;}</style></head>',
+        '<body><h2>⚛️ App sin interfaz</h2>',
+        '<p class="info">Esta app no tiene código HTML.<br>',
+        'El código Python se ejecuta con <code>pyCall()</code>.</p></body></html>'
+    ].join('');
+
+    // Inyectar el bridge
+    if (html.includes('</head>'))        html = html.replace('</head>', bridge + '</head>');
+    else if (html.includes('<body'))      html = html.replace('<body', bridge + '<body');
+    else if (html.includes('<html'))      html = html.replace('<html>', '<html>' + bridge);
+    else                                  html = bridge + html;
+
+    return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+}
+
+function executeWithStudio(app) {
+    const loadingDiv = document.getElementById('execLoading');
+    const statusSpan = document.getElementById('execStatus');
+    const iframe     = document.getElementById('execIframe');
+
+    loadingDiv.style.display = 'flex';
+    statusSpan.innerHTML     = '⏳ Preparando aplicación cuántica...';
+    statusSpan.className     = 'exec-status';
+
+    const serverUrl = app.serverUrl || compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+
+    if (!app.htmlCode && !app.pythonCode) {
+        loadingDiv.style.display = 'none';
+        statusSpan.innerHTML     = '❌ La app no tiene código HTML ni Python.';
+        statusSpan.className     = 'exec-status error';
         return;
     }
-    
-    const requestId = 'compile_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    pendingCompileRequest = requestId;
-    
-    const statusSpan = document.getElementById('execStatus');
-    statusSpan.innerHTML = '⏳ Compilando app en Quantum App Studio...';
-    
-    studioIframe.contentWindow.postMessage({
-        type: 'QCOL_REQUEST_COMPILE',
-        requestId: requestId,
-        appId: app.id,
-        appName: app.title,
-        pythonCode: app.pythonCode || '',
-        htmlCode: app.htmlCode || '',
-        serverUrl: app.serverUrl || compilerUrl
-    }, '*');
-    
-    // Timeout
-    setTimeout(() => {
-        if (pendingCompileRequest === requestId) {
-            pendingCompileRequest = null;
-            const loadingDiv = document.getElementById('execLoading');
+
+    if (!serverUrl && app.pythonCode) {
+        // Avisar pero seguir — la app puede funcionar sin backend
+        statusSpan.innerHTML = '⚠️ Sin servidor configurado — funciones pyCall no disponibles';
+        statusSpan.className = 'exec-status';
+    }
+
+    // Liberar blob anterior
+    if (window._execBlobUrl) { URL.revokeObjectURL(window._execBlobUrl); }
+
+    try {
+        window._execBlobUrl = _buildAppBlob(app.pythonCode, app.htmlCode, serverUrl);
+        iframe.src = window._execBlobUrl;
+
+        iframe.onload = function() {
             loadingDiv.style.display = 'none';
-            const statusSpanLocal = document.getElementById('execStatus');
-            statusSpanLocal.innerHTML = '❌ Tiempo de espera agotado. El Studio no respondió.';
-            statusSpanLocal.className = 'exec-status error';
-            showNotification('Error: El Studio no respondió a tiempo');
-        }
-    }, 20000);
+            statusSpan.innerHTML     = serverUrl
+                ? '✅ App ejecutándose · servidor cuántico conectado'
+                : '✅ App ejecutándose · modo sin servidor';
+            statusSpan.className     = 'exec-status success';
+        };
+
+        setTimeout(function() {
+            if (loadingDiv.style.display !== 'none') {
+                loadingDiv.style.display = 'none';
+                statusSpan.innerHTML     = '✅ App cargada';
+                statusSpan.className     = 'exec-status success';
+            }
+        }, 5000);
+
+    } catch(err) {
+        loadingDiv.style.display = 'none';
+        statusSpan.innerHTML     = '❌ Error: ' + escapeHtml(err.message);
+        statusSpan.className     = 'exec-status error';
+        showNotification('Error al construir la app: ' + err.message);
+    }
 }
+
+// sendCompileRequest ya no es necesaria pero la mantenemos por compatibilidad
+function sendCompileRequest(app) { executeWithStudio(app); }
 
 function onCompileResponse(requestId, compiledHtml, error) {
     if (pendingCompileRequest !== requestId) return;
@@ -917,6 +1004,19 @@ const studioIframe = document.getElementById('studioIframe');
 
 function openQuantumAppStudio() {
     studioModal.classList.add('open');
+    // Enviar handshake al Studio para que responda QCOL_STUDIO_OPENED
+    setTimeout(function() {
+        var sf = document.getElementById('studioIframe');
+        if (sf && sf.contentWindow) {
+            sf.contentWindow.postMessage({ type: 'QCOL_REQUEST_STUDIO_CONNECTION' }, '*');
+            // Si tenemos la URL, enviarla también
+            var url = compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+            if (url) {
+                sf.contentWindow.postMessage({ type: 'QCOL_SET_COMPILER_URL', url: url }, '*');
+                sf.contentWindow.postMessage({ type: 'QCOL_COMPILER_URL', url: url }, '*');
+            }
+        }
+    }, 400);
 }
 
 function closeStudioModal() {
@@ -937,17 +1037,16 @@ window.addEventListener('message', (e) => {
     }
     
     // Studio listo
-    if (data.type === 'QCOL_STUDIO_OPENED' && e.source === studioIframe?.contentWindow) {
+    if (data.type === 'QCOL_STUDIO_OPENED') {
         studioIframeReady = true;
-        console.log('Studio conectado y listo');
-        showNotification('Quantum App Studio conectado', 1500);
-        
+        studioIframeLoaded = true;
+        console.log('[Puzzle] Studio conectado y listo');
+        showNotification('⚡ Quantum App Studio listo', 1500);
         // Enviar URL del compilador si la tenemos
-        if (compilerUrl) {
-            studioIframe.contentWindow.postMessage({
-                type: 'QCOL_SET_COMPILER_URL',
-                url: compilerUrl
-            }, '*');
+        var urlNow = compilerUrl || localStorage.getItem('qcol_colab_url') || '';
+        if (urlNow && e.source) {
+            e.source.postMessage({ type: 'QCOL_SET_COMPILER_URL', url: urlNow }, '*');
+            e.source.postMessage({ type: 'QCOL_COMPILER_URL',     url: urlNow }, '*');
         }
         return;
     }
@@ -970,27 +1069,37 @@ window.addEventListener('message', (e) => {
     }
     
     if (data.type === 'QCOL_LAUNCH_QUANTUM_APP') {
-        const { appId, appTitle, appMetadata } = data;
-        let pending = getPendingApps();
-        if (!pending.find(p => p.id === appId)) {
-            const newApp = {
-                id: appId,
-                title: appTitle,
-                desc: appMetadata.description || '',
-                tags: appMetadata.tags || '',
-                duration: appMetadata.duration || 8,
-                pythonCode: appMetadata.pythonCode || '',
-                htmlCode: appMetadata.htmlCode || '',
-                serverUrl: appMetadata.serverUrl || '',
-                createdBy: currentUser?.username || 'desconocido',
-                createdAt: Date.now()
-            };
-            pending.push(newApp);
-            savePendingApps(pending);
-            showNotification(`📥 App "${appTitle}" recibida. Revisa pendientes.`);
-            if (document.getElementById('pendingModal').classList.contains('open')) {
-                renderPendingList();
-            }
+        var launchId     = data.appId;
+        var launchTitle  = data.appTitle;
+        var launchMeta   = data.appMetadata || {};
+        if (!launchId || !launchTitle) return;
+        var pendingApps  = getPendingApps();
+        var publishedApps = getPublishedApps();
+        // ── Protección: no sobreescribir si ya existe
+        if (publishedApps.find(function(p){ return p.id === launchId; })) {
+            showNotification('ℹ️ "' + launchTitle + '" ya está publicada. No se sobreescribió.');
+            return;
+        }
+        if (pendingApps.find(function(p){ return p.id === launchId; })) {
+            showNotification('ℹ️ "' + launchTitle + '" ya está en pendientes.');
+            return;
+        }
+        pendingApps.push({
+            id:         launchId,
+            title:      launchTitle,
+            desc:       launchMeta.description || '',
+            tags:       launchMeta.tags        || '',
+            duration:   launchMeta.duration    || 8,
+            pythonCode: launchMeta.pythonCode  || '',
+            htmlCode:   launchMeta.htmlCode    || '',
+            serverUrl:  launchMeta.serverUrl   || '',
+            createdBy:  currentUser?.username  || 'studio',
+            createdAt:  Date.now()
+        });
+        savePendingApps(pendingApps);
+        showNotification('📥 App "' + launchTitle + '" recibida. Revisa pendientes.');
+        if (document.getElementById('pendingModal').classList.contains('open')) {
+            renderPendingList();
         }
         return;
     }
