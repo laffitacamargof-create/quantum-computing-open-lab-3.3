@@ -493,6 +493,12 @@
     }
 
     function saveProjects() {
+        // 🛡️ Protección contra sobreescritura: guardamos un backup de la versión anterior
+        const previousBackup = localStorage.getItem('quantum_apps_repo_v2');
+        if (previousBackup) {
+            localStorage.setItem('quantum_apps_repo_v2_backup', previousBackup);
+        }
+
         localStorage.setItem('quantum_apps_repo_v2', JSON.stringify(projects));
         if (isEmbedded && currentEditId && parentOrigin) {
             const proj = projects.find(p => p.id === currentEditId);
@@ -565,14 +571,21 @@
             notify(`🚀 App "${proj.name}" enviada a la lista de pendientes del Fundador`, 2500);
         } else {
             let pendingApps = JSON.parse(localStorage.getItem('qcol_pending_apps') || '[]');
-            pendingApps.push({
+            // 🛡️ Protección contra duplicados: si ya existe una entrada con el mismo id, la actualizamos
+            const existingIndex = pendingApps.findIndex(entry => entry.id === proj.id);
+            const newEntry = {
                 id: proj.id,
                 name: proj.name,
                 pythonCode: proj.pythonCode,
                 htmlCode: proj.htmlCode,
                 serverUrl: proj.serverUrl,
                 timestamp: Date.now()
-            });
+            };
+            if (existingIndex !== -1) {
+                pendingApps[existingIndex] = newEntry;
+            } else {
+                pendingApps.push(newEntry);
+            }
             localStorage.setItem('qcol_pending_apps', JSON.stringify(pendingApps));
             notify(`📦 App "${proj.name}" guardada en pendientes local. Conecta con el Panel Fundador para sincronizar.`, 3000);
         }
