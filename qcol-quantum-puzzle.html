@@ -382,15 +382,17 @@ body::before{
 
 /* Modal de ejecución */
 .exec-modal .modal {
-    width: min(1200px, 95vw);
-    height: 85vh;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 .exec-modal .modal-header {
-    padding: 0.8rem 1rem;
+    padding: 0.4rem 1rem;
     background: linear-gradient(135deg, #0a1428, #050a14);
     border-bottom: 1px solid var(--bl);
     display: flex;
@@ -400,8 +402,25 @@ body::before{
 }
 .exec-modal .modal-header h3 {
     font-family: var(--orb);
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     color: var(--bl2);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.btn-close-x {
+    background: transparent;
+    border: none;
+    color: var(--mu);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.2rem;
+    transition: color 0.2s;
+}
+.btn-close-x:hover {
+    color: var(--rd);
 }
 .exec-tabs {
     display: flex;
@@ -573,8 +592,7 @@ body::before{
     <div class="modal">
         <div class="modal-header">
             <h3 id="execAppTitle">⚛️ Ejecutando app cuántica...</h3>
-            <!-- Botones EJECUTAR y CÓDIGO eliminados -->
-            <button class="btn-cancel" onclick="closeExecModal()" style="margin:0;">CERRAR</button>
+            <button class="btn-close-x" onclick="closeExecModal()" title="Cerrar">✕</button>
         </div>
         <div class="exec-content">
             <div id="execRunPanel" style="width:100%;height:100%;">
@@ -587,7 +605,6 @@ body::before{
                 <!-- El panel de código queda oculto permanentemente al eliminar los tabs -->
             </div>
         </div>
-        <!-- Pie de ejecución eliminado (estado y recargar) -->
     </div>
 </div>
 
