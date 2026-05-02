@@ -393,12 +393,24 @@
         if (data.type === 'QCOL_OPEN_APP_FROM_PUZZLE') {
             const { appId, appName, pythonCode, htmlCode, serverUrl } = data;
             if (appId && appName) {
+                // ── PROTECCIÓN: guardar estado actual antes de cargar el app del puzzle
+                if (currentEditId && currentEditId !== appId) {
+                    const prevIdx = projects.findIndex(p => p.id === currentEditId);
+                    if (prevIdx !== -1) {
+                        projects[prevIdx].pythonCode = document.getElementById('python-editor').value;
+                        projects[prevIdx].htmlCode   = document.getElementById('html-editor').value;
+                        projects[prevIdx].name       = document.getElementById('project-name-input').value.trim() || projects[prevIdx].name;
+                        saveProjects();
+                    }
+                }
                 let existing = projects.find(p => p.id === appId);
                 if (existing) {
                     currentEditId = appId;
                     document.getElementById('project-name-input').value = existing.name;
-                    document.getElementById('python-editor').value = existing.pythonCode;
-                    document.getElementById('html-editor').value = existing.htmlCode;
+                    document.getElementById('python-editor').value      = '';
+                    document.getElementById('html-editor').value        = '';
+                    document.getElementById('python-editor').value      = existing.pythonCode || '';
+                    document.getElementById('html-editor').value        = existing.htmlCode   || '';
                     if (existing.serverUrl) setServerUrl(existing.serverUrl);
                 } else {
                     const newProj = {
@@ -412,8 +424,10 @@
                     projects.push(newProj);
                     currentEditId = appId;
                     document.getElementById('project-name-input').value = newProj.name;
-                    document.getElementById('python-editor').value = newProj.pythonCode;
-                    document.getElementById('html-editor').value = newProj.htmlCode;
+                    document.getElementById('python-editor').value      = '';
+                    document.getElementById('html-editor').value        = '';
+                    document.getElementById('python-editor').value      = newProj.pythonCode;
+                    document.getElementById('html-editor').value        = newProj.htmlCode;
                     if (newProj.serverUrl) setServerUrl(newProj.serverUrl);
                     saveProjects();
                 }
@@ -594,10 +608,29 @@
     function editProject(id) {
         const proj = projects.find(p => p.id === id);
         if (!proj) return;
+
+        // ── PROTECCIÓN: guardar estado del editor actual antes de cambiar proyecto
+        // Evita que los cambios no guardados del proyecto anterior contaminen otro
+        if (currentEditId && currentEditId !== id) {
+            const prevIdx = projects.findIndex(p => p.id === currentEditId);
+            if (prevIdx !== -1) {
+                // Auto-guardar silenciosamente el proyecto anterior
+                projects[prevIdx].pythonCode = document.getElementById('python-editor').value;
+                projects[prevIdx].htmlCode   = document.getElementById('html-editor').value;
+                projects[prevIdx].name       = document.getElementById('project-name-input').value.trim() || projects[prevIdx].name;
+                saveProjects();
+            }
+        }
+
+        // ── Cargar el proyecto solicitado en el editor (limpieza total primero)
         currentEditId = id;
         document.getElementById('project-name-input').value = proj.name;
+        // Limpiar primero — evita residuos del proyecto anterior
+        document.getElementById('python-editor').value = '';
+        document.getElementById('html-editor').value   = '';
+        // Asignar el contenido real del proyecto
         document.getElementById('python-editor').value = proj.pythonCode || '';
-        document.getElementById('html-editor').value = proj.htmlCode || '';
+        document.getElementById('html-editor').value   = proj.htmlCode   || '';
         if (proj.serverUrl) setServerUrl(proj.serverUrl);
         showScreen('editor');
     }
@@ -707,6 +740,8 @@
     }
 
     async function launchProject(id) {
+        // ── PROTECCIÓN: cargar SIEMPRE desde el array projects, nunca del editor
+        // El editor puede tener contenido de otro proyecto si no se guardó
         const proj = projects.find(p => p.id === id);
         if (!proj) return;
         showScreen('runner');
@@ -752,43 +787,65 @@
         document.getElementById('repo-screen').classList.add('hidden');
         document.getElementById('editor-screen').classList.add('hidden');
         document.getElementById('runner-screen').classList.add('hidden');
-        if (screenId === 'repo') document.getElementById('repo-screen').classList.remove('hidden');
-        else if (screenId === 'editor') document.getElementById('editor-screen').classList.remove('hidden');
-        else if (screenId === 'runner') document.getElementById('runner-screen').classList.remove('hidden');
+        if (screenId === 'repo') {
+            document.getElementById('repo-screen').classList.remove('hidden');
+            // ── Al volver al repositorio, limpiar el editor
+            // Evita que al abrir otro proyecto vea residuos del anterior
+            currentEditId = null;
+            document.getElementById('project-name-input').value = '';
+            document.getElementById('python-editor').value      = '';
+            document.getElementById('html-editor').value        = '';
+        } else if (screenId === 'editor') {
+            document.getElementById('editor-screen').classList.remove('hidden');
+        } else if (screenId === 'runner') {
+            document.getElementById('runner-screen').classList.remove('hidden');
+        }
     }
 
     function saveCurrentEdit() {
+        const nameVal  = document.getElementById('project-name-input').value.trim();
+        const pyVal    = document.getElementById('python-editor').value;
+        const htmlVal  = document.getElementById('html-editor').value;
+        const urlVal   = document.getElementById('server-url-input').value;
+
         if (!currentEditId) {
-            const newName = document.getElementById('project-name-input').value.trim();
-            if (!newName) { notify("Ingresa un nombre"); return; }
-            const newId = generateId();
+            // Crear nuevo proyecto
+            if (!nameVal) { notify("Ingresa un nombre"); return; }
+            const newId  = generateId();
             const newProj = {
-                id: newId,
-                name: newName,
-                pythonCode: document.getElementById('python-editor').value,
-                htmlCode: document.getElementById('html-editor').value,
-                serverUrl: document.getElementById('server-url-input').value,
-                createdAt: Date.now()
+                id:         newId,
+                name:       nameVal,
+                pythonCode: pyVal,
+                htmlCode:   htmlVal,
+                serverUrl:  urlVal,
+                createdAt:  Date.now()
             };
             projects.push(newProj);
             currentEditId = newId;
             saveProjects();
-            notify(`Proyecto "${newName}" creado`);
+            notify(`Proyecto "${nameVal}" creado`);
             showScreen('repo');
             renderRepository();
             return;
         }
+
+        // Actualizar proyecto existente — verificar que el id aún existe
         const idx = projects.findIndex(p => p.id === currentEditId);
-        if (idx !== -1) {
-            projects[idx].name = document.getElementById('project-name-input').value.trim() || "Sin nombre";
-            projects[idx].pythonCode = document.getElementById('python-editor').value;
-            projects[idx].htmlCode = document.getElementById('html-editor').value;
-            projects[idx].serverUrl = document.getElementById('server-url-input').value;
-            saveProjects();
-            notify("Proyecto guardado");
-            showScreen('repo');
-            renderRepository();
+        if (idx === -1) {
+            notify("❌ Error: proyecto no encontrado. Crea uno nuevo.");
+            currentEditId = null;
+            return;
         }
+        // ── PROTECCIÓN: solo actualizar el proyecto cuyo id coincide exactamente
+        // Nunca tocar otros proyectos
+        projects[idx].name       = nameVal || projects[idx].name;
+        projects[idx].pythonCode = pyVal;
+        projects[idx].htmlCode   = htmlVal;
+        projects[idx].serverUrl  = urlVal;
+        saveProjects();
+        notify("Proyecto guardado");
+        showScreen('repo');
+        renderRepository();
     }
 
     function deleteProject(id) {
@@ -805,6 +862,17 @@
     }
 
     function startNewProject() {
+        // ── PROTECCIÓN: guardar el proyecto actual antes de crear uno nuevo
+        if (currentEditId) {
+            const prevIdx = projects.findIndex(p => p.id === currentEditId);
+            if (prevIdx !== -1) {
+                projects[prevIdx].pythonCode = document.getElementById('python-editor').value;
+                projects[prevIdx].htmlCode   = document.getElementById('html-editor').value;
+                projects[prevIdx].name       = document.getElementById('project-name-input').value.trim() || projects[prevIdx].name;
+                saveProjects();
+            }
+        }
+        // Limpiar completamente antes de empezar el nuevo proyecto
         currentEditId = null;
         document.getElementById('project-name-input').value = "Nuevo proyecto";
         document.getElementById('python-editor').value = `def mi_funcion(param):\n    return f"Recibí: {param}"\n\nimport numpy as np\nprint("Python remoto listo")`;
