@@ -455,8 +455,6 @@ s.blt{color:#ffb86c;}
   <button class="stab on" id="stab-1" onclick="setView('notebook')">📝 NOTEBOOK</button>
   <button class="stab" id="stab-2" onclick="setView('manage')">📂 MIS NOTEBOOKS</button>
   <div class="secbar-right">
-    <button class="tbtn" id="btn-add-code" onclick="addCellAt(-1,'code')">＋ Código</button>
-    <button class="tbtn" id="btn-add-qk" onclick="addCellAt(-1,'qiskit')" style="color:var(--cy);border-color:rgba(0,255,221,.25);">⚛ Qiskit</button>
     <button class="tbtn" id="btn-add-md" onclick="addCellAt(-1,'markdown')">✦ Texto</button>
     <button class="tbtn" id="btn-add-circ" onclick="addCellAt(-1,'circuit')" style="color:#00ff88;border-color:rgba(0,200,100,.25);">⚛ Circuito</button>
     <button class="tbtn" id="btn-import" onclick="importNb()">📂 Abrir</button>
@@ -475,8 +473,6 @@ s.blt{color:#ffb86c;}
   <div id="view-notebook" style="display:flex;">
     <div class="nb-scroll" id="nb-scroll">
       <div class="nb-bottom" id="nb-bottom-btns">
-        <button class="nb-add-big" onclick="addCellAt(-1,'code')">＋ Código Python</button>
-        <button class="nb-add-big" onclick="addCellAt(-1,'qiskit')" style="border-color:rgba(0,255,221,.2);color:rgba(0,255,221,.5);">⚛ Celda Qiskit</button>
         <button class="nb-add-big" onclick="addCellAt(-1,'markdown')">✦ Texto / LaTeX</button>
         <button class="nb-add-big" onclick="addCellAt(-1,'circuit')" style="border-color:rgba(0,200,100,.2);color:rgba(0,200,100,.5);">⚛ Circuito Visual</button>
       </div>
@@ -541,7 +537,8 @@ function genId(){return 'c'+Date.now()+Math.random().toString(36).slice(2,6);}
 // ── NAVEGACIÓN ────────────────────────────────────────────────
 function goBack(){
   if(_expositionMode){
-    // En modo exposición: volver a proyectos sin deactivar (el core maneja el nav)
+    // Quitar modo exposición → volver al repositorio de proyectos
+    deactivateExpositionMode();
     postCore('QCOL_NAV',{screen:'projects'});
   } else {
     postCore('QCOL_NAV',{screen:'home'});
@@ -558,11 +555,11 @@ function activateExpositionMode(){
   // Ocultar secbar completa — en expo solo se usa el botón ← ATRÁS del topbar
   const secbar=document.getElementById('secbar');
   if(secbar)secbar.style.display='none';
-  // Ocultar botones individuales por si acaso
-  ['btn-add-code','btn-add-qk','btn-add-md','btn-import',
-   'btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
+  // Ocultar botones de edición en expo — dejar solo los de circuito
+  ['btn-add-md','btn-import','btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='none';
   });
+  // btn-add-circ se mantiene visible: las celdas circuit son editables en expo
   const rst=document.getElementById('btn-restore-all');if(rst)rst.style.display='';
   const ni=document.getElementById('nb-name-inp');if(ni){ni.readOnly=true;ni.style.opacity='.6';}
   // Cambiar texto del botón atrás para indicar que va a Proyectos
@@ -580,7 +577,7 @@ function deactivateExpositionMode(){
   const secbar=document.getElementById('secbar');
   if(secbar)secbar.style.display='flex';
   // Restaurar botones
-  ['btn-add-code','btn-add-qk','btn-add-md','btn-import',
+  ['btn-add-md','btn-add-circ','btn-import',
    'btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='';
   });
@@ -1807,7 +1804,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── GESTIÓN NOTEBOOKS ─────────────────────────────────────────
-function newNotebook(){if(!confirm('¿Crear nuevo notebook?'))return;cells=[];execCounter=0;curCellId=null;document.getElementById('nb-name-inp').value='Nuevo Notebook';addCellAt(-1,'code');notify('✅ Nuevo notebook');}
+function newNotebook(){if(!confirm('¿Crear nuevo notebook?'))return;cells=[];execCounter=0;curCellId=null;document.getElementById('nb-name-inp').value='Nuevo Notebook';addCellAt(-1,'markdown');notify('✅ Nuevo notebook');}
 function importNb(){document.getElementById('import-file').click();}
 function handleImport(e){
   const file=e.target.files[0];if(!file)return;
@@ -1822,8 +1819,7 @@ function handleImport(e){
         const src=Array.isArray(c.source)?c.source.join(''):c.source||'';
         const tags=c.metadata?.tags||[];
         const type=c.cell_type==='markdown'?'markdown':
-          (tags.includes('qiskit-cell')?'qiskit':
-          (tags.includes('circuit-cell')?'circuit':'code'));
+          (tags.includes('circuit-cell')?'circuit':'markdown');  // solo markdown y circuit
         const hiddenCode = c.metadata?.hidden_code || '';
         const circuitData = c.metadata?.circuit_data || null;
         cells.push({id:genId(),type,code:src,output:'',exec_count:null,
@@ -1872,7 +1868,9 @@ function setView(v){
 }
 
 // ── CELDAS ────────────────────────────────────────────────────
-function addCellAt(afterIdx,type='code'){
+function addCellAt(afterIdx,type='markdown'){
+  // Solo se permiten celdas markdown y circuit
+  if(type==='code'||type==='qiskit') type='markdown';
   if(_expositionMode)return;
   const defaultQk=`# Celda Qiskit — imports automáticos: qc, AerSimulator, np, pi, plt
 qc = QuantumCircuit(2, 2)
@@ -1957,7 +1955,7 @@ function renderCells(){
 }
 function buildAddRow(idx){
   const row=document.createElement('div');row.className='add-cell-row';
-  row.innerHTML=`<div class="add-cell-line"></div><div class="add-cell-btns"><button class="add-btn" onclick="addCellAt(${idx},'code')">＋ Código</button><button class="add-btn" onclick="addCellAt(${idx},'qiskit')">⚛ Qiskit</button><button class="add-btn" onclick="addCellAt(${idx},'markdown')">✦ Texto</button><button class="add-btn" style="color:#00ff88" onclick="addCellAt(${idx},'circuit')">⚛ Circuito</button></div><div class="add-cell-line"></div>`;
+  row.innerHTML=`<div class="add-cell-line"></div><div class="add-cell-btns"><button class="add-btn" onclick="addCellAt(${idx},'markdown')">✦ Texto</button><button class="add-btn" style="color:#00ff88" onclick="addCellAt(${idx},'circuit')">⚛ Circuito</button></div><div class="add-cell-line"></div>`;
   return row;
 }
 
@@ -2096,18 +2094,14 @@ function buildCellEl(cell,i){
     // cell.circuitData = {qubits, gates} — estructura interna del arquitecto
     const hasCircuit = cell.circuitData && cell.circuitData.gates && cell.circuitData.gates.length > 0;
     const hasCode    = (cell.hiddenCode || '').trim().length > 0;
-    const circuitToolbar = _expositionMode
-      ? `<div class="cell-toolbar">
-          <button class="ct-btn ct-run" onclick="event.stopPropagation();runCell('${cell.id}')" title="Ejecutar">▶</button>
-        </div>`
-      : `<div class="cell-toolbar">
-          <button class="ct-btn" onclick="event.stopPropagation();moveCellUp('${cell.id}')" title="Subir">↑</button>
-          <button class="ct-btn" onclick="event.stopPropagation();moveCellDown('${cell.id}')" title="Bajar">↓</button>
-          <button class="ct-btn danger" onclick="event.stopPropagation();deleteCell('${cell.id}')" title="Eliminar">✕</button>
-        </div>`;
-    const restoreBtn = _expositionMode
-      ? `<button class="cell-restore-btn" onclick="event.stopPropagation();restoreCell('${cell.id}')">↺ Original</button>`
-      : '';
+    // En modo EXPO: circuit es EDITABLE (mismo toolbar que normal)
+    // Solo Markdown se bloquea en expo
+    const circuitToolbar = `<div class="cell-toolbar">
+        <button class="ct-btn" onclick="event.stopPropagation();moveCellUp('${cell.id}')" title="Subir">↑</button>
+        <button class="ct-btn" onclick="event.stopPropagation();moveCellDown('${cell.id}')" title="Bajar">↓</button>
+        ${_expositionMode ? '' : `<button class="ct-btn danger" onclick="event.stopPropagation();deleteCell('${cell.id}')" title="Eliminar">✕</button>`}
+      </div>`;
+    const restoreBtn = '';  // Sin restore en circuit (siempre editable)
     // Renderizar el diagrama del circuito a partir de circuitData
     const circuitSVG = hasCircuit ? buildCircuitFromData(cell.circuitData) : '';
     const outContent = cell.output ? `<div class="cell-output-area" id="out-${cell.id}">${'<!-- output -->'}</div>` : '';
@@ -2123,23 +2117,23 @@ function buildCellEl(cell,i){
           ⚛ Circuito Visual${hasCode?' · <span style="color:rgba(0,200,100,.5);font-size:.38rem;">código listo</span>':' · <span style="color:rgba(255,180,0,.6);font-size:.38rem;">sin código</span>'}
         </div>
         <div class="cell-circuit-preview" id="cprev-${cell.id}"
-          onclick="${_expositionMode?'':'event.stopPropagation();openCircuitEditor(\''+cell.id+'\')'}"
-          title="${_expositionMode?'':'Haz clic para editar en el Arquitecto Cuántico'}">
+          onclick="event.stopPropagation();openCircuitEditor('${cell.id}')"
+          title="Haz clic para editar en el Arquitecto Cuántico">
           ${hasCircuit
-            ? `<div class="circ-preview-hint">⚛ CIRCUITO CUÁNTICO${_expositionMode?'':' — clic para editar'}</div>${circuitSVG}`
-            : `<div class="circ-empty-hint" onclick="event.stopPropagation();${_expositionMode?'':('openCircuitEditor(\''+cell.id+'\')')}">
+            ? `<div class="circ-preview-hint">⚛ CIRCUITO CUÁNTICO — clic para editar</div>${circuitSVG}`
+            : `<div class="circ-empty-hint" onclick="event.stopPropagation();openCircuitEditor('${cell.id}')">
                 ⚛ Celda de Circuito Visual<br>
-                <span style="font-size:.4rem;color:rgba(0,200,100,.4);">${_expositionMode?'(sin circuito)':'Haz clic para abrir el Arquitecto Cuántico y diseñar el circuito'}</span>
+                <span style="font-size:.4rem;color:rgba(0,200,100,.4);">Haz clic para abrir el Arquitecto Cuántico y diseñar el circuito</span>
               </div>`
           }
         </div>
-        ${!_expositionMode ? `<div style="display:flex;gap:.4rem;margin-top:.3rem;align-items:center;">
+        <div style="display:flex;gap:.4rem;margin-top:.3rem;align-items:center;">
           <button class="circ-edit-btn" onclick="event.stopPropagation();openCircuitEditor('${cell.id}')">
             ✏ Editar en Arquitecto
           </button>
           ${hasCode?`<button class="circ-edit-btn" style="background:rgba(0,136,255,.1);border-color:rgba(0,136,255,.3);color:var(--bl2);"
             onclick="event.stopPropagation();runCell('${cell.id}')">▶ Ejecutar</button>`:''}
-        </div>` : ''}
+        </div>
         <div class="cell-output-area" id="out-${cell.id}">${cell.output?`<div class="out-stdout">${escH(cell.output)}</div>`:''}</div>
         ${restoreBtn}
       </div>`;
@@ -2374,10 +2368,10 @@ window.addEventListener('message',e=>{
       document.body.classList.add('expo-mode');
       // Botones
       document.getElementById('expo-badge').style.display='inline-flex';
-      ['btn-add-code','btn-add-qk','btn-add-md','btn-import',
-       'btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
+      ['btn-add-md','btn-import','btn-download','btn-save','btn-publish','stab-2'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.style.display='none';
       });
+      // circuit sigue visible en expo
       const rst=document.getElementById('btn-restore-all'); if(rst) rst.style.display='';
       const ni=document.getElementById('nb-name-inp');
       if(ni){ ni.readOnly=true; ni.style.opacity='.6'; }

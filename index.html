@@ -650,7 +650,7 @@ body::before{content:'';position:fixed;inset:0;
     account:        'qcol-account.html',
     founder:        'qcol-founder.html',
     help:           'qcol-help.html',
-    'quantum-puzzle':'qcol-quantum-puzzle.html',   // Nuevo módulo Quantum Puzzle
+    'quantum-puzzle':'qcol-quantum-puzzle.html',
   };
 
   let curUser = null;
@@ -658,20 +658,13 @@ body::before{content:'';position:fixed;inset:0;
   let aiCfg = JSON.parse(localStorage.getItem('qcol_ai') || '{}');
   let aiHistory = [];
 
-  // CodeMirror editor instance
   let cmEditor = null;
-
-  // ══════════════════════════════════════════════
-  // BASE DE DATOS LOCAL (localStorage) — SIN FIREBASE
-  // ══════════════════════════════════════════════
-  let _db = null;
 
   function dbLoad() {
       const stored = localStorage.getItem('qcol_db');
       if (stored) {
           try {
-              _db = JSON.parse(stored);
-              return _db;
+              return JSON.parse(stored);
           } catch(e) { console.warn('dbLoad parse error', e); }
       }
       return null;
@@ -680,7 +673,6 @@ body::before{content:'';position:fixed;inset:0;
   function dbSave(newData) {
       try {
           localStorage.setItem('qcol_db', JSON.stringify(newData));
-          _db = newData;
           return true;
       } catch(e) {
           console.error('dbSave error', e);
@@ -689,16 +681,16 @@ body::before{content:'';position:fixed;inset:0;
   }
 
   async function dbGet(section) {
-      if (!_db) dbLoad();
-      if (!_db) return null;
-      return _db[section] || null;
+      let data = dbLoad();
+      if (!data) return null;
+      return data[section] || null;
   }
 
   async function dbSet(section, value) {
-      if (!_db) dbLoad();
-      if (!_db) _db = { version:1, config:{}, users:[], circuits:{}, notebooks:{}, ai_history:{} };
-      _db[section] = value;
-      return dbSave(_db);
+      let data = dbLoad();
+      if (!data) data = { version:1, config:{}, users:[], circuits:{}, notebooks:{}, ai_history:{} };
+      data[section] = value;
+      return dbSave(data);
   }
 
   async function dbInit() {
@@ -735,27 +727,38 @@ body::before{content:'';position:fixed;inset:0;
       broadcast({ type: 'QCOL_CONFIG_UPDATED', db: data });
   }
 
-  // ── MENSAJERÍA INTER-MÓDULO ──
   window.addEventListener('message', e => {
     const d = e.data; if (!d?.type) return;
 
-    // ═══ REENVÍO A QUANTUM NOTEBOOK (MODO EXPOSICIÓN) ═══
     if (d.type === 'QCOL_OPEN_NB_EXPOSITION') {
-      const notebookFrame = iframes['architect-pro'];
-      if (notebookFrame && notebookFrame.contentWindow) {
-        notebookFrame.contentWindow.postMessage(d, '*');
-      } else {
-        setTimeout(() => {
-          const retryFrame = iframes['architect-pro'];
-          if (retryFrame && retryFrame.contentWindow) {
-            retryFrame.contentWindow.postMessage(d, '*');
+      // 1. Navegar a la pantalla del Quantum Notebook PRIMERO
+      nav('architect-pro');
+
+      // 2. Enviar el mensaje al iframe — con retry robusto igual que QCOL_OPEN_ARCHITECT_EDIT
+      const sendExpo = () => {
+        const nbFrame = iframes['architect-pro'];
+        if (nbFrame && nbFrame.contentWindow) {
+          nbFrame.contentWindow.postMessage(d, '*');
+          return true;
+        }
+        return false;
+      };
+
+      if (!sendExpo()) {
+        // Iframe aún cargando — reintentar cada 200ms hasta 5s
+        let attempts = 0;
+        const retry = setInterval(() => {
+          attempts++;
+          if (sendExpo()) {
+            clearInterval(retry);
+          } else if (attempts > 25) {
+            clearInterval(retry);
           }
-        }, 300);
+        }, 200);
       }
       return;
     }
 
-    // ═══ CELDA CIRCUIT: NOTEBOOK → ARCHITECT (abrir editor) ═══
     if (d.type === 'QCOL_OPEN_ARCHITECT_EDIT') {
       nav('architect');
       const sendToArchitect = () => {
@@ -779,7 +782,6 @@ body::before{content:'';position:fixed;inset:0;
       return;
     }
 
-    // ═══ CELDA CIRCUIT: ARCHITECT → NOTEBOOK (devolver datos) ═══
     if (d.type === 'QCOL_CIRCUIT_RETURN') {
       nav('architect-pro');
       const sendToNB = () => {
@@ -828,12 +830,14 @@ body::before{content:'';position:fixed;inset:0;
           'qcol_ignored_attrs': 'ignored_attrs',
           'qcol_ignored_attrs_reasons': 'ignored_attrs_reasons'
       };
-      if (CONFIG_KEYS[d.key] && _db) {
-          if (!_db.config) _db.config = {};
+      if (CONFIG_KEYS[d.key]) {
+          let data = dbLoad();
+          if (!data) data = { config: {} };
+          if (!data.config) data.config = {};
           let parsedVal = d.val;
           try { parsedVal = typeof d.val === 'string' ? JSON.parse(d.val) : d.val; } catch(e) {}
-          _db.config[CONFIG_KEYS[d.key]] = parsedVal;
-          dbSave(_db);
+          data.config[CONFIG_KEYS[d.key]] = parsedVal;
+          dbSave(data);
       }
       if (d.key === 'qcol_colab_url') checkEngine();
       if (d.key === 'qcol_ai') { aiCfg = d.val; setupAI(); }
@@ -907,8 +911,29 @@ body::before{content:'';position:fixed;inset:0;
     } catch(e) {}
   }
 
+  // --- Helper para limpiar un iframe completamente ---
+  function clearModuleIframe(screen) {
+      const iframe = iframes[screen];
+      if (iframe) {
+          try { iframe.remove(); } catch(e) {}
+          delete iframes[screen];
+      }
+      const wrap = document.getElementById(screen + '-wrap');
+      if (wrap) wrap.innerHTML = '';
+  }
+
   function nav(screen) {
     const s = screen.replace(/_/g, '-');
+    const currentActive = document.querySelector('.screen.active');
+    const currentId = currentActive ? currentActive.id : null;
+
+    // Si se sale desde Quantum Open Lab o Quantum Notebook hacia el menú principal,
+    // se reinician ambos módulos para desactivar cualquier modo de exposición.
+    if (currentId && (currentId === 'screen-architect' || currentId === 'screen-architect-pro') && s === 'home') {
+        clearModuleIframe('architect');
+        clearModuleIframe('architect-pro');
+    }
+
     document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
     const el = document.getElementById('screen-' + s);
     if (el) { el.classList.add('active'); }
@@ -965,7 +990,7 @@ body::before{content:'';position:fixed;inset:0;
     </div>`;
   }
 
-  // ── MENÚ SEGÚN ROL ──
+  // ── MENÚ SEGÚN ROL (sin cambios) ──
   function renderMenu() {
     const role  = curUser?.role || 'guest';
     const isAdm = role === 'admin' || role === 'founder';
@@ -1069,7 +1094,6 @@ body::before{content:'';position:fixed;inset:0;
         desc:'Documentación completa, guías de inicio rápido y preguntas frecuentes sobre el ecosistema QCOL.',
         delay:.35, show:true,
       },
-      // NUEVA TARJETA: QUANTUM PUZZLE (antes Module Lab)
       {
         screen:'quantum-puzzle',
         icon:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -1246,13 +1270,15 @@ body::before{content:'';position:fixed;inset:0;
       reply = r;
     }
 
-    if (curUser?.username && _db) {
-        if (!_db.ai_history) _db.ai_history = {};
-        if (!_db.ai_history[curUser.username]) _db.ai_history[curUser.username] = [];
-        _db.ai_history[curUser.username].push({ q: msg, a: reply, ts: Date.now() });
-        if (_db.ai_history[curUser.username].length > 200) 
-            _db.ai_history[curUser.username] = _db.ai_history[curUser.username].slice(-200);
-        dbSave(_db);
+    if (curUser?.username) {
+        let data = dbLoad();
+        if (!data) data = { ai_history: {} };
+        if (!data.ai_history) data.ai_history = {};
+        if (!data.ai_history[curUser.username]) data.ai_history[curUser.username] = [];
+        data.ai_history[curUser.username].push({ q: msg, a: reply, ts: Date.now() });
+        if (data.ai_history[curUser.username].length > 200) 
+            data.ai_history[curUser.username] = data.ai_history[curUser.username].slice(-200);
+        dbSave(data);
     }
   }
 
